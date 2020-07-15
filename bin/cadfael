@@ -1,0 +1,14 @@
+#!/usr/bin/env php
+<?php
+// application.php
+
+require __DIR__.'/../vendor/autoload.php';
+
+use Symfony\Component\Console\Application;
+use Cadfael\Cli\Command\RunCommand;
+use Cadfael\Cli\Command\AboutCommand;
+
+$application = new Application();
+$application->add(new AboutCommand());
+$application->add(new RunCommand());
+$application->run();
