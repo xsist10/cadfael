@@ -6,8 +6,11 @@ At the moment Cadfael focuses on the MySQL database but the code is structured i
 
 ## Installation
 
+While this project is in early development, you'll need to specify the non-stable version:
+
+
 ```bash
-composer require cadfael/cadfael
+composer require cadfael/cadfael=^0.1
 ```
 
 ## Usage
