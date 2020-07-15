@@ -30,6 +30,9 @@
             "Cadfael\\Tests\\": "tests/"
         }
     },
+    "scripts": {
+        "test": "./build.sh"
+    },
     "bin": [
         "bin/cadfael"
     ]
