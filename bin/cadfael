@@ -1,8 +1,13 @@
 #!/usr/bin/env php
-<?php
-// application.php
+<?php declare(strict_types=1);
 
-require __DIR__.'/../vendor/autoload.php';
+// Find the correct autoload path
+foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php'] as $file) {
+    if (file_exists($file) === true) {
+        require $file;
+        break;
+    }
+}
 
 use Symfony\Component\Console\Application;
 use Cadfael\Cli\Command\RunCommand;
