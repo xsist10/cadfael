@@ -1,5 +1,7 @@
 # Cadfael
 
+![Build](https://github.com/xsist10/cadfael/workflows/build/badge.svg?branch=master)
+
 Cadfael is static analysis tool to provide critiquing for databases.
 
 At the moment Cadfael focuses on the MySQL database but the code is structured in a way to allow other databases to be added easily.
