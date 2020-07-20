@@ -8,8 +8,14 @@ use Cadfael\Engine\Entity;
 
 abstract class Table implements Entity
 {
+    /**
+     * @var string
+     */
     protected string $name;
-    protected string $schema;
+    /**
+     * @var Schema
+     */
+    protected Schema $schema;
     /**
      * @var array<Column>
      */
@@ -22,6 +28,21 @@ abstract class Table implements Entity
     public function __construct(string $schema, string $name)
     {
         $this->name = $name;
+    }
+
+    /**
+     * @return Schema
+     */
+    public function getSchema(): Schema
+    {
+        return $this->schema;
+    }
+
+    /**
+     * @param Schema $schema
+     */
+    public function setSchema(Schema $schema): void
+    {
         $this->schema = $schema;
     }
 
