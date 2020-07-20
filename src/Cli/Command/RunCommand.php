@@ -8,6 +8,7 @@ use Cadfael\Engine\Check\MySQL\Column\SaneAutoIncrement;
 use Cadfael\Engine\Check\MySQL\Table\AutoIncrementCapacity;
 use Cadfael\Engine\Check\MySQL\Table\EmptyTable;
 use Cadfael\Engine\Check\MySQL\Table\MustHavePrimaryKey;
+use Cadfael\Engine\Check\MySQL\Table\PreferredEngine;
 use Cadfael\Engine\Check\MySQL\Table\RedundantIndexes;
 use Cadfael\Engine\Check\MySQL\Table\SaneInnoDbPrimaryKey;
 use Cadfael\Engine\Factory;
@@ -95,6 +96,7 @@ class RunCommand extends Command
             new ReservedKeywords(),
             new SaneAutoIncrement(),
             new CorrectUtf8Encoding(),
+            new PreferredEngine(),
         ];
 
         $tables = $factory->getTables("tests");
