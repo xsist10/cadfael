@@ -46,6 +46,9 @@ abstract class Table implements Entity
         $this->schema = $schema;
     }
 
+    /**
+     * @param Column ...$columns
+     */
     public function setColumns(Column ...$columns): void
     {
         array_walk($columns, function ($column) {
@@ -62,11 +65,17 @@ abstract class Table implements Entity
         return $this->columns ?? [];
     }
 
+    /**
+     * @return string
+     */
     public function getName(): string
     {
         return $this->name;
     }
 
+    /**
+     * @param Index ...$indexes
+     */
     public function setIndexes(Index ...$indexes): void
     {
         array_walk($indexes, function ($index) {
@@ -93,6 +102,9 @@ abstract class Table implements Entity
         });
     }
 
+    /**
+     * @return string
+     */
     public function __toString(): string
     {
         return $this->name;

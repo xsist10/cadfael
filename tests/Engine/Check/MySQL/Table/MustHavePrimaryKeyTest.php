@@ -2,7 +2,6 @@
 declare(strict_types=1);
 
 use Cadfael\Engine\Check\MySQL\Table\MustHavePrimaryKey;
-use Cadfael\Engine\Entity\MySQL\Column;
 use Cadfael\Engine\Report;
 use Cadfael\Tests\Engine\Check\MySQL\BaseTest;
 use Cadfael\Tests\Engine\Check\MySQL\ColumnBuilder;

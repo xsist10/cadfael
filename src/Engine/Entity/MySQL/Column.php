@@ -12,7 +12,7 @@ class Column extends BaseColumn
 {
     public InformationSchema $information_schema;
 
-    public function __construct()
+    private function __construct()
     {
     }
 

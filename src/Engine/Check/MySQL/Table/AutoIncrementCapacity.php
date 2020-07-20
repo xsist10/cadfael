@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Cadfael\Engine\Check\MySQL\Table;
 
 use Cadfael\Engine\Check;
-use Cadfael\Engine\Entity;
 use Cadfael\Engine\Entity\MySQL\Table;
 use Cadfael\Engine\Exception\MissingSysData;
 use Cadfael\Engine\Report;

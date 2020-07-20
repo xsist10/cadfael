@@ -74,6 +74,7 @@ class RunCommand extends Command
 
         $helper = $this->getHelper('question');
         $password = $helper->ask($input, $output, $question);
+        $output->writeln('');
 
         $connectionParams = array(
             'dbname'    => $input->getArgument('schema'),
