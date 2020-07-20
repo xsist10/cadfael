@@ -25,7 +25,7 @@ class Table extends BaseTable
      */
     public static function createFromInformationSchema(array $schema): Table
     {
-        $table = new Table($schema['TABLE_SCHEMA'], $schema['TABLE_NAME']);
+        $table = new Table($schema['TABLE_NAME']);
         $table->information_schema = InformationSchema::createFromInformationSchema($schema);
 
         return $table;

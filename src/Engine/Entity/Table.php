@@ -25,7 +25,7 @@ abstract class Table implements Entity
      */
     protected array $indexes = [];
 
-    public function __construct(string $schema, string $name)
+    public function __construct(string $name)
     {
         $this->name = $name;
     }

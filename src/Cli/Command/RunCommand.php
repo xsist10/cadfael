@@ -97,7 +97,18 @@ class RunCommand extends Command
             new CorrectUtf8Encoding(),
         ];
 
-        foreach ($factory->getTables("tests") as $entity) {
+        $tables = $factory->getTables("tests");
+        if (!count($tables)) {
+            $output->writeln('No tables found in this database.');
+            return Command::SUCCESS;
+        }
+
+        $schema = $tables[0]->getSchema();
+        $output->writeln('<info>MySQL Version:</info> ' . $schema->getVersion());
+        $output->writeln('<info>Tables Found:</info> ' . count($tables));
+        $output->writeln('');
+
+        foreach ($tables as $entity) {
             foreach ($checks as $check) {
                 if ($check->supports($entity)) {
                     $report = $check->run($entity);

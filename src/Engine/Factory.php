@@ -4,6 +4,7 @@ declare(strict_types = 1);
 
 namespace Cadfael\Engine;
 
+use Cadfael\Engine\Entity\MySQL\Schema;
 use Cadfael\Engine\Entity\MySQL\Table\SchemaAutoIncrementColumns;
 use Cadfael\Engine\Entity\MySQL\Table\SchemaRedundantIndexes;
 use Cadfael\Engine\Exception\MissingPermissions;
@@ -11,6 +12,7 @@ use Doctrine\DBAL\Connection;
 use Cadfael\Engine\Entity\MySQL\Table;
 use Cadfael\Engine\Entity\MySQL\Column;
 use Cadfael\Engine\Entity\Index;
+use Doctrine\DBAL\DBALException;
 use Doctrine\DBAL\FetchMode;
 
 class Factory
@@ -83,14 +85,32 @@ class Factory
     }
 
     /**
+     * @return array<string>
+     */
+    public function getVariables(): array
+    {
+        $query = 'SHOW VARIABLES';
+        $rows = $this->connection->fetchAll($query);
+        $variables = [];
+        foreach ($rows as $row) {
+            $variables[$row['Variable_name']] = $row['Value'];
+        }
+
+        return $variables;
+    }
+
+    /**
      * @param string $database
      * @return array<Table>
-     * @throws \Doctrine\DBAL\DBALException
+     * @throws DBALException|MissingPermissions
      */
     public function getTables(string $database): array
     {
         $this->checkRequiredPermissions();
         $this->connection->setFetchMode(FetchMode::ASSOCIATIVE);
+
+        $schema = new Schema($database);
+        $schema->setVariables($this->getVariables());
 
         // Collect and generate all the tables
         $query = 'SELECT * FROM information_schema.TABLES WHERE TABLE_SCHEMA=:database';
@@ -101,7 +121,9 @@ class Factory
         $rows = $statement->fetchAll();
         $tables = [];
         foreach ($rows as $row) {
-            $tables[] = Table::createFromInformationSchema($row);
+            $table = Table::createFromInformationSchema($row);
+            $table->setSchema($schema);
+            $tables[] = $table;
         }
 
         // Collect and generate all the columns
