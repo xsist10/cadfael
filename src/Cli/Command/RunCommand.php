@@ -5,6 +5,7 @@ namespace Cadfael\Cli\Command;
 use Cadfael\Engine\Check\MySQL\Column\CorrectUtf8Encoding;
 use Cadfael\Engine\Check\MySQL\Column\ReservedKeywords;
 use Cadfael\Engine\Check\MySQL\Column\SaneAutoIncrement;
+use Cadfael\Engine\Check\MySQL\Schema\UnsupportedVersion;
 use Cadfael\Engine\Check\MySQL\Table\AutoIncrementCapacity;
 use Cadfael\Engine\Check\MySQL\Table\EmptyTable;
 use Cadfael\Engine\Check\MySQL\Table\MustHavePrimaryKey;
@@ -56,6 +57,18 @@ class RunCommand extends Command
         ;
     }
 
+    protected function addReportToTable(?Report $report, Table $table): void
+    {
+        if (!is_null($report) && $report->getStatus() != Report::STATUS_OK) {
+            $table->addRow([
+                $report->getCheckLabel(),
+                $report->getEntity(),
+                $this->renderStatus($report),
+                implode("\n", $report->getMessages())
+            ]);
+        }
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $output->writeln('Cadfael CLI Tool');
@@ -98,6 +111,7 @@ class RunCommand extends Command
             new SaneAutoIncrement(),
             new CorrectUtf8Encoding(),
             new PreferredEngine(),
+            new UnsupportedVersion(),
         ];
 
         $tables = $factory->getTables("tests");
@@ -111,31 +125,24 @@ class RunCommand extends Command
         $output->writeln('<info>Tables Found:</info> ' . count($tables));
         $output->writeln('');
 
+        foreach ($checks as $check) {
+            if ($check->supports($schema)) {
+                $report = $check->run($schema);
+                $this->addReportToTable($report, $table);
+            }
+        }
+
         foreach ($tables as $entity) {
             foreach ($checks as $check) {
                 if ($check->supports($entity)) {
                     $report = $check->run($entity);
-                    if (!is_null($report) && $report->getStatus() != Report::STATUS_OK) {
-                        $table->addRow([
-                            $report->getCheckLabel(),
-                            $report->getEntity(),
-                            $this->renderStatus($report),
-                            implode("\n", $report->getMessages())
-                        ]);
-                    }
+                    $this->addReportToTable($report, $table);
                 }
 
                 foreach ($entity->getColumns() as $column) {
                     if ($check->supports($column)) {
                         $report = $check->run($column);
-                        if (!is_null($report) && $report->getStatus() != Report::STATUS_OK) {
-                            $table->addRow([
-                                $report->getCheckLabel(),
-                                $report->getEntity(),
-                                $this->renderStatus($report),
-                                implode("\n", $report->getMessages())
-                            ]);
-                        }
+                        $this->addReportToTable($report, $table);
                     }
                 }
             }

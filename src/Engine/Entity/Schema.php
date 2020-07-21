@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Cadfael\Engine\Entity;
 
-abstract class Schema
+use Cadfael\Engine\Entity;
+
+abstract class Schema implements Entity
 {
     /**
      * @var string
