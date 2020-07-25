@@ -13,6 +13,7 @@ use Cadfael\Engine\Check\MySQL\Table\PreferredEngine;
 use Cadfael\Engine\Check\MySQL\Table\RedundantIndexes;
 use Cadfael\Engine\Check\MySQL\Table\SaneInnoDbPrimaryKey;
 use Cadfael\Engine\Factory;
+use Cadfael\Engine\Orchestrator;
 use Cadfael\Engine\Report;
 use Doctrine\DBAL\DriverManager;
 use Symfony\Component\Console\Command\Command;
@@ -101,7 +102,13 @@ class RunCommand extends Command
 
         $table = new Table($output);
         $table->setHeaders(['Check', 'Entity', 'Status', 'Message']);
-        $checks = [
+        $table->setColumnMaxWidth(0, 22);
+        $table->setColumnMaxWidth(1, 40);
+        $table->setColumnMaxWidth(2, 8);
+        $table->setColumnMaxWidth(3, 80);
+
+        $orchestrator = new Orchestrator();
+        $orchestrator->addChecks(
             new MustHavePrimaryKey(),
             new SaneInnoDbPrimaryKey(),
             new EmptyTable(),
@@ -111,8 +118,8 @@ class RunCommand extends Command
             new SaneAutoIncrement(),
             new CorrectUtf8Encoding(),
             new PreferredEngine(),
-            new UnsupportedVersion(),
-        ];
+            new UnsupportedVersion()
+        );
 
         $tables = $factory->getTables($input->getArgument('schema'));
         if (!count($tables)) {
@@ -125,33 +132,17 @@ class RunCommand extends Command
         $output->writeln('<info>Tables Found:</info> ' . count($tables));
         $output->writeln('');
 
-        foreach ($checks as $check) {
-            if ($check->supports($schema)) {
-                $report = $check->run($schema);
-                $this->addReportToTable($report, $table);
-            }
-        }
-
+        $orchestrator->addEntities($schema);
+        $orchestrator->addEntities(...$tables);
         foreach ($tables as $entity) {
-            foreach ($checks as $check) {
-                if ($check->supports($entity)) {
-                    $report = $check->run($entity);
-                    $this->addReportToTable($report, $table);
-                }
-
-                foreach ($entity->getColumns() as $column) {
-                    if ($check->supports($column)) {
-                        $report = $check->run($column);
-                        $this->addReportToTable($report, $table);
-                    }
-                }
-            }
+            $orchestrator->addEntities(...$entity->getColumns());
         }
 
-        $table->setColumnMaxWidth(0, 22);
-        $table->setColumnMaxWidth(1, 40);
-        $table->setColumnMaxWidth(2, 8);
-        $table->setColumnMaxWidth(3, 80);
+        $reports = $orchestrator->run();
+        foreach ($reports as $report) {
+            $this->addReportToTable($report, $table);
+        }
+
         $table->render();
         $output->writeln('');
 
