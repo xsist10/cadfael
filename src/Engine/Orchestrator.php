@@ -24,7 +24,7 @@ class Orchestrator
         return $this->checks;
     }
 
-    public function addChecks(Check ...$checks)
+    public function addChecks(Check ...$checks): void
     {
         $this->checks = array_merge($this->checks, $checks);
     }
@@ -37,7 +37,7 @@ class Orchestrator
         return $this->entities;
     }
 
-    public function addEntities(Entity ...$entities)
+    public function addEntities(Entity ...$entities): void
     {
         $this->entities = array_merge($this->entities, $entities);
     }
