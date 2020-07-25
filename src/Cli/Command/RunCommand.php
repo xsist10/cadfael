@@ -114,7 +114,7 @@ class RunCommand extends Command
             new UnsupportedVersion(),
         ];
 
-        $tables = $factory->getTables("tests");
+        $tables = $factory->getTables($input->getArgument('schema'));
         if (!count($tables)) {
             $output->writeln('No tables found in this database.');
             return Command::SUCCESS;
