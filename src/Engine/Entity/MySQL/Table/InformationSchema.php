@@ -21,7 +21,7 @@ class InformationSchema
     public int $max_data_length;
     public int $data_free;
     public ?string $auto_increment;
-    public string $create_time;
+    public ?string $create_time;
     public ?string $update_time;
     public ?string $check_time;
     public string $table_collation;
