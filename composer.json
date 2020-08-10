@@ -32,7 +32,7 @@
         }
     },
     "scripts": {
-        "test": "./build.sh"
+        "test": "./vendor/bin/phpunit"
     },
     "bin": [
         "bin/cadfael"
