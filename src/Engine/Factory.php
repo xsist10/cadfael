@@ -14,9 +14,12 @@ use Cadfael\Engine\Entity\MySQL\Column;
 use Cadfael\Engine\Entity\Index;
 use Doctrine\DBAL\DBALException;
 use Doctrine\DBAL\FetchMode;
+use Psr\Log\LoggerAwareTrait;
 
 class Factory
 {
+    use LoggerAwareTrait;
+
     private Connection $connection;
     /**
      * @var array<array<bool>>
@@ -31,6 +34,7 @@ class Factory
     protected function hasPermission(string $schema, string $table): bool
     {
         if (!count($this->permissions)) {
+            $this->logger->info("Collecting GRANTs.");
             // First we attempt to figure out what permissions the user has
             $query = 'SHOW GRANTS FOR CURRENT_USER();';
             $this->connection->setFetchMode(FetchMode::NUMERIC);
@@ -79,6 +83,7 @@ class Factory
 
         foreach ($accesses as $access) {
             if (!$this->hasPermission($access['schema'], $access['table'])) {
+                $this->logger->warning(sprintf("Missing critical permission to access %s.%s.", $access['schema'], $access['table']));
                 throw new MissingPermissions(sprintf($message, $access['schema'], $access['table']));
             }
         }
@@ -89,13 +94,13 @@ class Factory
      */
     public function getVariables(): array
     {
+        $this->logger->info("Collecting MySQL VARIABLES.");
         $query = 'SHOW VARIABLES';
         $rows = $this->connection->fetchAll($query);
         $variables = [];
         foreach ($rows as $row) {
             $variables[$row['Variable_name']] = $row['Value'];
         }
-
         return $variables;
     }
 
@@ -113,6 +118,7 @@ class Factory
         $schema->setVariables($this->getVariables());
 
         // Collect and generate all the tables
+        $this->logger->info("Collecting information_schema.TABLES.");
         $query = 'SELECT * FROM information_schema.TABLES WHERE TABLE_SCHEMA=:database';
         $statement = $this->connection->prepare($query);
         $statement->bindValue("database", $database);
@@ -127,6 +133,7 @@ class Factory
         }
 
         // Collect and generate all the columns
+        $this->logger->info("Collecting information_schema.COLUMNS.");
         $query = 'SELECT * FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=:database';
         $statement = $this->connection->prepare($query);
         $statement->bindValue("database", $database);
@@ -163,6 +170,7 @@ class Factory
         }
 
         // Collect and generate all the indexes
+        $this->logger->info("Collecting information_schema.STATISTICS.");
         $query = 'SELECT * FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=:database';
         $statement = $this->connection->prepare($query);
         $statement->bindValue("database", $database);

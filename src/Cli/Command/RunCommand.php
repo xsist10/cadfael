@@ -15,6 +15,8 @@ use Cadfael\Engine\Check\MySQL\Table\SaneInnoDbPrimaryKey;
 use Cadfael\Engine\Factory;
 use Cadfael\Engine\Orchestrator;
 use Cadfael\Engine\Report;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
 use Doctrine\DBAL\DriverManager;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
@@ -99,6 +101,12 @@ class RunCommand extends Command
         );
         $connection = DriverManager::getConnection($connectionParams);
         $factory = new Factory($connection);
+
+        $log = new Logger('name');
+        if ($input->getOption('verbose')) {
+            $log->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+        }
+        $factory->setLogger($log);
 
         $table = new Table($output);
         $table->setHeaders(['Check', 'Entity', 'Status', 'Message']);
