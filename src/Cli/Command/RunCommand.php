@@ -113,7 +113,7 @@ class RunCommand extends Command
         $table->setColumnMaxWidth(0, 22);
         $table->setColumnMaxWidth(1, 40);
         $table->setColumnMaxWidth(2, 8);
-        $table->setColumnMaxWidth(3, 80);
+        $table->setColumnMaxWidth(3, 82);
 
         $orchestrator = new Orchestrator();
         $orchestrator->addChecks(
