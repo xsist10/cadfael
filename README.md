@@ -85,6 +85,18 @@ What is the database password?
 +----------------------+------------------------------------------+----------+----------------------------------------------------------------------------------+
 ```
 
+## Testing
+
+Try testing Cadfael on a few open data sources
+
++-----------------------------+------+-----------+----------+------------------------------+
+| Host                        | Port | Username  | Password | Schema                       |
++-----------------------------+------+-----------+----------+------------------------------+
+| ensembldb.ensembl.org       | 5306 | anonymous |          | tursiops_truncatus_core_84_1 |
+| mysql-rfam-public.ebi.ac.uk | 4497 | rfamro    |          | Rfam                         |
+| mysql-db.1000genomes.org    | 4272 | anonymous |          | homo_sapiens_core_73_37      |
++-----------------------------+------+-----------+----------+------------------------------+
+
 ## Contributions
 
 This project adopts the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md) for contributions.
