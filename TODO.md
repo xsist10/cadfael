@@ -14,6 +14,7 @@
 - [ ] Table Growth detection
     - [ ] Try determine creation values
 - [ ] Table access meta
+    - [ ] Collect mysql.innodb_index_stats metrics
 - [ ] Add support for partition detection and reporting
 - [ ] Overly permissive permission.
 - [ ] At version specific reserved column checks
