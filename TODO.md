@@ -1,7 +1,10 @@
 # TODO
 
-- [ ] Add Orchestrator
-- [ ] Setup workflow to save coverage artifacts
+- [x] Add Orchestrator
+- [x] Setup workflow to save coverage artifacts
+- [x] Add Logger
+- [x] Add regular expression support to permission checks (to support `%` and `*` characters).
+- [ ] Code currently violates Liskov substitution principle. Clean up inheritance mess.
 
 ## Checks
 
@@ -13,6 +16,7 @@
 - [ ] Table access meta
 - [ ] Add support for partition detection and reporting
 - [ ] Overly permissive permission.
+- [ ] At version specific reserved column checks
 
 ## Entities
 

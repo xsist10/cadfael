@@ -38,4 +38,5 @@ abstract class Column implements Entity
     abstract public function isInteger(): bool;
     abstract public function isNumeric(): bool;
     abstract public function getStorageByteSize(): float;
+    abstract public function getCapacity(): int;
 }

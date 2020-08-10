@@ -70,7 +70,8 @@ class InformationSchema
     public int $character_maximum_length = 0;
     public int $character_octet_length = 0;
     public int $numeric_precision;
-    public int $datetime_precision;
+    public int $numeric_scale;
+    public ?int $datetime_precision;
     public ?string $character_set_name;
     public ?string $collation_name;
     public string $extra = '';
@@ -94,13 +95,17 @@ class InformationSchema
         $informationSchema->character_maximum_length  = (int)$schema['CHARACTER_MAXIMUM_LENGTH'];
         $informationSchema->character_octet_length  = (int)$schema['CHARACTER_OCTET_LENGTH'];
         $informationSchema->numeric_precision = (int)$schema['NUMERIC_PRECISION'];
-        $informationSchema->datetime_precision = (int)$schema['DATETIME_PRECISION'];
+        $informationSchema->numeric_scale = (int)$schema['NUMERIC_SCALE'];
+        // DATETIME_PRECISION was added in MySQL 5.6
+        if (isset($schema['DATETIME_PRECISION'])) {
+            $informationSchema->datetime_precision = (int)$schema['DATETIME_PRECISION'];
+        }
         $informationSchema->character_set_name = $schema['CHARACTER_SET_NAME'];
         $informationSchema->collation_name = $schema['COLLATION_NAME'];
         $informationSchema->extra  = $schema['EXTRA'];
         $informationSchema->privileges = $schema['PRIVILEGES'];
         $informationSchema->column_comment = $schema['COLUMN_COMMENT'];
-        $informationSchema->generation_expression = $schema['GENERATION_EXPRESSION'];
+        $informationSchema->generation_expression = $schema['GENERATION_EXPRESSION'] ?? null;
         return $informationSchema;
     }
 }

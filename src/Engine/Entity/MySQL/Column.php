@@ -6,6 +6,7 @@ namespace Cadfael\Engine\Entity\MySQL;
 
 use Cadfael\Engine\Entity\Column as BaseColumn;
 use Cadfael\Engine\Entity\MySQL\Column\InformationSchema;
+use Cadfael\Engine\Exception\InvalidColumnType;
 use Cadfael\Engine\Exception\UnknownColumnType;
 
 class Column extends BaseColumn
@@ -186,5 +187,30 @@ class Column extends BaseColumn
         }
 
         throw new UnknownColumnType($this->information_schema->data_type . " is an unknown data type.");
+    }
+
+    public function getCapacity(): int
+    {
+        if (!$this->isInteger()) {
+            throw new InvalidColumnType('Column is not an integer type.');
+        }
+
+        $fields = [
+            'tinyint'   => 127,
+            'smallint'  => 32767,
+            'mediumint' => 8388607,
+            'int'       => 2147483647,
+            'bigint'    => 9223372036854775807,
+        ];
+
+        $capacity = $fields[$this->information_schema->data_type];
+
+        // Deal with MySQL freaking out about unsigned bigint :P
+        // It's possible that unsigned bigint isn't even allowed
+        if (!$this->isSigned()) {
+            $capacity = $capacity * 2 + 1;
+        }
+
+        return $capacity;
     }
 }

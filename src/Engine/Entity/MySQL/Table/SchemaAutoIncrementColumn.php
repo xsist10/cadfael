@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Cadfael\Engine\Entity\MySQL\Table;
 
+use Cadfael\Engine\Entity\MySQL\Table;
+use Cadfael\Engine\Exception\MissingInformationSchema;
+
 /**
  * Class SchemaAutoIncrementColumn
  * @package Cadfael\Engine\Entity\MySQL\Table
@@ -43,5 +46,37 @@ class SchemaAutoIncrementColumn
         $schemaAutoIncrementColumns->auto_increment_ratio = (float)$schema['auto_increment_ratio'];
 
         return $schemaAutoIncrementColumns;
+    }
+
+    /**
+     * Attempt to automatically determine the SchemaAutoIncrementColumn using existing meta data
+     *
+     * @param Table $table
+     * @return ?SchemaAutoIncrementColumn
+     * @throws MissingInformationSchema
+     */
+    public static function createFromTable(Table $table): ?SchemaAutoIncrementColumn
+    {
+        if (is_null($table->information_schema)) {
+            throw new MissingInformationSchema();
+        }
+        foreach ($table->getColumns() as $column) {
+            if ($column->isAutoIncrementing()) {
+                $schemaAutoIncrementColumns = new SchemaAutoIncrementColumn();
+                $schemaAutoIncrementColumns->column_name = $column->getName();
+                $schemaAutoIncrementColumns->data_type = $column->information_schema->data_type;
+                $schemaAutoIncrementColumns->column_type = $column->information_schema->column_type;
+                $schemaAutoIncrementColumns->is_signed = $column->isSigned();
+                $schemaAutoIncrementColumns->is_unsigned = !$column->isSigned();
+                $schemaAutoIncrementColumns->max_value = $column->getCapacity();
+                $schemaAutoIncrementColumns->auto_increment = (float)$table->information_schema->auto_increment;
+                $ratio = ($table->information_schema->auto_increment - 1) / $column->getCapacity();
+                $schemaAutoIncrementColumns->auto_increment_ratio = $ratio;
+
+                return $schemaAutoIncrementColumns;
+            }
+        }
+
+        return null;
     }
 }
