@@ -49,8 +49,8 @@ class Orchestrator
     {
         $reports = [];
 
-        foreach ($this->checks as $check) {
-            foreach ($this->entities as $entity) {
+        foreach ($this->entities as $entity) {
+            foreach ($this->checks as $check) {
                 if (!$check->supports($entity)) {
                     continue;
                 }
