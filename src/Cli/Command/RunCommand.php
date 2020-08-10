@@ -96,7 +96,7 @@ class RunCommand extends Command
             'dbname'    => $input->getArgument('schema'),
             'user'      => $input->getOption('username'),
             'password'  => $password,
-            'host'      => $input->getOption('host'),
+            'host'      => $input->getOption('host') . ':' . $input->getOption('port'),
             'driver'    => 'pdo_mysql',
         );
         $connection = DriverManager::getConnection($connectionParams);
