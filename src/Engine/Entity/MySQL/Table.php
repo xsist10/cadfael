@@ -4,16 +4,15 @@ declare(strict_types = 1);
 
 namespace Cadfael\Engine\Entity\MySQL;
 
-use Cadfael\Engine\Entity\Column;
 use Cadfael\Engine\Entity\Table as BaseTable;
 use Cadfael\Engine\Entity\MySQL\Table\InformationSchema;
-use Cadfael\Engine\Entity\MySQL\Table\SchemaAutoIncrementColumns;
+use Cadfael\Engine\Entity\MySQL\Table\SchemaAutoIncrementColumn;
 use Cadfael\Engine\Entity\MySQL\Table\SchemaRedundantIndexes;
 
 class Table extends BaseTable
 {
     public ?InformationSchema $information_schema = null;
-    public ?SchemaAutoIncrementColumns $schema_auto_increment_columns = null;
+    public ?SchemaAutoIncrementColumn $schema_auto_increment_column = null;
     /**
      * @var array<SchemaRedundantIndexes>
      */
@@ -35,9 +34,9 @@ class Table extends BaseTable
      * @codeCoverageIgnore
      * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
      */
-    public function setSchemaAutoIncrementColumns(SchemaAutoIncrementColumns $schema_auto_increment_columns): void
+    public function setSchemaAutoIncrementColumn(SchemaAutoIncrementColumn $schema_auto_increment_column): void
     {
-        $this->schema_auto_increment_columns = $schema_auto_increment_columns;
+        $this->schema_auto_increment_column = $schema_auto_increment_column;
     }
 
     /**

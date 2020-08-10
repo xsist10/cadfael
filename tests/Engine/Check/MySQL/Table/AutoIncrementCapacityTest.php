@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 use Cadfael\Engine\Check\MySQL\Table\AutoIncrementCapacity;
-use Cadfael\Engine\Entity\MySQL\Table\SchemaAutoIncrementColumns;
+use Cadfael\Engine\Entity\MySQL\Table\SchemaAutoIncrementColumn;
 use Cadfael\Engine\Exception\MissingSysData;
 use Cadfael\Engine\Report;
 
@@ -12,7 +12,7 @@ class AutoIncrementCapacityTest extends BaseTest
 {
     public function providerTableData() {
         $emptyLargeCapacity = $this->createTable();
-        $emptyLargeCapacity->setSchemaAutoIncrementColumns(SchemaAutoIncrementColumns::createFromSys([
+        $emptyLargeCapacity->setSchemaAutoIncrementColumn(SchemaAutoIncrementColumn::createFromSys([
             'table_schema'          => 'tests',
             'table_name'            => 'table_with_signed_autoincrement',
             'column_name'           => 'id',
@@ -26,7 +26,7 @@ class AutoIncrementCapacityTest extends BaseTest
         ]));
 
         $midLargeCapacity = $this->createTable();
-        $midLargeCapacity->setSchemaAutoIncrementColumns(SchemaAutoIncrementColumns::createFromSys([
+        $midLargeCapacity->setSchemaAutoIncrementColumn(SchemaAutoIncrementColumn::createFromSys([
             'table_schema'          => 'tests',
             'table_name'            => 'table_with_signed_autoincrement',
             'column_name'           => 'id',
@@ -40,7 +40,7 @@ class AutoIncrementCapacityTest extends BaseTest
         ]));
 
         $fullLargeCapacity = $this->createTable();
-        $fullLargeCapacity->setSchemaAutoIncrementColumns(SchemaAutoIncrementColumns::createFromSys([
+        $fullLargeCapacity->setSchemaAutoIncrementColumn(SchemaAutoIncrementColumn::createFromSys([
             'table_schema'          => 'tests',
             'table_name'            => 'table_with_signed_autoincrement',
             'column_name'           => 'id',
@@ -54,7 +54,7 @@ class AutoIncrementCapacityTest extends BaseTest
         ]));
 
         $emptySmallCapacity = $this->createTable();
-        $emptySmallCapacity->setSchemaAutoIncrementColumns(SchemaAutoIncrementColumns::createFromSys([
+        $emptySmallCapacity->setSchemaAutoIncrementColumn(SchemaAutoIncrementColumn::createFromSys([
             'table_schema'          => 'tests',
             'table_name'            => 'table_with_signed_autoincrement',
             'column_name'           => 'id',
@@ -68,7 +68,7 @@ class AutoIncrementCapacityTest extends BaseTest
         ]));
 
         $midSmallCapacity = $this->createTable();
-        $midSmallCapacity->setSchemaAutoIncrementColumns(SchemaAutoIncrementColumns::createFromSys([
+        $midSmallCapacity->setSchemaAutoIncrementColumn(SchemaAutoIncrementColumn::createFromSys([
             'table_schema'          => 'tests',
             'table_name'            => 'table_with_signed_autoincrement',
             'column_name'           => 'id',
@@ -82,7 +82,7 @@ class AutoIncrementCapacityTest extends BaseTest
         ]));
 
         $fullSmallCapacity = $this->createTable();
-        $fullSmallCapacity->setSchemaAutoIncrementColumns(SchemaAutoIncrementColumns::createFromSys([
+        $fullSmallCapacity->setSchemaAutoIncrementColumn(SchemaAutoIncrementColumn::createFromSys([
             'table_schema'          => 'tests',
             'table_name'            => 'table_with_signed_autoincrement',
             'column_name'           => 'id',
@@ -125,8 +125,8 @@ class AutoIncrementCapacityTest extends BaseTest
 
         $data = $report->getData();
         if ($data) {
-            $this->assertEquals($table->schema_auto_increment_columns->max_value, $data['total']);
-            $this->assertEquals($table->schema_auto_increment_columns->auto_increment, $data['used']);
+            $this->assertEquals($table->schema_auto_increment_column->max_value, $data['total']);
+            $this->assertEquals($table->schema_auto_increment_column->auto_increment, $data['used']);
         }
     }
 

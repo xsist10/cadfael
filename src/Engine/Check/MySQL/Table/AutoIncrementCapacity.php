@@ -15,13 +15,13 @@ class AutoIncrementCapacity implements Check
     public function supports($entity): bool
     {
         return $entity instanceof Table
-            && !is_null($entity->schema_auto_increment_columns)
+            && !is_null($entity->schema_auto_increment_column)
             && !$entity->isVirtual();
     }
 
     public function run($entity): ?Report
     {
-        $auto_increment = $entity->schema_auto_increment_columns;
+        $auto_increment = $entity->schema_auto_increment_column;
 
         // It is possible that we don't have access to the `sys` schema with the credentials supplied.
         if (is_null($auto_increment)) {

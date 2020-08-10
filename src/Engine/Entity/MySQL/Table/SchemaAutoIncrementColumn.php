@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Cadfael\Engine\Entity\MySQL\Table;
 
 /**
- * Class SchemaAutoIncrementColumns
+ * Class SchemaAutoIncrementColumn
  * @package Cadfael\Engine\Entity\MySQL\Table
  * @codeCoverageIgnore
  *
  * DTO of a record from sys.schema_auto_increment_columns
  */
-class SchemaAutoIncrementColumns
+class SchemaAutoIncrementColumn
 {
     public string $column_name;
     public string $data_type;
@@ -28,11 +28,11 @@ class SchemaAutoIncrementColumns
 
     /**
      * @param array<string> $schema This is a raw record from sys.schema_auto_increment_columns
-     * @return SchemaAutoIncrementColumns
+     * @return SchemaAutoIncrementColumn
      */
-    public static function createFromSys(array $schema): SchemaAutoIncrementColumns
+    public static function createFromSys(array $schema): SchemaAutoIncrementColumn
     {
-        $schemaAutoIncrementColumns = new SchemaAutoIncrementColumns();
+        $schemaAutoIncrementColumns = new SchemaAutoIncrementColumn();
         $schemaAutoIncrementColumns->column_name = $schema['column_name'];
         $schemaAutoIncrementColumns->data_type = $schema['data_type'];
         $schemaAutoIncrementColumns->column_type = $schema['column_type'];
