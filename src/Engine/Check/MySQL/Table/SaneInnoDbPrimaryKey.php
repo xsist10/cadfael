@@ -68,7 +68,7 @@ class SaneInnoDbPrimaryKey implements Check
                 "In InnoDB tables, the PRIMARY KEY is appended to other indexes.",
                 "If the PRIMARY KEY is big, other indexes will use more space.",
                 "Maybe turn your PRIMARY KEY into UNIQUE and add an auto_increment PRIMARY KEY.",
-                "Reference: https://dev.mysql.com/doc/refman/5.7/en/innodb-index-types.html"
+                "Reference: https://dev.mysql.com/doc/refman/8.0/en/innodb-index-types.html"
             ]
         );
     }

@@ -37,7 +37,7 @@ class RedundantIndexes implements Check
         }
         $messages[] = "A redundant index can probably drop it (unless it's a UNIQUE, in which case the dominant index "
                     . "might be a better candidate for reworking).";
-        $messages[] = "Reference: https://dev.mysql.com/doc/refman/5.7/en/sys-schema-redundant-indexes.html";
+        $messages[] = "Reference: https://dev.mysql.com/doc/refman/8.0/en/sys-schema-redundant-indexes.html";
 
         return new Report(
             $this,
