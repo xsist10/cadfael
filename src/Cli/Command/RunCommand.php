@@ -55,7 +55,7 @@ class RunCommand extends Command
             ->addOption('host', null, InputOption::VALUE_REQUIRED, 'The host of the database.', 'localhost')
             ->addOption('port', 'p', InputOption::VALUE_REQUIRED, 'The port of the database.', 3306)
             ->addOption('username', 'u', InputOption::VALUE_REQUIRED, 'The username of the database.', 'root')
-            ->addArgument('schema', InputArgument::REQUIRED, 'The schema to scan.')
+            ->addArgument('schema', InputArgument::REQUIRED | InputArgument::IS_ARRAY, 'The schema to scan.')
             // the full command description shown when running the command with
             // the "--help" option
 //            ->setHelp('.')
@@ -74,41 +74,17 @@ class RunCommand extends Command
         }
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    /**
+     * @param string $schemaName
+     * @param Factory $factory
+     * @param OutputInterface $output
+     * @throws \Cadfael\Engine\Exception\MissingPermissions
+     * @throws \Doctrine\DBAL\DBALException
+     */
+    protected function runChecksAgainstSchema(string $schemaName, Factory $factory, OutputInterface $output): void
     {
-        $output->writeln('Cadfael CLI Tool');
-        $output->writeln('');
-
-        $output->writeln('<info>Host:</info> ' . $input->getOption('host') . ':' . $input->getOption('port'));
-        $output->writeln('<info>User:</info> ' . $input->getOption('username'));
-        $output->writeln('');
-
         // outputs multiple lines to the console (adding "\n" at the end of each line)
-        $output->writeln("Attempting to scan schema <info>" . $input->getArgument('schema') . "</info>");
-
-        $question = new Question('What is the database password? ');
-        $question->setHidden(true);
-        $question->setHiddenFallback(false);
-
-        $helper = $this->getHelper('question');
-        $password = $helper->ask($input, $output, $question);
-        $output->writeln('');
-
-        $connectionParams = array(
-            'dbname'    => $input->getArgument('schema'),
-            'user'      => $input->getOption('username'),
-            'password'  => $password,
-            'host'      => $input->getOption('host') . ':' . $input->getOption('port'),
-            'driver'    => 'pdo_mysql',
-        );
-        $connection = DriverManager::getConnection($connectionParams);
-        $factory = new Factory($connection);
-
-        $log = new Logger('name');
-        if ($input->getOption('verbose')) {
-            $log->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
-        }
-        $factory->setLogger($log);
+        $output->writeln("Attempting to scan schema <info>$schemaName </info>");
 
         $table = new Table($output);
         $table->setHeaders(['Check', 'Entity', 'Status', 'Message']);
@@ -116,6 +92,17 @@ class RunCommand extends Command
         $table->setColumnMaxWidth(1, 40);
         $table->setColumnMaxWidth(2, 8);
         $table->setColumnMaxWidth(3, 82);
+
+        $tables = $factory->getTables($schemaName);
+        if (!count($tables)) {
+            $output->writeln('No tables found in this database.');
+            return;
+        }
+
+        $schema = $tables[0]->getSchema();
+        $output->writeln('<info>MySQL Version:</info> ' . $schema->getVersion());
+        $output->writeln('<info>Tables Found:</info> ' . count($tables));
+        $output->writeln('');
 
         $orchestrator = new Orchestrator();
         $orchestrator->addChecks(
@@ -131,17 +118,6 @@ class RunCommand extends Command
             new UnsupportedVersion()
         );
 
-        $tables = $factory->getTables($input->getArgument('schema'));
-        if (!count($tables)) {
-            $output->writeln('No tables found in this database.');
-            return Command::SUCCESS;
-        }
-
-        $schema = $tables[0]->getSchema();
-        $output->writeln('<info>MySQL Version:</info> ' . $schema->getVersion());
-        $output->writeln('<info>Tables Found:</info> ' . count($tables));
-        $output->writeln('');
-
         $orchestrator->addEntities($schema);
         $orchestrator->addEntities(...$tables);
         foreach ($tables as $entity) {
@@ -155,7 +131,53 @@ class RunCommand extends Command
 
         $table->render();
         $output->writeln('');
+    }
 
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $output->writeln('Cadfael CLI Tool');
+        $output->writeln('');
+
+        $host = $input->getOption('host') . ':' . $input->getOption('port');
+        $schemaList = [];
+        if (is_string($input->getArgument('schema'))) {
+            $schemaList[] = $input->getArgument('schema');
+        } else if (is_array($input->getArgument('schema'))) {
+            $schemaList = (array)$input->getArgument('schema');
+        }
+
+        $output->writeln('<info>Host:</info> ' . $host);
+        $output->writeln('<info>User:</info> ' . $input->getOption('username'));
+        $output->writeln('');
+
+        $question = new Question('What is the database password? ');
+        $question->setHidden(true);
+        $question->setHiddenFallback(false);
+
+        $helper = $this->getHelper('question');
+        $password = $helper->ask($input, $output, $question);
+        $output->writeln('');
+
+        foreach ($schemaList as $schemaName) {
+            $connectionParams = array(
+                'dbname'    => $schemaName,
+                'user'      => $input->getOption('username'),
+                'password'  => $password,
+                'host'      => $host,
+                'driver'    => 'pdo_mysql',
+            );
+            $connection = DriverManager::getConnection($connectionParams);
+            $factory = new Factory($connection);
+
+            $log = new Logger('name');
+            if ($input->getOption('verbose')) {
+                $log->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            }
+            $factory->setLogger($log);
+
+
+            $this->runChecksAgainstSchema($schemaName, $factory, $output);
+        }
         return Command::SUCCESS;
     }
 }
