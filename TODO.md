@@ -16,7 +16,6 @@
 - [ ] Table access meta
     - [ ] Collect mysql.innodb_index_stats metrics
 - [ ] Add support for partition detection and reporting
-- [ ] Overly permissive permission.
 - [ ] At version specific reserved column checks
 
 ## Entities
@@ -28,3 +27,4 @@
 ## Analysis
 
 - [ ] Add checkers to see if performance_schema metrics are being collected.
+- [ ] Linter for table design
