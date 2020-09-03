@@ -30,8 +30,36 @@ class SchemaRedundantIndexes
     public int $subpart_exists;
     public string $sql_drop_index;
 
-    public function __construct()
+    /**
+     * SchemaRedundantIndexes constructor.
+     * @param string $redundant_index_name
+     * @param array<string> $redundant_index_columns
+     * @param int $redundant_index_non_unique
+     * @param string $dominant_index_name
+     * @param array<string> $dominant_index_columns
+     * @param int $dominant_index_non_unique
+     * @param int $subpart_exists
+     * @param string $sql_drop_index
+     */
+    public function __construct(
+        string $redundant_index_name,
+        array $redundant_index_columns,
+        int $redundant_index_non_unique,
+        string $dominant_index_name,
+        array $dominant_index_columns,
+        int $dominant_index_non_unique,
+        int $subpart_exists,
+        string $sql_drop_index
+    )
     {
+        $this->redundant_index_name = $redundant_index_name;
+        $this->redundant_index_columns = $redundant_index_columns;
+        $this->redundant_index_non_unique = $redundant_index_non_unique;
+        $this->dominant_index_name = $dominant_index_name;
+        $this->dominant_index_columns = $dominant_index_columns;
+        $this->dominant_index_non_unique = $dominant_index_non_unique;
+        $this->subpart_exists = $subpart_exists;
+        $this->sql_drop_index = $sql_drop_index;
     }
 
     /**
@@ -40,15 +68,16 @@ class SchemaRedundantIndexes
      */
     public static function createFromSys(array $schema): SchemaRedundantIndexes
     {
-        $schemaRedundantIndexes = new SchemaRedundantIndexes();
-        $schemaRedundantIndexes->redundant_index_name = $schema['redundant_index_name'];
-        $schemaRedundantIndexes->redundant_index_columns = explode(',', $schema['redundant_index_columns']);
-        $schemaRedundantIndexes->redundant_index_non_unique = (int)$schema['redundant_index_non_unique'];
-        $schemaRedundantIndexes->dominant_index_name = $schema['dominant_index_name'];
-        $schemaRedundantIndexes->dominant_index_columns = explode(',', $schema['dominant_index_columns']);
-        $schemaRedundantIndexes->dominant_index_non_unique = (int)$schema['dominant_index_non_unique'];
-        $schemaRedundantIndexes->subpart_exists = (int)$schema['subpart_exists'];
-        $schemaRedundantIndexes->sql_drop_index = $schema['sql_drop_index'];
+        $schemaRedundantIndexes = new SchemaRedundantIndexes(
+            $schema['redundant_index_name'],
+            explode(',', $schema['redundant_index_columns']),
+            (int)$schema['redundant_index_non_unique'],
+            $schema['dominant_index_name'],
+            explode(',', $schema['dominant_index_columns']),
+            (int)$schema['dominant_index_non_unique'],
+            (int)$schema['subpart_exists'],
+            $schema['sql_drop_index']
+        );
 
         return $schemaRedundantIndexes;
     }

@@ -79,7 +79,7 @@ class Report
     public function getCheckLabel(): string
     {
         $label = explode('\\', get_class($this->check));
-        return array_pop($label) ?? 'unknown';
+        return array_pop($label);
     }
 
     public function getEntity(): Entity

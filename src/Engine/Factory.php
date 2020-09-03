@@ -15,6 +15,7 @@ use Cadfael\Engine\Entity\Index;
 use Doctrine\DBAL\DBALException;
 use Doctrine\DBAL\FetchMode;
 use Psr\Log\LoggerAwareTrait;
+use Psr\Log\NullLogger;
 
 class Factory
 {
@@ -33,6 +34,7 @@ class Factory
     public function __construct(Connection $connection)
     {
         $this->connection = $connection;
+        $this->logger = new NullLogger();
     }
 
     /**
@@ -51,7 +53,7 @@ class Factory
     private function collectSchemas(): array
     {
         $query = 'SELECT SCHEMA_NAME FROM information_schema.SCHEMATA';
-        return array_map(function ($row) {
+        return array_map(function ($row): string {
             return $row['SCHEMA_NAME'];
         }, $this->connection->fetchAll($query));
     }

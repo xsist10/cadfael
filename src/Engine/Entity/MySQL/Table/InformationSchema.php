@@ -20,7 +20,7 @@ class InformationSchema
     public int $data_length;
     public int $max_data_length;
     public int $data_free;
-    public ?string $auto_increment;
+    public int $auto_increment;
     public ?string $create_time;
     public ?string $update_time;
     public ?string $check_time;
@@ -41,19 +41,19 @@ class InformationSchema
     {
         $informationSchema = new InformationSchema();
         $informationSchema->table_type = $schema['TABLE_TYPE'];
-        $informationSchema->engine = $schema['ENGINE'];
+        $informationSchema->engine = (string)$schema['ENGINE'];
         $informationSchema->version = $schema['VERSION'];
-        $informationSchema->row_format = $schema['ROW_FORMAT'];
+        $informationSchema->row_format = (string)$schema['ROW_FORMAT'];
         $informationSchema->table_rows = (int)$schema['TABLE_ROWS'];
         $informationSchema->avg_row_length = (int)$schema['AVG_ROW_LENGTH'];
         $informationSchema->data_length = (int)$schema['DATA_LENGTH'];
         $informationSchema->max_data_length = (int)$schema['MAX_DATA_LENGTH'];
         $informationSchema->data_free = (int)$schema['DATA_FREE'];
-        $informationSchema->auto_increment = $schema['AUTO_INCREMENT'];
+        $informationSchema->auto_increment = (int)$schema['AUTO_INCREMENT'];
         $informationSchema->create_time = $schema['CREATE_TIME'];
         $informationSchema->update_time = $schema['UPDATE_TIME'];
         $informationSchema->check_time = $schema['CHECK_TIME'];
-        $informationSchema->table_collation = $schema['TABLE_COLLATION'];
+        $informationSchema->table_collation = (string)$schema['TABLE_COLLATION'];
         $informationSchema->checksum = $schema['CHECKSUM'];
         $informationSchema->create_options = $schema['CREATE_OPTIONS'];
         $informationSchema->table_comment = $schema['TABLE_COMMENT'];

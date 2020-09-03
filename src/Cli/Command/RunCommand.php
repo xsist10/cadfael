@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Cadfael\Cli\Command;
 
 use Cadfael\Engine\Check\MySQL\Column\CorrectUtf8Encoding;

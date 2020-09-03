@@ -51,7 +51,7 @@ abstract class Table implements Entity
      */
     public function setColumns(Column ...$columns): void
     {
-        array_walk($columns, function ($column) {
+        array_walk($columns, function (Column $column) {
             $column->setTable($this);
         });
         $this->columns = $columns;
@@ -62,7 +62,7 @@ abstract class Table implements Entity
      */
     public function getColumns(): array
     {
-        return $this->columns ?? [];
+        return $this->columns;
     }
 
     /**
@@ -78,7 +78,7 @@ abstract class Table implements Entity
      */
     public function setIndexes(Index ...$indexes): void
     {
-        array_walk($indexes, function ($index) {
+        array_walk($indexes, function (Index $index) {
             $index->setTable($this);
         });
         $this->indexes = $indexes;
@@ -89,7 +89,7 @@ abstract class Table implements Entity
      */
     public function getIndexes(): array
     {
-        return $this->indexes ?? [];
+        return $this->indexes;
     }
 
     /**
@@ -97,7 +97,7 @@ abstract class Table implements Entity
      */
     public function getPrimaryKeys(): array
     {
-        return array_filter($this->getColumns() ?? [], function ($column) {
+        return array_filter($this->getColumns(), function ($column) {
             return $column->isPartOfPrimaryKey();
         });
     }

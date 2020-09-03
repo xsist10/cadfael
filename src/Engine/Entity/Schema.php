@@ -28,7 +28,7 @@ abstract class Schema implements Entity
      */
     public function setTables(Table ...$tables): void
     {
-        array_walk($tables, function ($table) {
+        array_walk($tables, function (Table $table) {
             $table->setSchema($this);
         });
         $this->tables = $tables;
