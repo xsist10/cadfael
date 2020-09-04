@@ -142,10 +142,23 @@ class Table implements Entity
     /**
      * @codeCoverageIgnore
      * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     * @param SchemaAutoIncrementColumn|null $schema_auto_increment_column
      */
-    public function setSchemaAutoIncrementColumn(SchemaAutoIncrementColumn $schema_auto_increment_column): void
+    public function setSchemaAutoIncrementColumn(?SchemaAutoIncrementColumn $schema_auto_increment_column): void
     {
         $this->schema_auto_increment_column = $schema_auto_increment_column;
+    }
+
+    /**
+     * @return SchemaAutoIncrementColumn|null
+     * @throws \Cadfael\Engine\Exception\MissingInformationSchema
+     */
+    public function getSchemaAutoIncrementColumn(): ?SchemaAutoIncrementColumn
+    {
+        if ($this->schema_auto_increment_column === null) {
+            $this->setSchemaAutoIncrementColumn(SchemaAutoIncrementColumn::createFromTable($this));
+        }
+        return $this->schema_auto_increment_column;
     }
 
     /**

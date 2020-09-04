@@ -26,10 +26,12 @@ class EmptyTable implements Check
             );
         }
 
+        $auto_increment_column = $entity->getSchemaAutoIncrementColumn();
         $auto_increment_issued = 0;
-        if ($entity->schema_auto_increment_column) {
-            $auto_increment_issued = $entity->schema_auto_increment_column->auto_increment - 1;
+        if ($auto_increment_column !== null) {
+            $auto_increment_issued = $auto_increment_column->auto_increment - 1;
         }
+
         if ($entity->information_schema->data_free > 0 || $auto_increment_issued) {
             return new Report(
                 $this,

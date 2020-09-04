@@ -22,7 +22,7 @@ class SchemaAutoIncrementColumn
     public bool $is_signed;
     public bool $is_unsigned;
     public float $max_value;
-    public float $auto_increment;
+    public int $auto_increment;
     public float $auto_increment_ratio;
 
     public function __construct()
@@ -42,7 +42,7 @@ class SchemaAutoIncrementColumn
         $schemaAutoIncrementColumns->is_signed = $schema['is_signed'] == '1';
         $schemaAutoIncrementColumns->is_unsigned = $schema['is_unsigned'] == '1';
         $schemaAutoIncrementColumns->max_value = (float)$schema['max_value'];
-        $schemaAutoIncrementColumns->auto_increment = (float)$schema['auto_increment'];
+        $schemaAutoIncrementColumns->auto_increment = (int)$schema['auto_increment'];
         $schemaAutoIncrementColumns->auto_increment_ratio = (float)$schema['auto_increment_ratio'];
 
         return $schemaAutoIncrementColumns;
@@ -69,7 +69,7 @@ class SchemaAutoIncrementColumn
                 $schemaAutoIncrementColumns->is_signed = $column->isSigned();
                 $schemaAutoIncrementColumns->is_unsigned = !$column->isSigned();
                 $schemaAutoIncrementColumns->max_value = $column->getCapacity();
-                $schemaAutoIncrementColumns->auto_increment = (float)$table->information_schema->auto_increment;
+                $schemaAutoIncrementColumns->auto_increment = (int)$table->information_schema->auto_increment;
                 $ratio = ($table->information_schema->auto_increment - 1) / $column->getCapacity();
                 $schemaAutoIncrementColumns->auto_increment_ratio = $ratio;
 

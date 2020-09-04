@@ -43,7 +43,7 @@ abstract class BaseTest extends TestCase
             "MAX_DATA_LENGTH"   => 16434816,
             "INDEX_LENGTH"      => 0,
             "DATA_FREE"         => 0,
-            "AUTO_INCREMENT"    => null,
+            "AUTO_INCREMENT"    => 1,
             "CREATE_TIME"       => "2020-05-30 11:29:56",
             "UPDATE_TIME"       => null,
             "CHECK_TIME"        => null,

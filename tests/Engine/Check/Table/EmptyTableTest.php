@@ -4,6 +4,7 @@ declare(strict_types=1);
 use Cadfael\Engine\Check\Table\EmptyTable;
 use Cadfael\Engine\Report;
 use Cadfael\Tests\Engine\Check\BaseTest;
+use Cadfael\Tests\Engine\Check\ColumnBuilder;
 
 class EmptyTableTest extends BaseTest
 {
@@ -29,9 +30,14 @@ class EmptyTableTest extends BaseTest
     }
 
     public function providerTableDataForRun() {
+        $builder = new ColumnBuilder();
+        $column = $builder->int(10)->unsigned()->primary()->auto_increment()->generate();
+        $table = $this->createEmptyTable();
+        $table->setColumns($column);
+
         return [
             [
-                $this->createEmptyTable(),
+                $table,
                 Report::STATUS_WARNING
             ],
             [
