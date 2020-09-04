@@ -4,13 +4,13 @@ declare(strict_types = 1);
 
 namespace Cadfael\Engine;
 
-use Cadfael\Engine\Entity\MySQL\Schema;
-use Cadfael\Engine\Entity\MySQL\Table\SchemaAutoIncrementColumn;
-use Cadfael\Engine\Entity\MySQL\Table\SchemaRedundantIndexes;
+use Cadfael\Engine\Entity\Schema;
+use Cadfael\Engine\Entity\Table\SchemaAutoIncrementColumn;
+use Cadfael\Engine\Entity\Table\SchemaRedundantIndexes;
 use Cadfael\Engine\Exception\MissingPermissions;
 use Doctrine\DBAL\Connection;
-use Cadfael\Engine\Entity\MySQL\Table;
-use Cadfael\Engine\Entity\MySQL\Column;
+use Cadfael\Engine\Entity\Table;
+use Cadfael\Engine\Entity\Column;
 use Cadfael\Engine\Entity\Index;
 use Doctrine\DBAL\DBALException;
 use Doctrine\DBAL\FetchMode;
@@ -184,7 +184,7 @@ class Factory
         foreach ($rows as $row) {
             $table = Table::createFromInformationSchema($row);
             $table->setSchema($schema);
-            $tables[] = $table;
+            $tables[$table->getName()] = $table;
         }
 
         // Collect and generate all the columns
@@ -229,7 +229,10 @@ class Factory
 
                 $rows = $statement->fetchAll();
                 foreach ($rows as $row) {
-                    $schemaRedundantIndexes[$row['table_name']][] = SchemaRedundantIndexes::createFromSys($row);
+                    $schemaRedundantIndexes[$row['table_name']][] = SchemaRedundantIndexes::createFromSys(
+                        $tables[$row['table_name']],
+                        $row
+                    );
                 }
             } else {
                 $this->logger->warning("Missing GRANT to access sys.schema_redundant_indexes. Skipping.");
@@ -245,9 +248,11 @@ class Factory
 
         $rows = $statement->fetchAll();
         $indexes = [];
+        $indexUnique = [];
         foreach ($rows as $row) {
             $col = $columns[$row['TABLE_NAME']][$row['COLUMN_NAME']];
             $indexes[$row['TABLE_NAME']][$row['INDEX_NAME']][$row['SEQ_IN_INDEX']] = $col;
+            $indexUnique[$row['TABLE_NAME']][$row['INDEX_NAME']] = (bool)$row['NON_UNIQUE'];
         }
 
         $table_indexes_objects = [];
@@ -255,11 +260,12 @@ class Factory
             foreach ($table_indexes as $index_name => $index_columns) {
                 $index = new Index((string)$index_name);
                 $index->setColumns(...$index_columns);
+                $index->setNonUnique($indexUnique[$table_name][$index_name]);
                 $table_indexes_objects[$table_name][] = $index;
             }
         }
 
-        foreach ($tables as $table) {
+        foreach ($tables as $name => $table) {
             if (!empty($columns[$table->getName()])) {
                 $table->setColumns(...array_values($columns[$table->getName()]));
             }
@@ -279,6 +285,6 @@ class Factory
             }
         }
 
-        return $tables;
+        return array_values($tables);
     }
 }

@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace Cadfael\Cli\Command;
 
-use Cadfael\Engine\Check\MySQL\Column\CorrectUtf8Encoding;
-use Cadfael\Engine\Check\MySQL\Column\ReservedKeywords;
-use Cadfael\Engine\Check\MySQL\Column\SaneAutoIncrement;
-use Cadfael\Engine\Check\MySQL\Schema\UnsupportedVersion;
-use Cadfael\Engine\Check\MySQL\Table\AutoIncrementCapacity;
-use Cadfael\Engine\Check\MySQL\Table\EmptyTable;
-use Cadfael\Engine\Check\MySQL\Table\MustHavePrimaryKey;
-use Cadfael\Engine\Check\MySQL\Table\PreferredEngine;
-use Cadfael\Engine\Check\MySQL\Table\RedundantIndexes;
-use Cadfael\Engine\Check\MySQL\Table\SaneInnoDbPrimaryKey;
+use Cadfael\Engine\Check\Column\CorrectUtf8Encoding;
+use Cadfael\Engine\Check\Column\ReservedKeywords;
+use Cadfael\Engine\Check\Column\SaneAutoIncrement;
+use Cadfael\Engine\Check\Schema\UnsupportedVersion;
+use Cadfael\Engine\Check\Table\AutoIncrementCapacity;
+use Cadfael\Engine\Check\Table\EmptyTable;
+use Cadfael\Engine\Check\Table\MustHavePrimaryKey;
+use Cadfael\Engine\Check\Table\PreferredEngine;
+use Cadfael\Engine\Check\Table\RedundantIndexes;
+use Cadfael\Engine\Check\Table\SaneInnoDbPrimaryKey;
 use Cadfael\Engine\Factory;
 use Cadfael\Engine\Orchestrator;
 use Cadfael\Engine\Report;
@@ -142,7 +142,7 @@ class RunCommand extends Command
         $schemaList = [];
         if (is_string($input->getArgument('schema'))) {
             $schemaList[] = $input->getArgument('schema');
-        } else if (is_array($input->getArgument('schema'))) {
+        } elseif (is_array($input->getArgument('schema'))) {
             $schemaList = (array)$input->getArgument('schema');
         }
 

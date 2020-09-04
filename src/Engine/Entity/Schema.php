@@ -6,7 +6,7 @@ namespace Cadfael\Engine\Entity;
 
 use Cadfael\Engine\Entity;
 
-abstract class Schema implements Entity
+class Schema implements Entity
 {
     /**
      * @var string
@@ -17,6 +17,11 @@ abstract class Schema implements Entity
      * @var array<Table>
      */
     protected array $tables;
+
+    /**
+     * @var array<string>
+     */
+    private array $variables;
 
     public function __construct(string $name)
     {
@@ -50,6 +55,29 @@ abstract class Schema implements Entity
         return $this->name;
     }
 
-    abstract public function isVirtual(): bool;
-    abstract public function getVersion(): string;
+    /**
+     * @return array<string>
+     */
+    public function getVariables(): array
+    {
+        return $this->variables;
+    }
+
+    /**
+     * @param array<string> $variables
+     */
+    public function setVariables(array $variables): void
+    {
+        $this->variables = $variables;
+    }
+
+    public function getVersion(): string
+    {
+        return $this->variables['version'];
+    }
+
+    public function isVirtual(): bool
+    {
+        return false;
+    }
 }

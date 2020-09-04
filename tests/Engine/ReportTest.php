@@ -4,9 +4,9 @@ declare(strict_types=1);
 namespace Cadfael\Engine\Tests;
 
 use Cadfael\Engine\Check;
-use Cadfael\Engine\Check\MySQL\Table\EmptyTable;
+use Cadfael\Engine\Check\Table\EmptyTable;
 use Cadfael\Engine\Entity;
-use Cadfael\Engine\Entity\MySQL\Table;
+use Cadfael\Engine\Entity\Table;
 use Cadfael\Engine\Report;
 use PHPUnit\Framework\TestCase;
 

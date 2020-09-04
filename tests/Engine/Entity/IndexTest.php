@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Cadfael\Engine\Tests\Entity;
 
 use Cadfael\Engine\Entity\Index;
-use Cadfael\Engine\Entity\MySQL\Table;
+use Cadfael\Engine\Entity\Table;
 use PHPUnit\Framework\TestCase;
 
 class IndexTest extends TestCase

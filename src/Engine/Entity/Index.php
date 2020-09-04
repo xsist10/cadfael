@@ -14,6 +14,23 @@ class Index implements Entity
      * @var array<Column>
      */
     protected array $columns = [];
+    protected bool $non_unique;
+
+    /**
+     * @return bool
+     */
+    public function getNonUnique(): bool
+    {
+        return $this->non_unique;
+    }
+
+    /**
+     * @param bool $non_unique
+     */
+    public function setNonUnique(bool $non_unique): void
+    {
+        $this->non_unique = $non_unique;
+    }
 
     public function __construct(string $name)
     {

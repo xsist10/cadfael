@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 namespace Cadfael\Engine;
 
-use Cadfael\Engine\Check\MySQL\Table\EmptyTable;
-use Cadfael\Engine\Entity\MySQL\Schema;
-use Cadfael\Engine\Entity\MySQL\Table;
+use Cadfael\Engine\Check\Table\EmptyTable;
+use Cadfael\Engine\Entity\Schema;
+use Cadfael\Engine\Entity\Table;
 use PHPUnit\Framework\TestCase;
 
 class OrchestratorTest extends TestCase
