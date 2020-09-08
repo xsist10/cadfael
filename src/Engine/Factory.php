@@ -252,7 +252,7 @@ class Factory
         foreach ($rows as $row) {
             $col = $columns[$row['TABLE_NAME']][$row['COLUMN_NAME']];
             $indexes[$row['TABLE_NAME']][$row['INDEX_NAME']][$row['SEQ_IN_INDEX']] = $col;
-            $indexUnique[$row['TABLE_NAME']][$row['INDEX_NAME']] = (bool)$row['NON_UNIQUE'];
+            $indexUnique[$row['TABLE_NAME']][$row['INDEX_NAME']] = !(bool)$row['NON_UNIQUE'];
         }
 
         $table_indexes_objects = [];
@@ -260,7 +260,7 @@ class Factory
             foreach ($table_indexes as $index_name => $index_columns) {
                 $index = new Index((string)$index_name);
                 $index->setColumns(...$index_columns);
-                $index->setNonUnique($indexUnique[$table_name][$index_name]);
+                $index->setUnique($indexUnique[$table_name][$index_name]);
                 $table_indexes_objects[$table_name][] = $index;
             }
         }

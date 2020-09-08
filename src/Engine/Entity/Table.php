@@ -76,21 +76,6 @@ class Table implements Entity
     }
 
     /**
-     * @param string $name
-     * @return Column|null
-     */
-    public function getColumn(string $name): ?Column
-    {
-        foreach ($this->getColumns() as $column) {
-            if ($column->getName() === $name) {
-                return $column;
-            }
-        }
-
-        return null;
-    }
-
-    /**
      * @return string
      */
     public function getName(): string

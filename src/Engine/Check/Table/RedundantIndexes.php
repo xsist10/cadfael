@@ -28,15 +28,20 @@ class RedundantIndexes implements Check
         }
 
         $messages = [];
-        foreach ($entity->schema_redundant_indexes as $redundant_index) {
+        foreach ($entity->schema_redundant_indexes as $redundant) {
             $messages[] = sprintf(
                 "Redundant index %s (superseded by %s).",
-                $redundant_index->redundant_index->getName(),
-                $redundant_index->dominant_index->getName()
+                $redundant->redundant_index->getName(),
+                $redundant->dominant_index->getName()
             );
+            if ($redundant->redundant_index->isUnique()) {
+                $messages[] = sprintf(
+                    "However index %s is UNIQUE, in which case index %s might be a better candidate for reworking",
+                    $redundant->redundant_index->getName(),
+                    $redundant->dominant_index->getName()
+                );
+            }
         }
-        $messages[] = "A redundant index can probably drop it (unless it's a UNIQUE, in which case the dominant index "
-                    . "might be a better candidate for reworking).";
         $messages[] = "Reference: https://dev.mysql.com/doc/refman/8.0/en/sys-schema-redundant-indexes.html";
 
         return new Report(

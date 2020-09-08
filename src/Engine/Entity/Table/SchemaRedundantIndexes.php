@@ -72,7 +72,7 @@ class SchemaRedundantIndexes
                 explode(',', $schema['redundant_index_columns'])
             )
         );
-        $redundantIndex->setNonUnique((bool)$schema['redundant_index_non_unique']);
+        $redundantIndex->setUnique(!(bool)$schema['redundant_index_non_unique']);
 
         $dominantIndex = new Index($schema['dominant_index_name']);
         $dominantIndex->setTable($table);
@@ -82,7 +82,7 @@ class SchemaRedundantIndexes
                 explode(',', $schema['dominant_index_columns'])
             )
         );
-        $dominantIndex->setNonUnique((bool)$schema['dominant_index_non_unique']);
+        $dominantIndex->setUnique(!(bool)$schema['dominant_index_non_unique']);
 
         return new SchemaRedundantIndexes(
             $redundantIndex,

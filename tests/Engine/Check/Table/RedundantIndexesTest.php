@@ -36,7 +36,7 @@ class RedundantIndexesTest extends BaseTest
                     "redundant_index_non_unique"    => 1,
                     "dominant_index_name"           => "PRIMARY",
                     "dominant_index_columns"        => "id",
-                    "dominant_index_non_unique"     => 0,
+                    "dominant_index_non_unique"     => 1,
                     "subpart_exists"                => 0,
                     "sql_drop_index"                => "ALTER TABLE `tests`.`table_with_unused_index` DROP INDEX `id_some`",
                 ]
@@ -70,6 +70,12 @@ class RedundantIndexesTest extends BaseTest
     public function testRun($table, $result)
     {
         $check = new RedundantIndexes();
-        $this->assertEquals($check->run($table)->getStatus(), $result, "Ensure that the run for $table returns status $result");
+        $report = $check->run($table);
+        $this->assertEquals($report->getStatus(), $result, "Ensure that the run for $table returns status $result");
+        if ($report->getStatus() != Report::STATUS_OK) {
+            $this->assertStringNotContainsString('UNIQUE', implode("\n", $report->getMessages()));
+            $table->schema_redundant_indexes[0]->redundant_index->setUnique(true);
+            $this->assertStringContainsString('UNIQUE', implode("\n", $check->run($table)->getMessages()));
+        }
     }
 }
