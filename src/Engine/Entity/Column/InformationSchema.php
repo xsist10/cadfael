@@ -79,6 +79,10 @@ class InformationSchema
     public ?string $column_comment;
     public ?string $generation_expression;
 
+    protected function __construct()
+    {
+    }
+
     /**
      * @param array<string> $schema This is a raw record from information_schema.COLUMN
      * @return InformationSchema
