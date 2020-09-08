@@ -25,9 +25,7 @@ class SchemaAutoIncrementColumn
     public int $auto_increment;
     public float $auto_increment_ratio;
 
-    public function __construct()
-    {
-    }
+    protected function __construct() {}
 
     /**
      * @param array<string> $schema This is a raw record from sys.schema_auto_increment_columns

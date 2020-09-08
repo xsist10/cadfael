@@ -29,9 +29,7 @@ class InformationSchema
     public string $create_options;
     public string $table_comment;
 
-    public function __construct()
-    {
-    }
+    protected function __construct() {}
 
     /**
      * @param array<string> $schema This is a raw record from information_schema.TABLE

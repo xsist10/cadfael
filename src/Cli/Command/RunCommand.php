@@ -17,6 +17,7 @@ use Cadfael\Engine\Check\Table\SaneInnoDbPrimaryKey;
 use Cadfael\Engine\Factory;
 use Cadfael\Engine\Orchestrator;
 use Cadfael\Engine\Report;
+use Exception;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use Doctrine\DBAL\DriverManager;
@@ -139,12 +140,6 @@ class RunCommand extends Command
         $output->writeln('');
 
         $host = $input->getOption('host') . ':' . $input->getOption('port');
-        $schemaList = [];
-        if (is_string($input->getArgument('schema'))) {
-            $schemaList[] = $input->getArgument('schema');
-        } elseif (is_array($input->getArgument('schema'))) {
-            $schemaList = (array)$input->getArgument('schema');
-        }
 
         $output->writeln('<info>Host:</info> ' . $host);
         $output->writeln('<info>User:</info> ' . $input->getOption('username'));
@@ -158,7 +153,7 @@ class RunCommand extends Command
         $password = $helper->ask($input, $output, $question);
         $output->writeln('');
 
-        foreach ($schemaList as $schemaName) {
+        foreach ($input->getArgument('schema') as $schemaName) {
             $connectionParams = array(
                 'dbname'    => $schemaName,
                 'user'      => $input->getOption('username'),

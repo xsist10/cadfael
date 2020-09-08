@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Cadfael\Engine\Check\Table;
 
 use Cadfael\Engine\Check;
+use Cadfael\Engine\Entity\Column;
+use Cadfael\Engine\Entity\Index;
 use Cadfael\Engine\Entity\Table;
 use Cadfael\Engine\Report;
 
@@ -27,12 +29,12 @@ class SaneInnoDbPrimaryKey implements Check
         }
 
         // Find out the size of our primary key (bytes)
-        $primary_key_size = array_reduce($primary_keys, function ($size, $column) {
-            return $size + $column->getStorageByteSize();
+        $primary_key_size = array_reduce($primary_keys, function (?float $size, Column $column): float {
+            return ($size ?? 0) + $column->getStorageByteSize();
         });
 
         // Get a count of all the indexes that are not the PRIMARY KEY
-        $index_count = count(array_filter($entity->getIndexes(), function ($index) {
+        $index_count = count(array_filter($entity->getIndexes(), function (Index $index) {
             return $index->getName() !== "PRIMARY KEY";
         }));
 
