@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use Cadfael\Engine\Entity\Table;
 use Cadfael\Engine\Entity\Column;
+use Cadfael\Engine\Exception\InvalidColumnType;
 use PHPUnit\Framework\TestCase;
 use Cadfael\Engine\Exception\UnknownColumnType;
 
@@ -166,5 +167,16 @@ class ColumnTest extends TestCase
     {
         $this->expectException(UnknownColumnType::class);
         $this->invalidColumn->getStorageByteSize();
+    }
+
+    public function test__getCapacity()
+    {
+        $this->assertEquals(4294967295, $this->integerColumn->getCapacity(), "Return correct unsigned integer capacity.");
+    }
+
+    public function test__nonIntergetColumnCalling__getCapacity()
+    {
+        $this->expectException(InvalidColumnType::class);
+        $this->stringColumn->getCapacity();
     }
 }
