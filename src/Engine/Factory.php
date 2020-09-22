@@ -63,7 +63,7 @@ class Factory
         return str_replace(['*', '%', '`'], ['.*', '.*', ''], $pattern);
     }
 
-    protected function hasPermission(string $schema, string $table): bool
+    public function hasPermission(string $schema, string $table): bool
     {
         if (!count($this->permissions)) {
             $this->logger->info("Collecting GRANTs.");
@@ -149,6 +149,7 @@ class Factory
      */
     public function getVariables(): array
     {
+        $this->connection->setFetchMode(FetchMode::ASSOCIATIVE);
         $this->logger->info("Collecting MySQL VARIABLES.");
         $query = 'SHOW VARIABLES';
         $rows = $this->connection->fetchAll($query);
@@ -157,6 +158,13 @@ class Factory
             $variables[$row['Variable_name']] = $row['Value'];
         }
         return $variables;
+    }
+
+    public function getSchema(string $schema_name): Schema
+    {
+        $schema = new Schema($schema_name);
+        $schema->setVariables($this->getVariables());
+        return $schema;
     }
 
     /**
@@ -169,8 +177,7 @@ class Factory
         $this->checkRequiredPermissions($database);
         $this->connection->setFetchMode(FetchMode::ASSOCIATIVE);
 
-        $schema = new Schema($database);
-        $schema->setVariables($this->getVariables());
+        $schema = $this->getSchema($database);
 
         // Collect and generate all the tables
         $this->logger->info("Collecting information_schema.TABLES.");
