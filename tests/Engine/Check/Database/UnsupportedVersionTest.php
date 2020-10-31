@@ -9,17 +9,17 @@ use Cadfael\Tests\Engine\Check\BaseTest;
 
 class UnsupportedVersionTest extends BaseTest
 {
-    private array $schemas;
+    private array $databases;
 
     public function setUp(): void
     {
-        $this->schemas = [
-            '1.1' => $this->createSchema([ 'version' => '1.1.0' ]),
-            '5.1' => $this->createSchema([ 'version' => '5.1.0' ]),
-            '5.5' => $this->createSchema([ 'version' => '5.5.0' ]),
-            '5.6' => $this->createSchema([ 'version' => '5.6.0' ]),
-            '5.7' => $this->createSchema([ 'version' => '5.7.0' ]),
-            '8.0' => $this->createSchema([ 'version' => '8.0.0' ]),
+        $this->databases = [
+            '1.1' => $this->createDatabase([ 'version' => '1.1.0' ]),
+            '5.1' => $this->createDatabase([ 'version' => '5.1.0' ]),
+            '5.5' => $this->createDatabase([ 'version' => '5.5.0' ]),
+            '5.6' => $this->createDatabase([ 'version' => '5.6.0' ]),
+            '5.7' => $this->createDatabase([ 'version' => '5.7.0' ]),
+            '8.0' => $this->createDatabase([ 'version' => '8.0.0' ]),
         ];
     }
 
@@ -27,10 +27,10 @@ class UnsupportedVersionTest extends BaseTest
     {
         $check = new UnsupportedVersion();
 
-        foreach ($this->schemas as $schema) {
+        foreach ($this->databases as $database) {
             $this->assertTrue(
-                $check->supports($schema),
-                "Ensure that we care about all schemas."
+                $check->supports($database),
+                "Ensure that we care about all databases."
             );
         }
     }
@@ -51,7 +51,7 @@ class UnsupportedVersionTest extends BaseTest
         foreach ($expected_results as $version => $status) {
             $this->assertEquals(
                 $status,
-                $check->run($this->schemas[$version])->getStatus(),
+                $check->run($this->databases[$version])->getStatus(),
                 "Ensure we return " . Report::STATUS_LABEL[$status] . " ($status) for version $version."
             );
         }

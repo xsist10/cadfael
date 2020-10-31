@@ -20,9 +20,10 @@
 
 ## Entities
 
-- [x] Add Database element
-- [ ] Database vs Schema
+- [x] Add Schema element
+- [x] Split Database vs Schema
 - [ ] Permission Entity
+- [ ] Add Index size calculation
 
 ## Analysis
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Cadfael\Engine\Check\Schema;
 
 use Cadfael\Engine\Check;
-use Cadfael\Engine\Entity\Schema;
+use Cadfael\Engine\Entity\Database;
 use Cadfael\Engine\Exception\MySQL\UnknownVersion;
 use Cadfael\Engine\Report;
 
@@ -37,7 +37,7 @@ class UnsupportedVersion implements Check
 
     public function supports($entity): bool
     {
-        return $entity instanceof Schema;
+        return $entity instanceof Database;
     }
 
     public function run($entity): ?Report
