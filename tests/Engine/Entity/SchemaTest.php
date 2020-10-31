@@ -3,12 +3,14 @@ declare(strict_types=1);
 
 namespace Cadfael\Tests\Engine\Entity;
 
+use Cadfael\Engine\Entity\Database;
 use Cadfael\Engine\Entity\Schema;
 use Cadfael\Engine\Entity\Table;
 use PHPUnit\Framework\TestCase;
 
 class SchemaTest extends TestCase
 {
+    protected Database $database;
     protected Schema $schema;
     protected Table $table;
 
@@ -19,8 +21,10 @@ class SchemaTest extends TestCase
 
     protected function setUp(): void
     {
+        $this->database = new Database(null);
+        $this->database->setVariables(self::VARIABLES);
         $this->schema = new Schema('information_schema');
-        $this->schema->setVariables(self::VARIABLES);
+        $this->schema->setDatabase($this->database);
 
         $this->table = Table::createFromInformationSchema([
             "TABLE_CATALOG"     => "def",
@@ -62,16 +66,6 @@ class SchemaTest extends TestCase
     public function test__isVirtual()
     {
         $this->assertFalse($this->schema->isVirtual(), "Verify that the schema is correctly identified as not virtual.");;
-    }
-
-    public function test__getVersion()
-    {
-        $this->assertEquals($this->schema->getVersion(), self::VERSION, "Ensure the correct version is returned.");
-    }
-
-    public function test__getVariables()
-    {
-        $this->assertEquals($this->schema->getVariables(), self::VARIABLES, "Ensure the accessor function works... I guess.");
     }
 
     public function test__setTables()

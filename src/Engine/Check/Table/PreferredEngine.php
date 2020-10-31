@@ -13,7 +13,7 @@ class PreferredEngine implements Check
     public function supports($entity): bool
     {
         return $entity instanceof Table
-            && version_compare($entity->getSchema()->getVersion(), '5.5') >= 0
+            && version_compare($entity->getSchema()->getDatabase()->getVersion(), '5.5') >= 0
             && !$entity->isVirtual();
     }
 

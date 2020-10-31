@@ -4,10 +4,12 @@ declare(strict_types = 1);
 
 namespace Cadfael\Engine;
 
+use Cadfael\Engine\Entity\Database;
 use Cadfael\Engine\Entity\Schema;
 use Cadfael\Engine\Entity\Table\SchemaAutoIncrementColumn;
 use Cadfael\Engine\Entity\Table\SchemaRedundantIndexes;
 use Cadfael\Engine\Exception\MissingPermissions;
+use Cadfael\Engine\Exception\MissingInformationSchema;
 use Doctrine\DBAL\Connection;
 use Cadfael\Engine\Entity\Table;
 use Cadfael\Engine\Entity\Column;
@@ -35,6 +37,14 @@ class Factory
     {
         $this->connection = $connection;
         $this->logger = new NullLogger();
+    }
+
+    /**
+     * @return Connection
+     */
+    public function getConnection(): Connection
+    {
+        return $this->connection;
     }
 
     /**
@@ -160,138 +170,157 @@ class Factory
         return $variables;
     }
 
-    public function getSchema(string $schema_name): Schema
+    /**
+     * @return array<string>
+     */
+    public function getStatus(): array
     {
-        $schema = new Schema($schema_name);
-        $schema->setVariables($this->getVariables());
-        return $schema;
+        $this->connection->setFetchMode(FetchMode::ASSOCIATIVE);
+        $this->logger->info("Collecting MySQL GLOBAL STATUS.");
+        $query = 'SHOW GLOBAL STATUS';
+        $rows = $this->connection->fetchAll($query);
+        $variables = [];
+        foreach ($rows as $row) {
+            $variables[$row['Variable_name']] = $row['Value'];
+        }
+        return $variables;
     }
 
     /**
-     * @param string $database
-     * @return array<Table>
-     * @throws DBALException|MissingPermissions
+     * @param string[] $schema_names
+     * @return Database
+     * @throws DBALException|MissingPermissions|MissingInformationSchema
      */
-    public function getTables(string $database): array
+    public function buildDatabase(array $schema_names): Database
     {
-        $this->checkRequiredPermissions($database);
-        $this->connection->setFetchMode(FetchMode::ASSOCIATIVE);
+        $database = new Database($this->getConnection());
+        $database->setVariables($this->getVariables());
+        $database->setStatus($this->getStatus());
 
-        $schema = $this->getSchema($database);
+        $schemas = [];
+        foreach ($schema_names as $schema_name) {
+            $this->checkRequiredPermissions($schema_name);
+            $this->connection->setFetchMode(FetchMode::ASSOCIATIVE);
 
-        // Collect and generate all the tables
-        $this->logger->info("Collecting information_schema.TABLES.");
-        $query = 'SELECT * FROM information_schema.TABLES WHERE TABLE_SCHEMA=:database';
-        $statement = $this->connection->prepare($query);
-        $statement->bindValue("database", $database);
-        $statement->execute();
+            $schema = new Schema($schema_name);
+            $schemas[] = $schema;
 
-        $rows = $statement->fetchAll();
-        $tables = [];
-        foreach ($rows as $row) {
-            $table = Table::createFromInformationSchema($row);
-            $table->setSchema($schema);
-            $tables[$table->getName()] = $table;
-        }
+            // Collect and generate all the tables
+            $this->logger->info("Collecting information_schema.TABLES.");
+            $query = 'SELECT * FROM information_schema.TABLES WHERE TABLE_SCHEMA=:schema';
+            $statement = $this->connection->prepare($query);
+            $statement->bindValue("schema", $schema_name);
+            $statement->execute();
 
-        // Collect and generate all the columns
-        $this->logger->info("Collecting information_schema.COLUMNS.");
-        $query = 'SELECT * FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=:database';
-        $statement = $this->connection->prepare($query);
-        $statement->bindValue("database", $database);
-        $statement->execute();
+            $rows = $statement->fetchAll();
+            $tables = [];
+            foreach ($rows as $row) {
+                $table = Table::createFromInformationSchema($row);
+                $tables[$table->getName()] = $table;
+            }
 
-        $rows = $statement->fetchAll();
-        $columns = [];
-        foreach ($rows as $row) {
-            $column = Column::createFromInformationSchema($row);
-            $columns[$row['TABLE_NAME']][$row['COLUMN_NAME']] = $column;
-        }
+            // Collect and generate all the columns
+            $this->logger->info("Collecting information_schema.COLUMNS.");
+            $query = 'SELECT * FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=:schema';
+            $statement = $this->connection->prepare($query);
+            $statement->bindValue("schema", $schema_name);
+            $statement->execute();
 
-        $schemaAutoIncrementColumns = [];
-        $schemaRedundantIndexes = [];
-        if ($this->hasSchema('sys')) {
-            if ($this->hasPermission('sys', 'schema_auto_increment_columns')) {
-                // Collect and generate all sys.* information
-                $this->logger->info("Collecting sys.schema_auto_increment_columns.");
-                $query = 'SELECT * FROM sys.schema_auto_increment_columns WHERE table_schema=:database';
-                $statement = $this->connection->prepare($query);
-                $statement->bindValue("database", $database);
-                $statement->execute();
+            $rows = $statement->fetchAll();
+            $columns = [];
+            foreach ($rows as $row) {
+                $column = Column::createFromInformationSchema($row);
+                $columns[$row['TABLE_NAME']][$row['COLUMN_NAME']] = $column;
+            }
 
-                $rows = $statement->fetchAll();
-                foreach ($rows as $row) {
-                    $schemaAutoIncrementColumns[$row['table_name']] = SchemaAutoIncrementColumn::createFromSys($row);
+            $autoIncrementColumns = [];
+            $schemaRedundantIndexes = [];
+            if ($this->hasSchema('sys')) {
+                if ($this->hasPermission('sys', 'schema_auto_increment_columns')) {
+                    // Collect and generate all sys.* information
+                    $this->logger->info("Collecting sys.schema_auto_increment_columns.");
+                    $query = 'SELECT * FROM sys.schema_auto_increment_columns WHERE table_schema=:schema';
+                    $statement = $this->connection->prepare($query);
+                    $statement->bindValue("schema", $schema_name);
+                    $statement->execute();
+
+                    $rows = $statement->fetchAll();
+                    foreach ($rows as $row) {
+                        $autoIncrementColumns[$row['table_name']] = SchemaAutoIncrementColumn::createFromSys($row);
+                    }
+                } else {
+                    $this->logger->warning("Missing GRANT to access sys.schema_auto_increment_columns. Skipping.");
                 }
-            } else {
-                $this->logger->warning("Missing GRANT to access sys.schema_auto_increment_columns. Skipping.");
-            }
 
-            if ($this->hasPermission('sys', 'schema_redundant_indexes')) {
-                $this->logger->info("Collecting sys.schema_redundant_indexes.");
-                $query = 'SELECT * FROM sys.schema_redundant_indexes WHERE table_schema=:database';
-                $statement = $this->connection->prepare($query);
-                $statement->bindValue("database", $database);
-                $statement->execute();
+                if ($this->hasPermission('sys', 'schema_redundant_indexes')) {
+                    $this->logger->info("Collecting sys.schema_redundant_indexes.");
+                    $query = 'SELECT * FROM sys.schema_redundant_indexes WHERE table_schema=:schema';
+                    $statement = $this->connection->prepare($query);
+                    $statement->bindValue("schema", $schema_name);
+                    $statement->execute();
 
-                $rows = $statement->fetchAll();
-                foreach ($rows as $row) {
-                    $schemaRedundantIndexes[$row['table_name']][] = SchemaRedundantIndexes::createFromSys(
-                        $tables[$row['table_name']],
-                        $row
-                    );
-                }
-            } else {
-                $this->logger->warning("Missing GRANT to access sys.schema_redundant_indexes. Skipping.");
-            }
-        }
-
-        // Collect and generate all the indexes
-        $this->logger->info("Collecting information_schema.STATISTICS.");
-        $query = 'SELECT * FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=:database';
-        $statement = $this->connection->prepare($query);
-        $statement->bindValue("database", $database);
-        $statement->execute();
-
-        $rows = $statement->fetchAll();
-        $indexes = [];
-        $indexUnique = [];
-        foreach ($rows as $row) {
-            $col = $columns[$row['TABLE_NAME']][$row['COLUMN_NAME']];
-            $indexes[$row['TABLE_NAME']][$row['INDEX_NAME']][$row['SEQ_IN_INDEX']] = $col;
-            $indexUnique[$row['TABLE_NAME']][$row['INDEX_NAME']] = !(bool)$row['NON_UNIQUE'];
-        }
-
-        $table_indexes_objects = [];
-        foreach ($indexes as $table_name => $table_indexes) {
-            foreach ($table_indexes as $index_name => $index_columns) {
-                $index = new Index((string)$index_name);
-                $index->setColumns(...$index_columns);
-                $index->setUnique($indexUnique[$table_name][$index_name]);
-                $table_indexes_objects[$table_name][] = $index;
-            }
-        }
-
-        foreach ($tables as $name => $table) {
-            if (!empty($columns[$table->getName()])) {
-                $table->setColumns(...array_values($columns[$table->getName()]));
-            }
-            if (!empty($table_indexes_objects[$table->getName()])) {
-                $table->setIndexes(...array_values($table_indexes_objects[$table->getName()]));
-            }
-            if (!empty($schemaAutoIncrementColumns[$table->getName()])) {
-                $table->setSchemaAutoIncrementColumn($schemaAutoIncrementColumns[$table->getName()]);
-            } else {
-                $schemaAutoIncrementColumn = SchemaAutoIncrementColumn::createFromTable($table);
-                if ($schemaAutoIncrementColumn) {
-                    $table->setSchemaAutoIncrementColumn($schemaAutoIncrementColumn);
+                    $rows = $statement->fetchAll();
+                    foreach ($rows as $row) {
+                        $schemaRedundantIndexes[$row['table_name']][] = SchemaRedundantIndexes::createFromSys(
+                            $tables[$row['table_name']],
+                            $row
+                        );
+                    }
+                } else {
+                    $this->logger->warning("Missing GRANT to access sys.schema_redundant_indexes. Skipping.");
                 }
             }
-            if (!empty($schemaRedundantIndexes[$table->getName()])) {
-                $table->setSchemaRedundantIndexes(...$schemaRedundantIndexes[$table->getName()]);
+
+            // Collect and generate all the indexes
+            $this->logger->info("Collecting information_schema.STATISTICS.");
+            $query = 'SELECT * FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=:schema';
+            $statement = $this->connection->prepare($query);
+            $statement->bindValue("schema", $schema_name);
+            $statement->execute();
+
+            $rows = $statement->fetchAll();
+            $indexes = [];
+            $indexUnique = [];
+            foreach ($rows as $row) {
+                $col = $columns[$row['TABLE_NAME']][$row['COLUMN_NAME']];
+                $indexes[$row['TABLE_NAME']][$row['INDEX_NAME']][$row['SEQ_IN_INDEX']] = $col;
+                $indexUnique[$row['TABLE_NAME']][$row['INDEX_NAME']] = !(bool)$row['NON_UNIQUE'];
             }
+
+            $table_indexes_objects = [];
+            foreach ($indexes as $table_name => $table_indexes) {
+                foreach ($table_indexes as $index_name => $index_columns) {
+                    $index = new Index((string)$index_name);
+                    $index->setColumns(...$index_columns);
+                    $index->setUnique($indexUnique[$table_name][$index_name]);
+                    $table_indexes_objects[$table_name][] = $index;
+                }
+            }
+
+            foreach ($tables as $name => $table) {
+                if (!empty($columns[$table->getName()])) {
+                    $table->setColumns(...array_values($columns[$table->getName()]));
+                }
+                if (!empty($table_indexes_objects[$table->getName()])) {
+                    $table->setIndexes(...array_values($table_indexes_objects[$table->getName()]));
+                }
+                if (!empty($autoIncrementColumns[$table->getName()])) {
+                    $table->setSchemaAutoIncrementColumn($autoIncrementColumns[$table->getName()]);
+                } else {
+                    $schemaAutoIncrementColumn = SchemaAutoIncrementColumn::createFromTable($table);
+                    if ($schemaAutoIncrementColumn) {
+                        $table->setSchemaAutoIncrementColumn($schemaAutoIncrementColumn);
+                    }
+                }
+                if (!empty($schemaRedundantIndexes[$table->getName()])) {
+                    $table->setSchemaRedundantIndexes(...$schemaRedundantIndexes[$table->getName()]);
+                }
+            }
+
+            $schema->setTables(...array_values($tables));
         }
 
-        return array_values($tables);
+        $database->setSchemas($schemas);
+        return $database;
     }
 }

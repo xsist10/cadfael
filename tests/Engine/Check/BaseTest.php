@@ -4,19 +4,27 @@ declare(strict_types=1);
 
 namespace Cadfael\Tests\Engine\Check;
 
+use Cadfael\Engine\Entity\Database;
 use Cadfael\Engine\Entity\Schema;
 use Cadfael\Engine\Entity\Table;
 use PHPUnit\Framework\TestCase;
 
 abstract class BaseTest extends TestCase
 {
-    protected function createSchema(array $variables = []): Schema
+    protected function createDatabase(array $variables = []): Database
     {
         $base_variables = [
             "version" => "5.7"
         ];
-        $schema = new Schema('MOCK_SCHEMA');
-        $schema->setVariables(array_merge($base_variables, $variables));
+        $database = new Database(null);
+        $database->setVariables(array_merge($base_variables, $variables));
+        return $database;
+    }
+
+    protected function createSchema(array $variables = []): Schema
+    {
+        $schema = new Schema('test');
+        $schema->setDatabase($this->createDatabase($variables));
         return $schema;
     }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Cadfael\Engine\Entity;
 
 use Cadfael\Engine\Entity;
+use Doctrine\DBAL\Connection;
 
 class Schema implements Entity
 {
@@ -18,10 +19,7 @@ class Schema implements Entity
      */
     protected array $tables;
 
-    /**
-     * @var array<string>
-     */
-    private array $variables;
+    protected Database $database;
 
     public function __construct(string $name)
     {
@@ -40,6 +38,30 @@ class Schema implements Entity
     }
 
     /**
+     * @return Table[]
+     */
+    public function getTables(): array
+    {
+        return $this->tables;
+    }
+
+    /**
+     * @param Database $database
+     */
+    public function setDatabase(Database $database): void
+    {
+        $this->database = $database;
+    }
+
+    /**
+     * @return Database
+     */
+    public function getDatabase(): Database
+    {
+        return $this->database;
+    }
+
+    /**
      * @return string
      */
     public function getName(): string
@@ -55,25 +77,9 @@ class Schema implements Entity
         return $this->name;
     }
 
-    /**
-     * @return array<string>
-     */
-    public function getVariables(): array
+    public function getConnection(): Connection
     {
-        return $this->variables;
-    }
-
-    /**
-     * @param array<string> $variables
-     */
-    public function setVariables(array $variables): void
-    {
-        $this->variables = $variables;
-    }
-
-    public function getVersion(): string
-    {
-        return $this->variables['version'];
+        return $this->database->getConnection();
     }
 
     public function isVirtual(): bool
