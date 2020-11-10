@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Cadfael\Cli\Command;
 
+use Cadfael\Engine\Check\Account\NotProperlyClosingConnections;
 use Cadfael\Engine\Check\Column\CorrectUtf8Encoding;
 use Cadfael\Engine\Check\Column\ReservedKeywords;
 use Cadfael\Engine\Check\Column\SaneAutoIncrement;
-use Cadfael\Engine\Check\Schema\AccountsNotProperlyClosingConnections;
 use Cadfael\Engine\Check\Schema\UnsupportedVersion;
 use Cadfael\Engine\Check\Table\AutoIncrementCapacity;
 use Cadfael\Engine\Check\Table\EmptyTable;
@@ -15,6 +15,7 @@ use Cadfael\Engine\Check\Table\MustHavePrimaryKey;
 use Cadfael\Engine\Check\Table\PreferredEngine;
 use Cadfael\Engine\Check\Table\RedundantIndexes;
 use Cadfael\Engine\Check\Table\SaneInnoDbPrimaryKey;
+use Cadfael\Engine\Check\Table\UnusedIndexes;
 use Cadfael\Engine\Factory;
 use Cadfael\Engine\Orchestrator;
 use Cadfael\Engine\Report;
@@ -24,6 +25,9 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
+use Cadfael\Engine\Exception\MissingPermissions;
+use Doctrine\DBAL\DBALException;
+use Cadfael\Engine\Exception\MissingInformationSchema;
 
 class RunCommand extends AbstractDatabaseCommand
 {
@@ -76,41 +80,25 @@ class RunCommand extends AbstractDatabaseCommand
 
     /**
      * @param InputInterface $input
-     * @param string $schemaName
+     * @param array<string> $schemaNames
      * @param Factory $factory
      * @param OutputInterface $output
-     * @throws \Cadfael\Engine\Exception\MissingPermissions
-     * @throws \Doctrine\DBAL\DBALException
+     * @throws MissingPermissions
+     * @throws DBALException
+     * @throws MissingInformationSchema
      */
     protected function runChecksAgainstSchema(
         InputInterface $input,
-        string $schemaName,
+        array $schemaNames,
         Factory $factory,
         OutputInterface $output
     ): void {
         // outputs multiple lines to the console (adding "\n" at the end of each line)
-        $output->writeln("Attempting to scan schema <info>$schemaName </info>");
 
-        $table = new Table($output);
-        $table->setHeaders(['Check', 'Entity', 'Status', 'Message']);
-        $table->setColumnMaxWidth(0, 22);
-        $table->setColumnMaxWidth(1, 40);
-        $table->setColumnMaxWidth(2, 8);
-        $table->setColumnMaxWidth(3, 82);
-
-        $database = $factory->buildDatabase([$schemaName]);
-        $schema = $database->getSchemas()[0];
-        $tables = $schema->getTables();
-        if (!count($tables)) {
-            $output->writeln('No tables found in this database.');
-            return;
-        }
-
+        $database = $factory->buildDatabase($factory->getConnection(), $schemaNames);
         $uptime = (int)$database->getStatus()['Uptime'];
         $output->writeln('<info>MySQL Version:</info> ' . $database->getVersion());
         $output->writeln('<info>Uptime:</info> ' . round($uptime / 60) . ' min');
-        $output->writeln('<info>Tables Found:</info> ' . count($tables));
-        $output->writeln('');
 
         $orchestrator = new Orchestrator();
         $orchestrator->addChecks(
@@ -126,42 +114,79 @@ class RunCommand extends AbstractDatabaseCommand
             new UnsupportedVersion()
         );
 
-        if ($input->getOption('performance_schema')) {
-            if ($uptime < 86400) {
-                $output->writeln('<comment>Server has been running for less than 24 hours.</comment>');
-                $output->writeln('<comment>Certain results may be incomplete.</comment>');
+        $load_information_schema = $input->getOption('performance_schema');
+        if ($load_information_schema) {
+            $output->writeln('');
+            $output->writeln('Enabling performance_schema checks.');
+            // Either the performance schema isn't enabled
+            if (!$database->hasPerformanceSchema()) {
+                $output->writeln('<comment>This server does not performance_schema enabled.</comment>');
+                $output->writeln('<comment>Disabling the flag and continuing.</comment>');
+                $load_information_schema = false;
+            // Or we don't have access to it
+            } elseif (!$factory->hasPermission('performance_schema', '?')) {
+                $output->writeln('<error>User account does not have permission to query performance_schema.</error>');
+                $output->writeln('Try run the command without the --performance_schema flag.');
+                $output->writeln('');
+                return;
+            // Or the server really hasn't been on long enough for good results.
+            } elseif ($uptime < 86400) {
+                $output->writeln('<comment>This server has been running for less than 24 hours.</comment>');
+                $output->writeln('<comment>Certain checks may be incomplete or misleading.</comment>');
 
                 $question = new ConfirmationQuestion(
-                    'Continue anyway [Y/N]? ',
+                    'Run with performance schema checks anyway [Y/N]? ',
                     false
                 );
 
                 $helper = $this->getHelper('question');
-                if (!$helper->ask($input, $output, $question)) {
-                    return;
-                }
-                $output->writeln('');
+                $load_information_schema = $helper->ask($input, $output, $question);
             }
+        }
 
+        if ($load_information_schema) {
             $orchestrator->addChecks(
-                new AccountsNotProperlyClosingConnections()
+                new NotProperlyClosingConnections(),
+                new UnusedIndexes()
             );
         }
 
-        $orchestrator->addEntities($database);
-        $orchestrator->addEntities($schema);
-        $orchestrator->addEntities(...$tables);
-        foreach ($tables as $entity) {
-            $orchestrator->addEntities(...$entity->getColumns());
-        }
+        foreach ($database->getSchemas() as $schema) {
+            $table = new Table($output);
+            $table->setHeaders(['Check', 'Entity', 'Status', 'Message']);
+            $table->setColumnMaxWidth(0, 22);
+            $table->setColumnMaxWidth(1, 40);
+            $table->setColumnMaxWidth(2, 8);
+            $table->setColumnMaxWidth(3, 82);
 
-        $reports = $orchestrator->run();
-        foreach ($reports as $report) {
-            $this->addReportToTable($report, $table);
-        }
 
-        $table->render();
-        $output->writeln('');
+            $tables = $schema->getTables();
+            $output->writeln('');
+            $output->writeln("Attempting to scan schema <info>" . $schema->getName() . "</info>");
+            $output->writeln('<info>Tables Found:</info> ' . count($tables));
+            $output->writeln('');
+
+            if (!count($tables)) {
+                $output->writeln('No tables found in this schema.');
+                return;
+            }
+
+            $orchestrator->addEntities($database);
+            $orchestrator->addEntities(...$database->getAccounts());
+            $orchestrator->addEntities($schema);
+            $orchestrator->addEntities(...$tables);
+            foreach ($tables as $entity) {
+                $orchestrator->addEntities(...$entity->getColumns());
+            }
+
+            $reports = $orchestrator->run();
+            foreach ($reports as $report) {
+                $this->addReportToTable($report, $table);
+            }
+
+            $table->render();
+            $output->writeln('');
+        }
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -172,11 +197,11 @@ class RunCommand extends AbstractDatabaseCommand
         $this->displayDatabaseDetails($input, $output);
         $password = $this->getDatabasePassword($input, $output);
 
-        foreach ($input->getArgument('schema') as $schemaName) {
-            $factory = $this->getFactory($input, $schemaName, $password);
-            $this->runChecksAgainstSchema($input, $schemaName, $factory, $output);
-            $factory->getConnection()->close();
-        }
+        $schemas = $input->getArgument('schema');
+        $factory = $this->getFactory($input, $schemas[0], $password);
+        $this->runChecksAgainstSchema($input, $schemas, $factory, $output);
+        $factory->getConnection()->close();
+
         return Command::SUCCESS;
     }
 }

@@ -4,10 +4,13 @@ declare(strict_types = 1);
 
 namespace Cadfael\Engine;
 
+use Cadfael\Engine\Entity\Account;
+use Cadfael\Engine\Entity\Account\NotClosedProperly;
 use Cadfael\Engine\Entity\Database;
 use Cadfael\Engine\Entity\Schema;
 use Cadfael\Engine\Entity\Table\SchemaAutoIncrementColumn;
-use Cadfael\Engine\Entity\Table\SchemaRedundantIndexes;
+use Cadfael\Engine\Entity\Table\SchemaRedundantIndex;
+use Cadfael\Engine\Entity\Table\SchemaUnusedIndex;
 use Cadfael\Engine\Exception\MissingPermissions;
 use Cadfael\Engine\Exception\MissingInformationSchema;
 use Doctrine\DBAL\Connection;
@@ -155,14 +158,15 @@ class Factory
     }
 
     /**
+     * @param Connection $connection
      * @return array<string>
      */
-    public function getVariables(): array
+    public function getVariables(Connection $connection): array
     {
-        $this->connection->setFetchMode(FetchMode::ASSOCIATIVE);
+        $connection->setFetchMode(FetchMode::ASSOCIATIVE);
         $this->logger->info("Collecting MySQL VARIABLES.");
         $query = 'SHOW VARIABLES';
-        $rows = $this->connection->fetchAll($query);
+        $rows = $connection->fetchAll($query);
         $variables = [];
         foreach ($rows as $row) {
             $variables[$row['Variable_name']] = $row['Value'];
@@ -171,14 +175,15 @@ class Factory
     }
 
     /**
+     * @param Connection $connection
      * @return array<string>
      */
-    public function getStatus(): array
+    public function getStatus(Connection $connection): array
     {
-        $this->connection->setFetchMode(FetchMode::ASSOCIATIVE);
+        $connection->setFetchMode(FetchMode::ASSOCIATIVE);
         $this->logger->info("Collecting MySQL GLOBAL STATUS.");
         $query = 'SHOW GLOBAL STATUS';
-        $rows = $this->connection->fetchAll($query);
+        $rows = $connection->fetchAll($query);
         $variables = [];
         foreach ($rows as $row) {
             $variables[$row['Variable_name']] = $row['Value'];
@@ -187,15 +192,37 @@ class Factory
     }
 
     /**
-     * @param string[] $schema_names
-     * @return Database
-     * @throws DBALException|MissingPermissions|MissingInformationSchema
+     * @param Connection $connection
+     * @return array<Account>
      */
-    public function buildDatabase(array $schema_names): Database
+    public function getAccounts(Connection $connection): array
     {
-        $database = new Database($this->getConnection());
-        $database->setVariables($this->getVariables());
-        $database->setStatus($this->getStatus());
+        $accounts = [];
+        if ($this->hasPermission('mysql', 'user')) {
+            $connection->setFetchMode(FetchMode::ASSOCIATIVE);
+            $this->logger->info("Collecting MySQL user accounts.");
+            $query = 'SELECT * FROM mysql.user';
+            foreach ($connection->fetchAll($query) as $row) {
+                $accounts[] = new Account($row['User'], $row['Host']);
+            }
+        }
+        return $accounts;
+    }
+
+    /**
+     * @param Connection $connection
+     * @param array<string> $schema_names
+     * @return Database
+     * @throws DBALException
+     * @throws MissingInformationSchema
+     * @throws MissingPermissions
+     */
+    public function buildDatabase(Connection $connection, array $schema_names): Database
+    {
+        $database = new Database($connection);
+        $database->setVariables($this->getVariables($connection));
+        $database->setStatus($this->getStatus($connection));
+        $database->setAccounts(...$this->getAccounts($connection));
 
         $schemas = [];
         foreach ($schema_names as $schema_name) {
@@ -235,6 +262,7 @@ class Factory
 
             $autoIncrementColumns = [];
             $schemaRedundantIndexes = [];
+            $schema_unused_indexes = [];
             if ($this->hasSchema('sys')) {
                 if ($this->hasPermission('sys', 'schema_auto_increment_columns')) {
                     // Collect and generate all sys.* information
@@ -261,7 +289,7 @@ class Factory
 
                     $rows = $statement->fetchAll();
                     foreach ($rows as $row) {
-                        $schemaRedundantIndexes[$row['table_name']][] = SchemaRedundantIndexes::createFromSys(
+                        $schemaRedundantIndexes[$row['table_name']][] = SchemaRedundantIndex::createFromSys(
                             $tables[$row['table_name']],
                             $row
                         );
@@ -293,7 +321,57 @@ class Factory
                     $index = new Index((string)$index_name);
                     $index->setColumns(...$index_columns);
                     $index->setUnique($indexUnique[$table_name][$index_name]);
-                    $table_indexes_objects[$table_name][] = $index;
+                    $table_indexes_objects[$table_name][$index_name] = $index;
+                }
+            }
+
+            if (!$database->hasPerformanceSchema() || !$this->hasPermission('performance_schema', '?')) {
+                $message = "Missing critical permission to access performance_schema.?.";
+                $this->logger->warning($message);
+            } else {
+                // Collect all indexes that haven't been used
+                $statement = $this->getConnection()->prepare("
+                    SELECT object_schema, object_name, index_name
+                    FROM performance_schema.table_io_waits_summary_by_index_usage
+                    WHERE index_name IS NOT NULL
+                        AND index_name != 'PRIMARY'
+                        AND count_star = 0
+                        AND object_schema = :schema
+                    ORDER BY object_schema, object_name;
+                ");
+                $statement->bindValue("schema", $schema->getName());
+                $statement->execute();
+                foreach ($statement->fetchAll() as $row) {
+                    $index = $table_indexes_objects[$row['object_name']][$row['index_name']];
+                    $schema_unused_indexes[$row['object_name']][] = new SchemaUnusedIndex($index);
+                }
+
+                // Collect all accounts who have not been closing connections properly.
+                $accountsNotClosedProperly = $this->getConnection()->fetchAll("
+                    SELECT
+                      ess.user,
+                      ess.host,
+                      (a.total_connections - a.current_connections) - ess.count_star as not_closed,
+                      ((a.total_connections - a.current_connections) - ess.count_star) * 100 /
+                      (a.total_connections - a.current_connections) as not_closed_perc
+                    FROM performance_schema.events_statements_summary_by_account_by_event_name ess
+                    JOIN performance_schema.accounts a on (ess.user = a.user and ess.host = a.host)
+                    WHERE ess.event_name = 'statement/com/quit'
+                        AND (a.total_connections - a.current_connections) > ess.count_star
+                ");
+
+                foreach ($accountsNotClosedProperly as $accountNotClosedProperly) {
+                    $account = $database->getAccount(
+                        $accountNotClosedProperly['user'],
+                        $accountNotClosedProperly['host']
+                    );
+                    if (!$account) {
+                        $account = new Account($accountNotClosedProperly['user'], $accountNotClosedProperly['host']);
+                        $database->addAccount($account);
+                    }
+                    $account->setAccountNotClosedProperly(
+                        NotClosedProperly::createFromEventSummary($accountNotClosedProperly)
+                    );
                 }
             }
 
@@ -314,6 +392,9 @@ class Factory
                 }
                 if (!empty($schemaRedundantIndexes[$table->getName()])) {
                     $table->setSchemaRedundantIndexes(...$schemaRedundantIndexes[$table->getName()]);
+                }
+                if (!empty($schema_unused_indexes[$table->getName()])) {
+                    $table->setUnusedRedundantIndexes(...$schema_unused_indexes[$table->getName()]);
                 }
             }
 

@@ -15,7 +15,7 @@ use Cadfael\Engine\Entity\Table;
  *
  * DTO of a record from sys.schema_redundant_indexes
  */
-class SchemaRedundantIndexes
+class SchemaRedundantIndex
 {
     public Index $redundant_index;
     public Index $dominant_index;
@@ -60,9 +60,9 @@ class SchemaRedundantIndexes
     /**
      * @param Table $table
      * @param array<string> $schema This is a raw record from sys.schema_redundant_indexes
-     * @return SchemaRedundantIndexes
+     * @return SchemaRedundantIndex
      */
-    public static function createFromSys(Table $table, array $schema): SchemaRedundantIndexes
+    public static function createFromSys(Table $table, array $schema): SchemaRedundantIndex
     {
         $redundantIndex = new Index($schema['redundant_index_name']);
         $redundantIndex->setTable($table);
@@ -84,7 +84,7 @@ class SchemaRedundantIndexes
         );
         $dominantIndex->setUnique(!(bool)$schema['dominant_index_non_unique']);
 
-        return new SchemaRedundantIndexes(
+        return new SchemaRedundantIndex(
             $redundantIndex,
             $dominantIndex,
             (int)$schema['subpart_exists'],

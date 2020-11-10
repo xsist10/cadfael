@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Cadfael\Tests\Engine\Check\Table;
 
 use Cadfael\Engine\Check\Table\RedundantIndexes;
-use Cadfael\Engine\Entity\Table\SchemaRedundantIndexes;
+use Cadfael\Engine\Entity\Table\SchemaRedundantIndex;
 use Cadfael\Engine\Report;
 use Cadfael\Tests\Engine\Check\BaseTest;
 
@@ -26,7 +26,7 @@ class RedundantIndexesTest extends BaseTest
     public function providerTableDataForRun() {
         $tableWithRedundantIndex = $this->createTable();
         $tableWithRedundantIndex->setSchemaRedundantIndexes(
-            SchemaRedundantIndexes::createFromSys(
+            SchemaRedundantIndex::createFromSys(
                 $tableWithRedundantIndex,
                 [
                     "table_schema"                  => "tests",

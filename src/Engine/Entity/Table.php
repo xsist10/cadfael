@@ -7,7 +7,8 @@ namespace Cadfael\Engine\Entity;
 use Cadfael\Engine\Entity;
 use Cadfael\Engine\Entity\Table\InformationSchema;
 use Cadfael\Engine\Entity\Table\SchemaAutoIncrementColumn;
-use Cadfael\Engine\Entity\Table\SchemaRedundantIndexes;
+use Cadfael\Engine\Entity\Table\SchemaRedundantIndex;
+use Cadfael\Engine\Entity\Table\SchemaUnusedIndex;
 
 class Table implements Entity
 {
@@ -31,9 +32,13 @@ class Table implements Entity
     public ?InformationSchema $information_schema = null;
     public ?SchemaAutoIncrementColumn $schema_auto_increment_column = null;
     /**
-     * @var array<SchemaRedundantIndexes>
+     * @var array<SchemaRedundantIndex>
      */
     public array $schema_redundant_indexes = [];
+    /**
+     * @var array<SchemaUnusedIndex>
+     */
+    public array $schema_unused_indexes = [];
 
     public function __construct(string $name)
     {
@@ -150,9 +155,18 @@ class Table implements Entity
      * @codeCoverageIgnore
      * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
      */
-    public function setSchemaRedundantIndexes(SchemaRedundantIndexes ...$schema_redundant_indexes): void
+    public function setSchemaRedundantIndexes(SchemaRedundantIndex ...$schema_redundant_indexes): void
     {
         $this->schema_redundant_indexes = $schema_redundant_indexes;
+    }
+
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     */
+    public function setUnusedRedundantIndexes(SchemaUnusedIndex ...$schema_unused_indexes): void
+    {
+        $this->schema_unused_indexes = $schema_unused_indexes;
     }
 
     public function isVirtual(): bool
