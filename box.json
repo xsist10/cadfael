@@ -1,8 +1,5 @@
 {
-  "directories": [
-    "src",
-    "vendor"
-  ],
+  "force-autodiscovery": true,
   "main": "bin/cadfael",
   "output": "cadfael.phar"
 }
