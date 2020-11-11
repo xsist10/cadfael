@@ -8,17 +8,41 @@ At the moment Cadfael focuses on the MySQL database but the code is structured i
 
 ## Installation
 
-While this project is in early development, you'll need to specify the non-stable version:
+There are a couple options for installation depending on your personal preference.
 
+### Phar
+
+You can grab the phar file from the [most recent release](https://github.com/xsist10/cadfael/releases).
+This ensures you won't have any dependency conflicts.
+
+### Global
+
+If you'd like Cadfael available anywhere on your system, you can install it globally.
 
 ```bash
-composer require cadfael/cadfael=^0.1
+composer global require cadfael/cadfael
 ```
+
+Ensure that your global composer vendor bin folder is set in your path. You may need to add this to your `.bashrc` file.
+
+```bash
+export PATH=$PATH:~/.config/composer/vendor/bin
+```
+
+### Local
+
+If you want to use it within a specific project you can install it with:
+
+```bash
+composer require cadfael/cadfael
+```
+
+The path to the executable will be in `./vendor/bin/`.
 
 ## Usage
 
 ```bash
-./vendor/bin/cadfael run --host 127.0.0.1 --username root --port 3306 [database_to_scan]
+cadfael run --host 127.0.0.1 --username root --port 3306 [database_to_scan]
 ```
 
 **Output**
