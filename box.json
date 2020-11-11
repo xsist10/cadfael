@@ -1,0 +1,8 @@
+{
+  "directories": [
+    "src",
+    "vendor"
+  ],
+  "main": "bin/cadfael",
+  "output": "cadfael.phar"
+}
