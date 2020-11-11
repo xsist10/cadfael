@@ -36,7 +36,7 @@ class CorrectUtf8Encoding implements Check
             $entity,
             Report::STATUS_CONCERN,
             [
-                "Character set should be utf8mb2 not utf8.",
+                "Character set should be utf8mb4 not utf8.",
                 "Reference: $reference"
             ]
         );
