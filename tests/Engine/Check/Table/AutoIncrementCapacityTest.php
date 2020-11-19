@@ -129,12 +129,4 @@ class AutoIncrementCapacityTest extends BaseTest
             $this->assertEquals($table->schema_auto_increment_column->auto_increment, $data['used']);
         }
     }
-
-    public function testRunWithMissingSysData()
-    {
-        $this->expectException(MissingSysData::class);
-
-        $check = new AutoIncrementCapacity();
-        $check->run($this->createTable());
-    }
 }

@@ -145,7 +145,7 @@ class Table implements Entity
      */
     public function getSchemaAutoIncrementColumn(): ?SchemaAutoIncrementColumn
     {
-        if ($this->schema_auto_increment_column === null) {
+        if (is_null($this->schema_auto_increment_column)) {
             $this->setSchemaAutoIncrementColumn(SchemaAutoIncrementColumn::createFromTable($this));
         }
         return $this->schema_auto_increment_column;
