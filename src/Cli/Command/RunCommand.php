@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Cadfael\Cli\Command;
 
+use Cadfael\Engine\Check\Account\NotConnecting;
 use Cadfael\Engine\Check\Account\NotProperlyClosingConnections;
 use Cadfael\Engine\Check\Column\CorrectUtf8Encoding;
 use Cadfael\Engine\Check\Column\ReservedKeywords;
@@ -16,6 +17,7 @@ use Cadfael\Engine\Check\Table\PreferredEngine;
 use Cadfael\Engine\Check\Table\RedundantIndexes;
 use Cadfael\Engine\Check\Table\SaneInnoDbPrimaryKey;
 use Cadfael\Engine\Check\Table\UnusedIndexes;
+use Cadfael\Engine\Check\Table\UnusedTable;
 use Cadfael\Engine\Factory;
 use Cadfael\Engine\Orchestrator;
 use Cadfael\Engine\Report;
@@ -147,7 +149,9 @@ class RunCommand extends AbstractDatabaseCommand
         if ($load_information_schema) {
             $orchestrator->addChecks(
                 new NotProperlyClosingConnections(),
-                new UnusedIndexes()
+                new UnusedIndexes(),
+                new NotConnecting(),
+                new UnusedTable()
             );
         }
 

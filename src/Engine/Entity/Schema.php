@@ -38,6 +38,9 @@ class Schema implements Entity
     }
 
     /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
      * @return Table[]
      */
     public function getTables(): array
@@ -77,6 +80,12 @@ class Schema implements Entity
         return $this->name;
     }
 
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @return Connection
+     */
     public function getConnection(): Connection
     {
         return $this->database->getConnection();

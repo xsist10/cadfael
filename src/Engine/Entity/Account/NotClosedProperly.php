@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Cadfael\Engine\Entity\Account;
 
+/**
+ * Class NotClosedProperly
+ * @package Cadfael\Engine\Entity\Account
+ * @codeCoverageIgnore
+ */
 class NotClosedProperly
 {
     public int $count;

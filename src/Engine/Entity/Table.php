@@ -5,6 +5,7 @@ declare(strict_types = 1);
 namespace Cadfael\Engine\Entity;
 
 use Cadfael\Engine\Entity;
+use Cadfael\Engine\Entity\Table\AccessInformation;
 use Cadfael\Engine\Entity\Table\InformationSchema;
 use Cadfael\Engine\Entity\Table\SchemaAutoIncrementColumn;
 use Cadfael\Engine\Entity\Table\SchemaRedundantIndex;
@@ -31,6 +32,7 @@ class Table implements Entity
 
     public ?InformationSchema $information_schema = null;
     public ?SchemaAutoIncrementColumn $schema_auto_increment_column = null;
+    public ?AccessInformation $access_information = null;
     /**
      * @var array<SchemaRedundantIndex>
      */
@@ -154,6 +156,8 @@ class Table implements Entity
     /**
      * @codeCoverageIgnore
      * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @param SchemaRedundantIndex ...$schema_redundant_indexes
      */
     public function setSchemaRedundantIndexes(SchemaRedundantIndex ...$schema_redundant_indexes): void
     {
@@ -163,10 +167,23 @@ class Table implements Entity
     /**
      * @codeCoverageIgnore
      * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @param SchemaUnusedIndex ...$schema_unused_indexes
      */
     public function setUnusedRedundantIndexes(SchemaUnusedIndex ...$schema_unused_indexes): void
     {
         $this->schema_unused_indexes = $schema_unused_indexes;
+    }
+
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @param AccessInformation $access_information
+     */
+    public function setAccessInformation(AccessInformation $access_information): void
+    {
+        $this->access_information = $access_information;
     }
 
     public function isVirtual(): bool

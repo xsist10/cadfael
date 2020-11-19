@@ -48,17 +48,32 @@ class Database implements Entity
         return $this->getName();
     }
 
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @return Connection
+     */
     public function getConnection(): Connection
     {
         return $this->connection;
     }
 
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @param Connection $connection
+     */
     public function setConnection(Connection $connection): void
     {
         $this->connection = $connection;
     }
 
     /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
      * @return array<Account>
      */
     public function getAccounts(): array
@@ -70,17 +85,23 @@ class Database implements Entity
     {
         $accounts = array_filter($this->accounts, function ($account) use ($username, $host) {
             return $account->getName() === $username
-                && $account->getHost() === $host;
+                && (
+                    $account->getHost() === $host
+                    || $account->getHost() === '%'
+                );
         });
 
         if (count($accounts)) {
-            return $accounts[0];
+            return array_shift($accounts);
         }
 
         return null;
     }
 
     /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
      * @param Account ...$accounts
      */
     public function setAccounts(Account...$accounts): void
@@ -89,6 +110,9 @@ class Database implements Entity
     }
 
     /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
      * @param Account $account
      */
     public function addAccount(Account $account): void
@@ -97,6 +121,9 @@ class Database implements Entity
     }
 
     /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
      * @return string[]
      */
     public function getVariables(): array
@@ -105,6 +132,9 @@ class Database implements Entity
     }
 
     /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
      * @param string[] $variables
      */
     public function setVariables(array $variables): void
@@ -113,6 +143,9 @@ class Database implements Entity
     }
 
     /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
      * @return string[]
      */
     public function getStatus(): array
@@ -134,6 +167,9 @@ class Database implements Entity
     }
 
     /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
      * @param string[] $status
      */
     public function setStatus(array $status): void
@@ -142,6 +178,9 @@ class Database implements Entity
     }
 
     /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
      * @return Schema[]
      */
     public function getSchemas(): array
@@ -164,7 +203,6 @@ class Database implements Entity
     {
         return $this->variables['version'];
     }
-
 
     public function isVirtual(): bool
     {

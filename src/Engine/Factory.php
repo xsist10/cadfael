@@ -8,6 +8,7 @@ use Cadfael\Engine\Entity\Account;
 use Cadfael\Engine\Entity\Account\NotClosedProperly;
 use Cadfael\Engine\Entity\Database;
 use Cadfael\Engine\Entity\Schema;
+use Cadfael\Engine\Entity\Table\AccessInformation;
 use Cadfael\Engine\Entity\Table\SchemaAutoIncrementColumn;
 use Cadfael\Engine\Entity\Table\SchemaRedundantIndex;
 use Cadfael\Engine\Entity\Table\SchemaUnusedIndex;
@@ -263,6 +264,8 @@ class Factory
             $autoIncrementColumns = [];
             $schemaRedundantIndexes = [];
             $schema_unused_indexes = [];
+            $table_access_information = [];
+            $table_indexes_objects = [];
             if ($this->hasSchema('sys')) {
                 if ($this->hasPermission('sys', 'schema_auto_increment_columns')) {
                     // Collect and generate all sys.* information
@@ -315,7 +318,6 @@ class Factory
                 $indexUnique[$row['TABLE_NAME']][$row['INDEX_NAME']] = !(bool)$row['NON_UNIQUE'];
             }
 
-            $table_indexes_objects = [];
             foreach ($indexes as $table_name => $table_indexes) {
                 foreach ($table_indexes as $index_name => $index_columns) {
                     $index = new Index((string)$index_name);
@@ -373,6 +375,36 @@ class Factory
                         NotClosedProperly::createFromEventSummary($accountNotClosedProperly)
                     );
                 }
+
+                $accountConnections = $this->getConnection()->fetchAll("
+                    SELECT * FROM performance_schema.accounts WHERE USER IS NOT NULL AND HOST IS NOT NULL
+                ");
+                foreach ($accountConnections as $accountConnection) {
+                    $account = $database->getAccount($accountConnection['USER'], $accountConnection['HOST']);
+                    if (!$account) {
+                        $account = new Account($accountConnection['USER'], $accountConnection['HOST']);
+                        $database->addAccount($account);
+                    }
+                    $account->setCurrentConnections((int)$accountConnection['CURRENT_CONNECTIONS']);
+                    $account->setTotalConnections((int)$accountConnection['TOTAL_CONNECTIONS']);
+                }
+
+                $query = "
+                    SELECT OBJECT_NAME, COUNT_READ, COUNT_WRITE
+                    FROM performance_schema.table_io_waits_summary_by_table
+                    WHERE OBJECT_SCHEMA=:schema
+                ";
+                $statement = $this->connection->prepare($query);
+                $statement->bindValue("schema", $schema_name);
+                $statement->execute();
+
+                $access_requests = $statement->fetchAll();
+                foreach ($access_requests as $access_request) {
+                    $table_access_information[$access_request['OBJECT_NAME']] = new AccessInformation(
+                        (int)$access_request['COUNT_READ'],
+                        (int)$access_request['COUNT_WRITE']
+                    );
+                }
             }
 
             foreach ($tables as $name => $table) {
@@ -395,6 +427,9 @@ class Factory
                 }
                 if (!empty($schema_unused_indexes[$table->getName()])) {
                     $table->setUnusedRedundantIndexes(...$schema_unused_indexes[$table->getName()]);
+                }
+                if (!empty($table_access_information[$table->getName()])) {
+                    $table->setAccessInformation($table_access_information[$table->getName()]);
                 }
             }
 

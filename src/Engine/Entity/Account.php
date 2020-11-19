@@ -11,6 +11,9 @@ class Account implements Entity
 {
     protected string $username;
     protected string $host;
+    protected int $current_connections = 0;
+    protected int $total_connections = 0;
+
 
     protected Database $database;
 
@@ -23,6 +26,53 @@ class Account implements Entity
     }
 
     /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @return int
+     */
+    public function getCurrentConnections(): int
+    {
+        return $this->current_connections;
+    }
+
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @param int $current_connections
+     */
+    public function setCurrentConnections(int $current_connections): void
+    {
+        $this->current_connections = $current_connections;
+    }
+
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @return int
+     */
+    public function getTotalConnections(): int
+    {
+        return $this->total_connections;
+    }
+
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @param int $total_connections
+     */
+    public function setTotalConnections(int $total_connections): void
+    {
+        $this->total_connections = $total_connections;
+    }
+
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
      * @param Database $database
      */
     public function setDatabase(Database $database): void
@@ -31,6 +81,9 @@ class Account implements Entity
     }
 
     /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
      * @return Database
      */
     public function getDatabase(): Database
@@ -39,6 +92,9 @@ class Account implements Entity
     }
 
     /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
      * @return string
      */
     public function getHost(): string
@@ -47,6 +103,9 @@ class Account implements Entity
     }
 
     /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
      * @return string
      */
     public function getName(): string
