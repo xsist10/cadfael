@@ -318,11 +318,34 @@ class Factory
                 $indexUnique[$row['TABLE_NAME']][$row['INDEX_NAME']] = !(bool)$row['NON_UNIQUE'];
             }
 
+            $indexSize = [];
+            if ($this->hasPermission('mysql', 'innodb_index_stats')) {
+                // Collect the size of indexes
+                $statement = $this->getConnection()->prepare("
+                    SELECT
+                      table_name,
+                      index_name,
+                      stat_value
+                    FROM mysql.innodb_index_stats
+                    WHERE index_name NOT IN ('PRIMARY', 'GEN_CLUST_INDEX')
+                        AND stat_name = 'size'
+                        AND database_name = :schema
+                    ORDER BY table_name, index_name;
+                ");
+                $statement->bindValue("schema", $schema->getName());
+                $statement->execute();
+                foreach ($statement->fetchAll() as $row) {
+                    $size = $row['stat_value'] * $database->getVariables()['innodb_page_size'];
+                    $indexSize[$row['table_name']][$row['index_name']] = $size;
+                }
+            }
+
             foreach ($indexes as $table_name => $table_indexes) {
                 foreach ($table_indexes as $index_name => $index_columns) {
                     $index = new Index((string)$index_name);
                     $index->setColumns(...$index_columns);
                     $index->setUnique($indexUnique[$table_name][$index_name]);
+                    $index->setSizeInBytes($indexSize[$table_name][$index_name] ?? 0);
                     $table_indexes_objects[$table_name][$index_name] = $index;
                 }
             }

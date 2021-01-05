@@ -14,7 +14,7 @@
 - [ ] Table Growth detection
     - [ ] Try determine creation values
 - [ ] Table access meta
-    - [ ] Collect mysql.innodb_index_stats metrics
+    - [x] Collect `mysql.innodb_index_stats` metrics
 - [ ] Add support for partition detection and reporting
 - [ ] At version specific reserved column checks
 
@@ -23,7 +23,7 @@
 - [x] Add Schema element
 - [x] Split Database vs Schema
 - [ ] Permission Entity
-- [ ] Add Index size calculation
+- [x] Add Index size calculation
 
 ## Analysis
 

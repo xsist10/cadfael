@@ -15,6 +15,7 @@ class Index implements Entity
      */
     protected array $columns = [];
     protected bool $is_unique;
+    protected int $size_in_bytes;
 
     public function __construct(string $name)
     {
@@ -55,6 +56,16 @@ class Index implements Entity
     public function isVirtual(): bool
     {
         return false;
+    }
+
+    public function setSizeInBytes(int $bytes): void
+    {
+        $this->size_in_bytes = $bytes;
+    }
+
+    public function getSizeInBytes(): int
+    {
+        return $this->getSizeInBytes();
     }
 
     public function setColumns(Column ...$columns): void
