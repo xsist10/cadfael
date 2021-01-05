@@ -139,7 +139,7 @@ class Column implements Entity
             ],
             'varchar' => [
                 'body'   => $this->information_schema->character_maximum_length,
-                'header' => 1
+                'header' => ($this->information_schema->character_maximum_length > 255 ? 2 : 1)
             ],
             'tinyint' => [
                 'body'   => 1,
