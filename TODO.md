@@ -17,6 +17,7 @@
     - [x] Collect `mysql.innodb_index_stats` metrics
 - [ ] Add support for partition detection and reporting
 - [ ] At version specific reserved column checks
+- [ ] Map permissions to queries to determine which permissions are not being used.
 
 ## Entities
 
