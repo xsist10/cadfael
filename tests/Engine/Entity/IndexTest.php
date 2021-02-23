@@ -49,6 +49,18 @@ class IndexTest extends TestCase
         $this->assertEquals("MOCK_INDEX", $this->index->getName());
     }
 
+    public function testGetSizeBeforeSetting()
+    {
+        $this->expectException(\Error::class);
+        $this->index->getSizeInBytes();
+    }
+
+    public function testGetSize()
+    {
+        $this->index->setSizeInBytes(10);
+        $this->assertEquals(10, $this->index->getSizeInBytes());
+    }
+
     public function test__toString()
     {
         $this->assertEquals("MOCK_TABLE.MOCK_INDEX", (string)$this->index);

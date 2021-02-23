@@ -65,7 +65,7 @@ class Index implements Entity
 
     public function getSizeInBytes(): int
     {
-        return $this->getSizeInBytes();
+        return $this->size_in_bytes;
     }
 
     public function setColumns(Column ...$columns): void
