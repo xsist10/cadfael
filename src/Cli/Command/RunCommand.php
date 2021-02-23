@@ -36,6 +36,8 @@ class RunCommand extends AbstractDatabaseCommand
     // the name of the command (the part after "bin/console")
     protected static $defaultName = 'run';
 
+    protected int $worstReportStatus = Report::STATUS_OK;
+
     const STATUS_COLOUR = [
         1 => '<fg=green>',
         2 => '<fg=blue>',
@@ -71,6 +73,9 @@ class RunCommand extends AbstractDatabaseCommand
     protected function addReportToTable(?Report $report, Table $table): void
     {
         if (!is_null($report) && $report->getStatus() != Report::STATUS_OK) {
+            if ($report->getStatus() > $this->worstReportStatus) {
+                $this->worstReportStatus = $report->getStatus();
+            }
             $table->addRow([
                 $report->getCheckLabel(),
                 $report->getEntity(),
@@ -206,6 +211,10 @@ class RunCommand extends AbstractDatabaseCommand
         $this->runChecksAgainstSchema($input, $schemas, $factory, $output);
         $factory->getConnection()->close();
 
+        // If we get anything serious, our script should fail
+        if ($this->worstReportStatus >= Report::STATUS_WARNING) {
+            return Command::FAILURE;
+        }
         return Command::SUCCESS;
     }
 }
