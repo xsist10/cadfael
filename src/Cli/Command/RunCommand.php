@@ -206,7 +206,7 @@ class RunCommand extends AbstractDatabaseCommand
         $this->displayDatabaseDetails($input, $output);
         $password = $this->getDatabasePassword($input, $output);
 
-        $schemas = $input->getArgument('schema');
+        $schemas = (array)$input->getArgument('schema');
         $factory = $this->getFactory($input, $schemas[0], $password);
         $this->runChecksAgainstSchema($input, $schemas, $factory, $output);
         $factory->getConnection()->close();
