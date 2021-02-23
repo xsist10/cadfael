@@ -69,7 +69,7 @@ class SchemaAutoIncrementColumn
                 $schemaAutoIncrementColumns->is_signed = $column->isSigned();
                 $schemaAutoIncrementColumns->is_unsigned = !$column->isSigned();
                 $schemaAutoIncrementColumns->max_value = $column->getCapacity();
-                $schemaAutoIncrementColumns->auto_increment = (int)$table->information_schema->auto_increment;
+                $schemaAutoIncrementColumns->auto_increment = $table->information_schema->auto_increment;
                 $ratio = ($table->information_schema->auto_increment - 1) / $column->getCapacity();
                 $schemaAutoIncrementColumns->auto_increment_ratio = $ratio;
 
