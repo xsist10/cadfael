@@ -2,9 +2,7 @@
 
 ![Build](https://github.com/xsist10/cadfael/workflows/build/badge.svg?branch=master)
 
-Cadfael is static analysis tool to provide critiquing for databases.
-
-At the moment Cadfael focuses on the MySQL database but the code is structured in a way to allow other databases to be added easily.
+Cadfael is static analysis tool to provide critiquing for MySQL databases.
 
 ## Installation
 
@@ -116,7 +114,7 @@ What is the database password?
 +----------------------+------------------------------------------+----------+----------------------------------------------------------------------------------+
 ```
 
-## Testing
+## Take it for a spin
 
 Try testing Cadfael on a few open data sources
 
