@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Cadfael\Tests\Engine\Check\Schema;
+namespace Cadfael\Tests\Engine\Check\Database;
 
-use Cadfael\Engine\Check\Schema\UnsupportedVersion;
+use Cadfael\Engine\Check\Database\UnsupportedVersion;
 use Cadfael\Engine\Report;
 use Cadfael\Tests\Engine\Check\BaseTest;
 

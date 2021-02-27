@@ -19,6 +19,11 @@ class Schema implements Entity
      */
     protected array $tables;
 
+    /**
+     * @var array<Query>
+     */
+    protected array $queries;
+
     protected Database $database;
 
     public function __construct(string $name)
@@ -46,6 +51,37 @@ class Schema implements Entity
     public function getTables(): array
     {
         return $this->tables;
+    }
+
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @return array<Query>
+     */
+    public function getQueries(): array
+    {
+        return $this->queries;
+    }
+
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @param Query ...$queries
+     */
+    public function setQueries(Query...$queries): void
+    {
+        $this->queries = $queries;
+    }
+
+    /**
+     * @param Query $query
+     */
+    public function addQuery(Query $query): void
+    {
+        $query->setSchema($this);
+        $this->queries[] = $query;
     }
 
     /**

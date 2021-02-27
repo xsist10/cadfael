@@ -9,7 +9,8 @@ use Cadfael\Engine\Check\Account\NotProperlyClosingConnections;
 use Cadfael\Engine\Check\Column\CorrectUtf8Encoding;
 use Cadfael\Engine\Check\Column\ReservedKeywords;
 use Cadfael\Engine\Check\Column\SaneAutoIncrement;
-use Cadfael\Engine\Check\Schema\UnsupportedVersion;
+use Cadfael\Engine\Check\Query\Inefficient;
+use Cadfael\Engine\Check\Database\UnsupportedVersion;
 use Cadfael\Engine\Check\Table\AutoIncrementCapacity;
 use Cadfael\Engine\Check\Table\EmptyTable;
 use Cadfael\Engine\Check\Table\MustHavePrimaryKey;
@@ -121,15 +122,15 @@ class RunCommand extends AbstractDatabaseCommand
             new UnsupportedVersion()
         );
 
-        $load_information_schema = $input->getOption('performance_schema');
-        if ($load_information_schema) {
+        $load_performance_schema = $input->getOption('performance_schema');
+        if ($load_performance_schema) {
             $output->writeln('');
             $output->writeln('Enabling performance_schema checks.');
             // Either the performance schema isn't enabled
             if (!$database->hasPerformanceSchema()) {
                 $output->writeln('<comment>This server does not performance_schema enabled.</comment>');
                 $output->writeln('<comment>Disabling the flag and continuing.</comment>');
-                $load_information_schema = false;
+                $load_performance_schema = false;
             // Or we don't have access to it
             } elseif (!$factory->hasPermission('performance_schema', '?')) {
                 $output->writeln('<error>User account does not have permission to query performance_schema.</error>');
@@ -147,16 +148,17 @@ class RunCommand extends AbstractDatabaseCommand
                 );
 
                 $helper = $this->getHelper('question');
-                $load_information_schema = $helper->ask($input, $output, $question);
+                $load_performance_schema = $helper->ask($input, $output, $question);
             }
         }
 
-        if ($load_information_schema) {
+        if ($load_performance_schema) {
             $orchestrator->addChecks(
                 new NotProperlyClosingConnections(),
                 new UnusedIndexes(),
                 new NotConnecting(),
-                new UnusedTable()
+                new UnusedTable(),
+                new Inefficient()
             );
         }
 
@@ -184,6 +186,7 @@ class RunCommand extends AbstractDatabaseCommand
             $orchestrator->addEntities(...$database->getAccounts());
             $orchestrator->addEntities($schema);
             $orchestrator->addEntities(...$tables);
+            $orchestrator->addEntities(...$schema->getQueries());
             foreach ($tables as $entity) {
                 $orchestrator->addEntities(...$entity->getColumns());
             }

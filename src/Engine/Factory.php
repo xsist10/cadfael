@@ -7,6 +7,8 @@ namespace Cadfael\Engine;
 use Cadfael\Engine\Entity\Account;
 use Cadfael\Engine\Entity\Account\NotClosedProperly;
 use Cadfael\Engine\Entity\Database;
+use Cadfael\Engine\Entity\Query;
+use Cadfael\Engine\Entity\Query\EventsStatementsSummary;
 use Cadfael\Engine\Entity\Schema;
 use Cadfael\Engine\Entity\Table\AccessInformation;
 use Cadfael\Engine\Entity\Table\SchemaAutoIncrementColumn;
@@ -369,6 +371,26 @@ class Factory
                 foreach ($statement->fetchAll() as $row) {
                     $index = $table_indexes_objects[$row['object_name']][$row['index_name']];
                     $schema_unused_indexes[$row['object_name']][] = new SchemaUnusedIndex($index);
+                }
+
+                // Collect all query digests that have been run so far.
+                $statement = $this->getConnection()->prepare("
+                    SELECT *
+                    FROM performance_schema.events_statements_summary_by_digest
+                    WHERE SCHEMA_NAME = :schema
+                      AND QUERY_SAMPLE_TEXT NOT LIKE 'show %'
+                      AND QUERY_SAMPLE_TEXT NOT LIKE '% information_schema.%'
+                      AND QUERY_SAMPLE_TEXT NOT LIKE '% mysql.%'
+                      AND QUERY_SAMPLE_TEXT NOT LIKE '% sys.%'
+                      AND QUERY_SAMPLE_TEXT NOT LIKE '% performance_schema.%'
+                ");
+                $statement->bindValue("schema", $schema->getName());
+                $statement->execute();
+                foreach ($statement->fetchAll() as $querySummaryByDigest) {
+                    $query = new Query($querySummaryByDigest['DIGEST_TEXT']);
+                    $summary = EventsStatementsSummary::createFromPerformanceSchema($querySummaryByDigest);
+                    $query->setEventsStatementsSummary($summary);
+                    $schema->addQuery($query);
                 }
 
                 // Collect all accounts who have not been closing connections properly.
