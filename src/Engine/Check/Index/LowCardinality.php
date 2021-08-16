@@ -18,7 +18,7 @@ class LowCardinality implements Check
     public function run($entity): ?Report
     {
         // If the index is unique, then the cardinality is as high as it can be
-        if ($entity->is_unqiue) {
+        if ($entity->isUnique()) {
             return new Report(
                 $this,
                 $entity,
@@ -31,8 +31,8 @@ class LowCardinality implements Check
 
         // Identify the cardinality as a ratio of the size of the table
         // Cardinality in older version of MySQL aren't distinct per column
-        $table_size = $entity->table->information_schema->table_rows;
-        $cardinality = $entity->columns[0]->cardinality;
+        $table_size = $entity->getTable()->information_schema->table_rows;
+        $cardinality = $entity->getColumns()[0]->cardinality;
 
         $ratio = $table_size / $cardinality;
 
@@ -41,11 +41,12 @@ class LowCardinality implements Check
         $messages = [
             "The ratio of cardinality for this index is $ratio."
         ];
-        if ($ratio > 10_000) {
+        $status = Report::STATUS_OK;
+        if ($ratio >= 10_000) {
             $status = Report::STATUS_WARNING;
             $messages[] = "This seems particularly high and will cause large result sets for queries using it.";
         }
-        if ($ratio > 1_000) {
+        else if ($ratio >= 1_000) {
             $status = Report::STATUS_CONCERN;
             $messages[] = "This seems high and may cause large result sets for queries using it.";
         }

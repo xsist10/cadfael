@@ -35,6 +35,11 @@ class Index implements Entity
         $this->table = $table;
     }
 
+    public function getTable(): Table
+    {
+        return $this->table;
+    }
+
     /**
      * @return bool
      */
@@ -90,6 +95,11 @@ class Index implements Entity
     public function setColumns(Column ...$columns): void
     {
         $this->columns = $columns;
+    }
+
+    public function getColumns(): array
+    {
+        return $this->columns;
     }
 
     public function __toString(): string
