@@ -44,11 +44,11 @@ class LowCardinality implements Check
         $status = Report::STATUS_OK;
         if ($ratio >= 10_000) {
             $status = Report::STATUS_WARNING;
-            $messages[] = "This seems particularly high and will cause large result sets for queries using it.";
+            $messages[] = "This seems particularly high and will cause longer querying times or the index being ignored (wasted space/processing).";
         }
         else if ($ratio >= 1_000) {
             $status = Report::STATUS_CONCERN;
-            $messages[] = "This seems high and may cause large result sets for queries using it.";
+            $messages[] = "This seems high and may cause longer querying times or the index being ignored (wasted space/processing).";
         }
 
         return new Report(
