@@ -42,13 +42,13 @@ class LowCardinality implements Check
             "The ratio of cardinality for this index is $ratio."
         ];
         $status = Report::STATUS_OK;
+        if ($ratio >= 1_000) {
+            $status = Report::STATUS_CONCERN;
+            $messages[] = "This seems particularly high.";
+            $messages[] = "It may cause longer querying times or the index being ignored (wasted space/processing).";
+        }
         if ($ratio >= 10_000) {
             $status = Report::STATUS_WARNING;
-            $messages[] = "This seems particularly high and will cause longer querying times or the index being ignored (wasted space/processing).";
-        }
-        else if ($ratio >= 1_000) {
-            $status = Report::STATUS_CONCERN;
-            $messages[] = "This seems high and may cause longer querying times or the index being ignored (wasted space/processing).";
         }
 
         return new Report(
