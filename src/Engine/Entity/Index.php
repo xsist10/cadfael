@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Cadfael\Engine\Entity;
 
 use Cadfael\Engine\Entity;
+use Cadfael\Engine\Entity\Index\Statistics;
 
 class Index implements Entity
 {
@@ -16,6 +17,8 @@ class Index implements Entity
     protected array $columns = [];
     protected bool $is_unique;
     protected int $size_in_bytes;
+
+    protected Statistics $statistics;
 
     public function __construct(string $name)
     {
@@ -30,6 +33,11 @@ class Index implements Entity
     public function setTable(Table $table): void
     {
         $this->table = $table;
+    }
+
+    public function getTable(): Table
+    {
+        return $this->table;
     }
 
     /**
@@ -58,6 +66,22 @@ class Index implements Entity
         return false;
     }
 
+    /**
+     * @param \Cadfael\Engine\Entity\Index\Statistics $statistics
+     */
+    public function setStatistics(\Cadfael\Engine\Entity\Index\Statistics $statistics): void
+    {
+        $this->statistics = $statistics;
+    }
+
+    /**
+     * @return \Cadfael\Engine\Entity\Index\Statistics
+     */
+    public function getStatistics(): \Cadfael\Engine\Entity\Index\Statistics
+    {
+        return $this->statistics;
+    }
+
     public function setSizeInBytes(int $bytes): void
     {
         $this->size_in_bytes = $bytes;
@@ -71,6 +95,11 @@ class Index implements Entity
     public function setColumns(Column ...$columns): void
     {
         $this->columns = $columns;
+    }
+
+    public function getColumns(): array
+    {
+        return $this->columns;
     }
 
     public function __toString(): string

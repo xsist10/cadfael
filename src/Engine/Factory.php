@@ -14,12 +14,13 @@ use Cadfael\Engine\Entity\Table\AccessInformation;
 use Cadfael\Engine\Entity\Table\SchemaAutoIncrementColumn;
 use Cadfael\Engine\Entity\Table\SchemaRedundantIndex;
 use Cadfael\Engine\Entity\Table\SchemaUnusedIndex;
-use Cadfael\Engine\Exception\MissingPermissions;
-use Cadfael\Engine\Exception\MissingInformationSchema;
-use Doctrine\DBAL\Connection;
 use Cadfael\Engine\Entity\Table;
 use Cadfael\Engine\Entity\Column;
 use Cadfael\Engine\Entity\Index;
+use Cadfael\Engine\Entity\Index\Statistics;
+use Cadfael\Engine\Exception\MissingPermissions;
+use Cadfael\Engine\Exception\MissingInformationSchema;
+use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DBALException;
 use Doctrine\DBAL\FetchMode;
 use Psr\Log\LoggerAwareTrait;
@@ -263,11 +264,29 @@ class Factory
                 $columns[$row['TABLE_NAME']][$row['COLUMN_NAME']] = $column;
             }
 
+            // Collect and generate all the indexes
+            $this->logger->info("Collecting information_schema.STATISTICS.");
+            $query = 'SELECT * FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=:schema';
+            $statement = $this->connection->prepare($query);
+            $statement->bindValue("schema", $schema_name);
+            $statement->execute();
+
+            $rows = $statement->fetchAll();
+            $indexes = [];
+            $indexUnique = [];
+            foreach ($rows as $row) {
+                $col = $columns[$row['TABLE_NAME']][$row['COLUMN_NAME']];
+                $col->setCardinality((int)$row['CARDINALITY']);
+                $indexes[$row['TABLE_NAME']][$row['INDEX_NAME']][$row['SEQ_IN_INDEX']] = $col;
+                $indexUnique[$row['TABLE_NAME']][$row['INDEX_NAME']] = !(bool)$row['NON_UNIQUE'];
+            }
+
             $autoIncrementColumns = [];
             $schemaRedundantIndexes = [];
             $schema_unused_indexes = [];
             $table_access_information = [];
             $table_indexes_objects = [];
+            $index_statistics = [];
             if ($this->hasSchema('sys')) {
                 if ($this->hasPermission('sys', 'schema_auto_increment_columns')) {
                     // Collect and generate all sys.* information
@@ -302,22 +321,21 @@ class Factory
                 } else {
                     $this->logger->warning("Missing GRANT to access sys.schema_redundant_indexes. Skipping.");
                 }
-            }
 
-            // Collect and generate all the indexes
-            $this->logger->info("Collecting information_schema.STATISTICS.");
-            $query = 'SELECT * FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=:schema';
-            $statement = $this->connection->prepare($query);
-            $statement->bindValue("schema", $schema_name);
-            $statement->execute();
+                if ($this->hasPermission('sys', 'schema_index_statistics')) {
+                    $this->logger->info("Collecting sys.schema_index_statistics.");
+                    $query = 'SELECT * FROM sys.schema_index_statistics WHERE table_schema=:schema';
+                    $statement = $this->connection->prepare($query);
+                    $statement->bindValue("schema", $schema_name);
+                    $statement->execute();
 
-            $rows = $statement->fetchAll();
-            $indexes = [];
-            $indexUnique = [];
-            foreach ($rows as $row) {
-                $col = $columns[$row['TABLE_NAME']][$row['COLUMN_NAME']];
-                $indexes[$row['TABLE_NAME']][$row['INDEX_NAME']][$row['SEQ_IN_INDEX']] = $col;
-                $indexUnique[$row['TABLE_NAME']][$row['INDEX_NAME']] = !(bool)$row['NON_UNIQUE'];
+                    $rows = $statement->fetchAll();
+                    foreach ($rows as $row) {
+                        $index_statistics[$row['table_name']][$row['index_name']] = Statistics::createFromSys($row);
+                    }
+                } else {
+                    $this->logger->warning("Missing GRANT to access sys.schema_redundant_indexes. Skipping.");
+                }
             }
 
             $indexSize = [];
@@ -349,6 +367,9 @@ class Factory
                     $index->setUnique($indexUnique[$table_name][$index_name]);
                     $index->setSizeInBytes($indexSize[$table_name][$index_name] ?? 0);
                     $table_indexes_objects[$table_name][$index_name] = $index;
+                    if (!empty($index_statistics[$table_name][$index_name])) {
+                        $index->setStatistics($index_statistics[$table_name][$index_name]);
+                    }
                 }
             }
 

@@ -14,6 +14,7 @@ class Column implements Entity
     protected string $name;
     protected Table $table;
     public InformationSchema $information_schema;
+    public int $cardinality;
 
     private function __construct()
     {
@@ -42,14 +43,14 @@ class Column implements Entity
         $this->table = $table;
     }
 
-    public function __toString(): string
-    {
-        return (string)$this->table . "." . $this->name;
-    }
-
     public function getTable(): Table
     {
         return $this->table;
+    }
+
+    public function __toString(): string
+    {
+        return (string)$this->table . "." . $this->name;
     }
 
     public function isPartOfPrimaryKey() : bool
@@ -234,5 +235,15 @@ class Column implements Entity
         }
 
         return $capacity;
+    }
+
+    public function setCardinality(int $cardinality): void
+    {
+        $this->cardinality = $cardinality;
+    }
+
+    public function getCardinality(): int
+    {
+        return $this->cardinality;
     }
 }

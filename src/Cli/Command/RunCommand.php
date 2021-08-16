@@ -210,6 +210,10 @@ class RunCommand extends AbstractDatabaseCommand
         $password = $this->getDatabasePassword($input, $output);
 
         $schemas = (array)$input->getArgument('schema');
+        if (!count($schemas)) {
+            return Command::FAILURE;
+        }
+
         $factory = $this->getFactory($input, $schemas[0], $password);
         $this->runChecksAgainstSchema($input, $schemas, $factory, $output);
         $factory->getConnection()->close();
