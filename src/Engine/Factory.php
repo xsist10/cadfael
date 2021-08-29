@@ -76,7 +76,8 @@ class Factory
         }, $this->connection->fetchAll($query));
     }
 
-    private function getEventStatementsSummary(Schema $schema) {
+    private function getEventStatementsSummary(Schema $schema): void
+    {
         try {
             // Collect all query digests that have been run so far.
             $statement = $this->getConnection()->prepare("
