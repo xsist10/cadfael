@@ -128,7 +128,7 @@ class RunCommand extends AbstractDatabaseCommand
             $output->writeln('Enabling performance_schema checks.');
             // Either the performance schema isn't enabled
             if (!$database->hasPerformanceSchema()) {
-                $output->writeln('<comment>This server does not performance_schema enabled.</comment>');
+                $output->writeln('<comment>This server does not have the performance_schema enabled.</comment>');
                 $output->writeln('<comment>Disabling the flag and continuing.</comment>');
                 $load_performance_schema = false;
             // Or we don't have access to it

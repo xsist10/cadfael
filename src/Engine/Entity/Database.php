@@ -40,7 +40,7 @@ class Database implements Entity
 
     public function getName(): string
     {
-        return $this->getConnection()->getHost() . ':' . $this->getConnection()->getPort();
+        return $this->getConnection()->getHost();
     }
 
     public function __toString(): string
