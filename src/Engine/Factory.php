@@ -22,6 +22,7 @@ use Cadfael\Engine\Exception\MissingPermissions;
 use Cadfael\Engine\Exception\MissingInformationSchema;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DBALException;
+use Doctrine\DBAL\Exception\InvalidFieldNameException;
 use Doctrine\DBAL\FetchMode;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
@@ -73,6 +74,41 @@ class Factory
         return array_map(function ($row): string {
             return $row['SCHEMA_NAME'];
         }, $this->connection->fetchAll($query));
+    }
+
+    private function getEventStatementsSummary(Schema $schema): void
+    {
+        try {
+            // Collect all query digests that have been run so far.
+            $statement = $this->getConnection()->prepare("
+                SELECT *
+                FROM performance_schema.events_statements_summary_by_digest
+                WHERE SCHEMA_NAME = :schema
+                  AND QUERY_SAMPLE_TEXT NOT LIKE 'show %'
+                  AND QUERY_SAMPLE_TEXT NOT LIKE '% information_schema.%'
+                  AND QUERY_SAMPLE_TEXT NOT LIKE '% mysql.%'
+                  AND QUERY_SAMPLE_TEXT NOT LIKE '% sys.%'
+                  AND QUERY_SAMPLE_TEXT NOT LIKE '% performance_schema.%'
+            ");
+            $statement->bindValue("schema", $schema->getName());
+            $statement->execute();
+        } catch (InvalidFieldNameException $exception) {
+            // Older versions of MySQL don't have QUERY_SAMPLE_TEXT. Collect everything
+            $statement = $this->getConnection()->prepare("
+                SELECT *
+                FROM performance_schema.events_statements_summary_by_digest
+                WHERE SCHEMA_NAME = :schema
+            ");
+            $statement->bindValue("schema", $schema->getName());
+            $statement->execute();
+        }
+
+        foreach ($statement->fetchAllAssociative() as $querySummaryByDigest) {
+            $query = new Query($querySummaryByDigest['DIGEST_TEXT']);
+            $summary = EventsStatementsSummary::createFromPerformanceSchema($querySummaryByDigest);
+            $query->setEventsStatementsSummary($summary);
+            $schema->addQuery($query);
+        }
     }
 
     private function convertMySQLFuzzyMatchToRegex(string $pattern): string
@@ -243,7 +279,7 @@ class Factory
             $statement->bindValue("schema", $schema_name);
             $statement->execute();
 
-            $rows = $statement->fetchAll();
+            $rows = $statement->fetchAllAssociative();
             $tables = [];
             foreach ($rows as $row) {
                 $table = Table::createFromInformationSchema($row);
@@ -257,7 +293,7 @@ class Factory
             $statement->bindValue("schema", $schema_name);
             $statement->execute();
 
-            $rows = $statement->fetchAll();
+            $rows = $statement->fetchAllAssociative();
             $columns = [];
             foreach ($rows as $row) {
                 $column = Column::createFromInformationSchema($row);
@@ -271,7 +307,7 @@ class Factory
             $statement->bindValue("schema", $schema_name);
             $statement->execute();
 
-            $rows = $statement->fetchAll();
+            $rows = $statement->fetchAllAssociative();
             $indexes = [];
             $indexUnique = [];
             foreach ($rows as $row) {
@@ -296,7 +332,7 @@ class Factory
                     $statement->bindValue("schema", $schema_name);
                     $statement->execute();
 
-                    $rows = $statement->fetchAll();
+                    $rows = $statement->fetchAllAssociative();
                     foreach ($rows as $row) {
                         $autoIncrementColumns[$row['table_name']] = SchemaAutoIncrementColumn::createFromSys($row);
                     }
@@ -311,7 +347,7 @@ class Factory
                     $statement->bindValue("schema", $schema_name);
                     $statement->execute();
 
-                    $rows = $statement->fetchAll();
+                    $rows = $statement->fetchAllAssociative();
                     foreach ($rows as $row) {
                         $schemaRedundantIndexes[$row['table_name']][] = SchemaRedundantIndex::createFromSys(
                             $tables[$row['table_name']],
@@ -329,7 +365,7 @@ class Factory
                     $statement->bindValue("schema", $schema_name);
                     $statement->execute();
 
-                    $rows = $statement->fetchAll();
+                    $rows = $statement->fetchAllAssociative();
                     foreach ($rows as $row) {
                         $index_statistics[$row['table_name']][$row['index_name']] = Statistics::createFromSys($row);
                     }
@@ -354,7 +390,7 @@ class Factory
                 ");
                 $statement->bindValue("schema", $schema->getName());
                 $statement->execute();
-                foreach ($statement->fetchAll() as $row) {
+                foreach ($statement->fetchAllAssociative() as $row) {
                     $size = $row['stat_value'] * $database->getVariables()['innodb_page_size'];
                     $indexSize[$row['table_name']][$row['index_name']] = $size;
                 }
@@ -389,30 +425,12 @@ class Factory
                 ");
                 $statement->bindValue("schema", $schema->getName());
                 $statement->execute();
-                foreach ($statement->fetchAll() as $row) {
+                foreach ($statement->fetchAllAssociative() as $row) {
                     $index = $table_indexes_objects[$row['object_name']][$row['index_name']];
                     $schema_unused_indexes[$row['object_name']][] = new SchemaUnusedIndex($index);
                 }
 
-                // Collect all query digests that have been run so far.
-                $statement = $this->getConnection()->prepare("
-                    SELECT *
-                    FROM performance_schema.events_statements_summary_by_digest
-                    WHERE SCHEMA_NAME = :schema
-                      AND QUERY_SAMPLE_TEXT NOT LIKE 'show %'
-                      AND QUERY_SAMPLE_TEXT NOT LIKE '% information_schema.%'
-                      AND QUERY_SAMPLE_TEXT NOT LIKE '% mysql.%'
-                      AND QUERY_SAMPLE_TEXT NOT LIKE '% sys.%'
-                      AND QUERY_SAMPLE_TEXT NOT LIKE '% performance_schema.%'
-                ");
-                $statement->bindValue("schema", $schema->getName());
-                $statement->execute();
-                foreach ($statement->fetchAll() as $querySummaryByDigest) {
-                    $query = new Query($querySummaryByDigest['DIGEST_TEXT']);
-                    $summary = EventsStatementsSummary::createFromPerformanceSchema($querySummaryByDigest);
-                    $query->setEventsStatementsSummary($summary);
-                    $schema->addQuery($query);
-                }
+                $this->getEventStatementsSummary($schema);
 
                 // Collect all accounts who have not been closing connections properly.
                 $accountsNotClosedProperly = $this->getConnection()->fetchAll("
@@ -464,7 +482,7 @@ class Factory
                 $statement->bindValue("schema", $schema_name);
                 $statement->execute();
 
-                $access_requests = $statement->fetchAll();
+                $access_requests = $statement->fetchAllAssociative();
                 foreach ($access_requests as $access_request) {
                     $table_access_information[$access_request['OBJECT_NAME']] = new AccessInformation(
                         (int)$access_request['COUNT_READ'],

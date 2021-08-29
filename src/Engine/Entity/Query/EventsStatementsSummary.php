@@ -88,12 +88,14 @@ class EventsStatementsSummary
         $summary->sum_no_good_index_used = (int)$schema['SUM_NO_GOOD_INDEX_USED'];
         $summary->first_seen = self::convertToDateTime($schema['FIRST_SEEN']);
         $summary->last_seen = self::convertToDateTime($schema['LAST_SEEN']);
-        $summary->quantile_95 = (int)$schema['QUANTILE_95'];
-        $summary->quantile_99 = (int)$schema['QUANTILE_99'];
-        $summary->quantile_999 = (int)$schema['QUANTILE_999'];
-        $summary->query_sample_text = $schema['QUERY_SAMPLE_TEXT'];
-        $summary->query_sample_seen = self::convertToDateTime($schema['QUERY_SAMPLE_SEEN']);
-        $summary->query_sample_timer_wait = (int)$schema['QUERY_SAMPLE_TIMER_WAIT'];
+        if (isset($schema['QUERY_SAMPLE_TEXT'])) {
+            $summary->quantile_95 = (int)$schema['QUANTILE_95'];
+            $summary->quantile_99 = (int)$schema['QUANTILE_99'];
+            $summary->quantile_999 = (int)$schema['QUANTILE_999'];
+            $summary->query_sample_text = $schema['QUERY_SAMPLE_TEXT'];
+            $summary->query_sample_seen = self::convertToDateTime($schema['QUERY_SAMPLE_SEEN']);
+            $summary->query_sample_timer_wait = (int)$schema['QUERY_SAMPLE_TIMER_WAIT'];
+        }
 
         return $summary;
     }
