@@ -278,7 +278,7 @@ class Factory
             $statement->bindValue("schema", $schema_name);
             $statement->execute();
 
-            $rows = $statement->fetchAll();
+            $rows = $statement->fetchAllAssociative();
             $tables = [];
             foreach ($rows as $row) {
                 $table = Table::createFromInformationSchema($row);
@@ -292,7 +292,7 @@ class Factory
             $statement->bindValue("schema", $schema_name);
             $statement->execute();
 
-            $rows = $statement->fetchAll();
+            $rows = $statement->fetchAllAssociative();
             $columns = [];
             foreach ($rows as $row) {
                 $column = Column::createFromInformationSchema($row);
@@ -306,7 +306,7 @@ class Factory
             $statement->bindValue("schema", $schema_name);
             $statement->execute();
 
-            $rows = $statement->fetchAll();
+            $rows = $statement->fetchAllAssociative();
             $indexes = [];
             $indexUnique = [];
             foreach ($rows as $row) {
@@ -331,7 +331,7 @@ class Factory
                     $statement->bindValue("schema", $schema_name);
                     $statement->execute();
 
-                    $rows = $statement->fetchAll();
+                    $rows = $statement->fetchAllAssociative();
                     foreach ($rows as $row) {
                         $autoIncrementColumns[$row['table_name']] = SchemaAutoIncrementColumn::createFromSys($row);
                     }
@@ -346,7 +346,7 @@ class Factory
                     $statement->bindValue("schema", $schema_name);
                     $statement->execute();
 
-                    $rows = $statement->fetchAll();
+                    $rows = $statement->fetchAllAssociative();
                     foreach ($rows as $row) {
                         $schemaRedundantIndexes[$row['table_name']][] = SchemaRedundantIndex::createFromSys(
                             $tables[$row['table_name']],
@@ -364,7 +364,7 @@ class Factory
                     $statement->bindValue("schema", $schema_name);
                     $statement->execute();
 
-                    $rows = $statement->fetchAll();
+                    $rows = $statement->fetchAllAssociative();
                     foreach ($rows as $row) {
                         $index_statistics[$row['table_name']][$row['index_name']] = Statistics::createFromSys($row);
                     }
@@ -389,7 +389,7 @@ class Factory
                 ");
                 $statement->bindValue("schema", $schema->getName());
                 $statement->execute();
-                foreach ($statement->fetchAll() as $row) {
+                foreach ($statement->fetchAllAssociative() as $row) {
                     $size = $row['stat_value'] * $database->getVariables()['innodb_page_size'];
                     $indexSize[$row['table_name']][$row['index_name']] = $size;
                 }
@@ -424,7 +424,7 @@ class Factory
                 ");
                 $statement->bindValue("schema", $schema->getName());
                 $statement->execute();
-                foreach ($statement->fetchAll() as $row) {
+                foreach ($statement->fetchAllAssociative() as $row) {
                     $index = $table_indexes_objects[$row['object_name']][$row['index_name']];
                     $schema_unused_indexes[$row['object_name']][] = new SchemaUnusedIndex($index);
                 }
@@ -481,7 +481,7 @@ class Factory
                 $statement->bindValue("schema", $schema_name);
                 $statement->execute();
 
-                $access_requests = $statement->fetchAll();
+                $access_requests = $statement->fetchAllAssociative();
                 foreach ($access_requests as $access_request) {
                     $table_access_information[$access_request['OBJECT_NAME']] = new AccessInformation(
                         (int)$access_request['COUNT_READ'],
