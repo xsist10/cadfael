@@ -17,12 +17,12 @@ class Schema implements Entity
     /**
      * @var array<Table>
      */
-    protected array $tables;
+    protected array $tables = [];
 
     /**
      * @var array<Query>
      */
-    protected array $queries;
+    protected array $queries = [];
 
     protected Database $database;
 

@@ -22,6 +22,7 @@ use Cadfael\Engine\Exception\MissingPermissions;
 use Cadfael\Engine\Exception\MissingInformationSchema;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DBALException;
+use Doctrine\DBAL\Exception\InvalidFieldNameException;
 use Doctrine\DBAL\FetchMode;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
@@ -73,6 +74,40 @@ class Factory
         return array_map(function ($row): string {
             return $row['SCHEMA_NAME'];
         }, $this->connection->fetchAll($query));
+    }
+
+    private function getEventStatementsSummary(Schema $schema) {
+        try {
+            // Collect all query digests that have been run so far.
+            $statement = $this->getConnection()->prepare("
+                SELECT *
+                FROM performance_schema.events_statements_summary_by_digest
+                WHERE SCHEMA_NAME = :schema
+                  AND QUERY_SAMPLE_TEXT NOT LIKE 'show %'
+                  AND QUERY_SAMPLE_TEXT NOT LIKE '% information_schema.%'
+                  AND QUERY_SAMPLE_TEXT NOT LIKE '% mysql.%'
+                  AND QUERY_SAMPLE_TEXT NOT LIKE '% sys.%'
+                  AND QUERY_SAMPLE_TEXT NOT LIKE '% performance_schema.%'
+            ");
+            $statement->bindValue("schema", $schema->getName());
+            $statement->execute();
+        } catch (InvalidFieldNameException $exception) {
+            // Older versions of MySQL don't have QUERY_SAMPLE_TEXT. Collect everything
+            $statement = $this->getConnection()->prepare("
+                SELECT *
+                FROM performance_schema.events_statements_summary_by_digest
+                WHERE SCHEMA_NAME = :schema
+            ");
+            $statement->bindValue("schema", $schema->getName());
+            $statement->execute();
+        }
+
+        foreach ($statement->fetchAllAssociative() as $querySummaryByDigest) {
+            $query = new Query($querySummaryByDigest['DIGEST_TEXT']);
+            $summary = EventsStatementsSummary::createFromPerformanceSchema($querySummaryByDigest);
+            $query->setEventsStatementsSummary($summary);
+            $schema->addQuery($query);
+        }
     }
 
     private function convertMySQLFuzzyMatchToRegex(string $pattern): string
@@ -394,25 +429,7 @@ class Factory
                     $schema_unused_indexes[$row['object_name']][] = new SchemaUnusedIndex($index);
                 }
 
-                // Collect all query digests that have been run so far.
-                $statement = $this->getConnection()->prepare("
-                    SELECT *
-                    FROM performance_schema.events_statements_summary_by_digest
-                    WHERE SCHEMA_NAME = :schema
-                      AND QUERY_SAMPLE_TEXT NOT LIKE 'show %'
-                      AND QUERY_SAMPLE_TEXT NOT LIKE '% information_schema.%'
-                      AND QUERY_SAMPLE_TEXT NOT LIKE '% mysql.%'
-                      AND QUERY_SAMPLE_TEXT NOT LIKE '% sys.%'
-                      AND QUERY_SAMPLE_TEXT NOT LIKE '% performance_schema.%'
-                ");
-                $statement->bindValue("schema", $schema->getName());
-                $statement->execute();
-                foreach ($statement->fetchAll() as $querySummaryByDigest) {
-                    $query = new Query($querySummaryByDigest['DIGEST_TEXT']);
-                    $summary = EventsStatementsSummary::createFromPerformanceSchema($querySummaryByDigest);
-                    $query->setEventsStatementsSummary($summary);
-                    $schema->addQuery($query);
-                }
+                $this->getEventStatementsSummary($schema);
 
                 // Collect all accounts who have not been closing connections properly.
                 $accountsNotClosedProperly = $this->getConnection()->fetchAll("
