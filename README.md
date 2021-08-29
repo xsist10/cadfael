@@ -119,13 +119,13 @@ What is the database password?
 Try testing Cadfael on a few open data sources
 
 ```
-+-----------------------------+------+-----------+----------+-------------------------+
-| Host                        | Port | Username  | Password | Schema                  |
-+-----------------------------+------+-----------+----------+-------------------------+
-| ensembldb.ensembl.org       | 5306 | anonymous |          | ensembl_stable_ids_99   |
-| mysql-rfam-public.ebi.ac.uk | 4497 | rfamro    |          | Rfam                    |
-| mysql-db.1000genomes.org    | 4272 | anonymous |          | homo_sapiens_core_73_37 |
-+-----------------------------+------+-----------+----------+-------------------------+
++-----------------------------+------+-----------+----------+--------------------------+
+| Host                        | Port | Username  | Password | Schema                   |
++-----------------------------+------+-----------+----------+--------------------------+
+| ensembldb.ensembl.org       | 5306 | anonymous |          | homo_sapiens_core_103_38 |
+| mysql-rfam-public.ebi.ac.uk | 4497 | rfamro    |          | Rfam                     |
+| mysql-db.1000genomes.org    | 4272 | anonymous |          | homo_sapiens_core_73_37  |
++-----------------------------+------+-----------+----------+--------------------------+
 ```
 
 ## Contributions
