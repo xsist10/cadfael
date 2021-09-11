@@ -201,6 +201,42 @@ class RunCommand extends AbstractDatabaseCommand
         }
     }
 
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @param String $password
+     * @param array $schemas
+     * @return int
+     */
+    protected function processSchemas(
+        InputInterface $input,
+        OutputInterface $output,
+        String $password,
+        array $schemas
+    ): int {
+        if (!count($schemas)) {
+            return Command::FAILURE;
+        }
+
+        try {
+            $factory = $this->getFactory($input, $schemas[0], $password);
+            $this->runChecksAgainstSchema($input, $schemas, $factory, $output);
+            $factory->getConnection()->close();
+        } catch (DBALException $e) {
+            $output->writeln('<error>' . $e->getMessage() . '</error>');
+        } catch (MissingInformationSchema $e) {
+            $output->writeln('<error>Unable to retrieve information for ' . $schemas[0] . '</error>');
+        } catch (MissingPermissions $e) {
+            $output->writeln('<error>' . $e->getMessage() . '</error>');
+        }
+
+        // If we get anything serious, our script should fail
+        if ($this->worstReportStatus >= Report::STATUS_WARNING) {
+            return Command::FAILURE;
+        }
+        return Command::SUCCESS;
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $output->writeln('Cadfael CLI Tool');
@@ -209,19 +245,6 @@ class RunCommand extends AbstractDatabaseCommand
         $this->displayDatabaseDetails($input, $output);
         $password = $this->getDatabasePassword($input, $output);
 
-        $schemas = (array)$input->getArgument('schema');
-        if (!count($schemas)) {
-            return Command::FAILURE;
-        }
-
-        $factory = $this->getFactory($input, $schemas[0], $password);
-        $this->runChecksAgainstSchema($input, $schemas, $factory, $output);
-        $factory->getConnection()->close();
-
-        // If we get anything serious, our script should fail
-        if ($this->worstReportStatus >= Report::STATUS_WARNING) {
-            return Command::FAILURE;
-        }
-        return Command::SUCCESS;
+        return $this->processSchemas($input, $output, $password, (array)$input->getArgument('schema'));
     }
 }
