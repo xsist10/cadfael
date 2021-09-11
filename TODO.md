@@ -1,10 +1,11 @@
-# TODO
+# Architecture
 
 - [x] Add Orchestrator
 - [x] Setup workflow to save coverage artifacts
 - [x] Add Logger
 - [x] Add regular expression support to permission checks (to support `%` and `*` characters).
 - [ ] Code currently violates Liskov substitution principle. Clean up inheritance mess.
+- [ ] Refactor result view to better fit into the space.
 
 ## Checks
 
@@ -12,7 +13,7 @@
 - [ ] Add check for database version CVEs
 - [x] Table Engine recommendation
 - [ ] Table Growth detection
-    - [ ] Try determine creation values
+    - [ ] Try to determine creation values
 - [ ] Table access meta
     - [x] Collect `mysql.innodb_index_stats` metrics
 - [ ] Add support for partition detection and reporting
