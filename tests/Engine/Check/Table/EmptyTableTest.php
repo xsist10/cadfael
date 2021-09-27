@@ -31,9 +31,23 @@ class EmptyTableTest extends BaseTest
 
     public function providerTableDataForRun() {
         $builder = new ColumnBuilder();
-        $column = $builder->int(10)->unsigned()->primary()->auto_increment()->generate();
+        $column = $builder->int(10)
+            ->unsigned()
+            ->primary()
+            ->auto_increment()
+            ->generate();
         $table = $this->createEmptyTable();
         $table->setColumns($column);
+
+        $column = $builder->int(10)
+            ->unsigned()
+            ->primary()
+            ->auto_increment()
+            ->generate();
+        $table_with_inserts = $this->createEmptyTable();
+        $table_with_inserts->setColumns($column);
+        $auto_increment = $table_with_inserts->getSchemaAutoIncrementColumn();
+        $auto_increment->auto_increment = 10;
 
         return [
             [
@@ -41,8 +55,12 @@ class EmptyTableTest extends BaseTest
                 Report::STATUS_WARNING
             ],
             [
+                $table_with_inserts,
+                Report::STATUS_CONCERN
+            ],
+            [
                 $this->createEmptyTable([ "DATA_FREE" => 110 ]),
-                Report::STATUS_INFO
+                Report::STATUS_CONCERN
             ],
             [
                 $this->createTable(),
