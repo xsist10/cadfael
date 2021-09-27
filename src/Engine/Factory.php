@@ -11,12 +11,14 @@ use Cadfael\Engine\Entity\Query;
 use Cadfael\Engine\Entity\Query\EventsStatementsSummary;
 use Cadfael\Engine\Entity\Schema;
 use Cadfael\Engine\Entity\Table\AccessInformation;
+use Cadfael\Engine\Entity\Table\InnoDbTable;
 use Cadfael\Engine\Entity\Table\SchemaAutoIncrementColumn;
 use Cadfael\Engine\Entity\Table\SchemaRedundantIndex;
 use Cadfael\Engine\Entity\Table\SchemaUnusedIndex;
 use Cadfael\Engine\Entity\Table;
 use Cadfael\Engine\Entity\Column;
 use Cadfael\Engine\Entity\Index;
+use Cadfael\Engine\Entity\Tablespace;
 use Cadfael\Engine\Entity\Index\Statistics;
 use Cadfael\Engine\Exception\MissingPermissions;
 use Cadfael\Engine\Exception\MissingInformationSchema;
@@ -40,6 +42,10 @@ class Factory
      * @var array<string>
      */
     private $schemas = [];
+    /**
+     * @var array<boolean>
+     */
+    private $table_lookup = [];
 
     public function __construct(Connection $connection)
     {
@@ -249,6 +255,73 @@ class Factory
         return $accounts;
     }
 
+    public function doesTableExist(Connection $connection, string $schema, string $table)
+    {
+        if (!count($this->table_lookup)) {
+            $this->logger->info("Collecting all table names in database.");
+            $connection->setFetchMode(FetchMode::ASSOCIATIVE);
+            $query = 'SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.TABLES';
+            foreach ($connection->fetchAll($query) as $row) {
+                $key = $row['TABLE_SCHEMA'] . '.' . $row['TABLE_NAME'];
+                $this->table_lookup[strtoupper($key)] = true;
+            }
+        }
+
+        return !empty($this->table_lookup[strtoupper($schema . '.' . $table)]);
+    }
+
+    /**
+     * @param Connection $connection
+     * @return array<Tablespace>
+     */
+    public function getTablespaces(Connection $connection): array
+    {
+        $tablespaces = [];
+        // MySQL stores innodb tablespace information in different table
+        // depending on the version.
+        foreach (['innodb_tablespaces', 'innodb_sys_tablespaces'] as $table) {
+            if ($this->doesTableExist($connection, 'information_schema', $table)) {
+                $connection->setFetchMode(FetchMode::ASSOCIATIVE);
+                $this->logger->info("Collecting MySQL tablespaces.");
+                $query = "SELECT * FROM information_schema.$table";
+                foreach ($connection->fetchAll($query) as $row) {
+                    $tablespaces[] = Tablespace::createFromInformationSchema($row);
+                }
+            }
+        }
+        return $tablespaces;
+    }
+
+    /**
+     * @param Connection $connection
+     * @return array<InnoDbTable>
+     */
+    public function getInnodbTableMeta(Connection $connection, Schema $schema): array
+    {
+        $innodb_tables = [];
+        // MySQL stores innodb tablespace information in different table
+        // depending on the version.
+        foreach (['innodb_tables', 'innodb_sys_tables'] as $table) {
+            if ($this->doesTableExist($connection, 'information_schema', $table)) {
+                $connection->setFetchMode(FetchMode::ASSOCIATIVE);
+                $this->logger->info("Collecting MySQL innodb table meta.");
+                $query = "SELECT * FROM information_schema.$table WHERE name LIKE :name_pattern";
+                $statement = $this->connection->prepare($query);
+                $statement->bindValue(":name_pattern", $schema->getName() . "/%");
+                $statement->execute();
+
+                $rows = $statement->fetchAllAssociative();
+                foreach ($rows as $row) {
+                    $table = explode('/', $row['NAME']);
+                    $innodb_tables[$table[1]] = InnoDbTable::createFromInformationSchema(
+                        $row
+                    );
+                }
+            }
+        }
+        return $innodb_tables;
+    }
+
     /**
      * @param Connection $connection
      * @param array<string> $schema_names
@@ -263,6 +336,7 @@ class Factory
         $database->setVariables($this->getVariables($connection));
         $database->setStatus($this->getStatus($connection));
         $database->setAccounts(...$this->getAccounts($connection));
+        $database->setTablespaces(...$this->getTablespaces($connection));
 
         $schemas = [];
         foreach ($schema_names as $schema_name) {
@@ -409,6 +483,8 @@ class Factory
                 }
             }
 
+            $innodb_tables = $this->getInnodbTableMeta($connection, $schema);
+
             if (!$database->hasPerformanceSchema() || !$this->hasPermission('performance_schema', '?')) {
                 $message = "Missing critical permission to access performance_schema.?.";
                 $this->logger->warning($message);
@@ -514,6 +590,9 @@ class Factory
                 }
                 if (!empty($table_access_information[$table->getName()])) {
                     $table->setAccessInformation($table_access_information[$table->getName()]);
+                }
+                if (!empty($innodb_tables[$table->getName()])) {
+                    $table->setInnoDbTable($innodb_tables[$table->getName()]);
                 }
             }
 

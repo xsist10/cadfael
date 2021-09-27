@@ -7,6 +7,7 @@ namespace Cadfael\Engine\Entity;
 use Cadfael\Engine\Entity;
 use Cadfael\Engine\Entity\Table\AccessInformation;
 use Cadfael\Engine\Entity\Table\InformationSchema;
+use Cadfael\Engine\Entity\Table\InnoDbTable;
 use Cadfael\Engine\Entity\Table\SchemaAutoIncrementColumn;
 use Cadfael\Engine\Entity\Table\SchemaRedundantIndex;
 use Cadfael\Engine\Entity\Table\SchemaUnusedIndex;
@@ -33,6 +34,7 @@ class Table implements Entity
     public ?InformationSchema $information_schema = null;
     public ?SchemaAutoIncrementColumn $schema_auto_increment_column = null;
     public ?AccessInformation $access_information = null;
+    public ?InnoDbTable $innodb_table = null;
     /**
      * @var array<SchemaRedundantIndex>
      */
@@ -184,6 +186,28 @@ class Table implements Entity
     public function setAccessInformation(AccessInformation $access_information): void
     {
         $this->access_information = $access_information;
+    }
+
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @param InnoDbTable $innodb_table
+     */
+    public function setInnoDbTable(InnoDbTable $innodb_table): void
+    {
+        $this->innodb_table = $innodb_table;
+    }
+
+    public function getTableSpace(): ?Tablespace
+    {
+        if (!$this->innodb_table) {
+            return null;
+        }
+
+        // Our database holds all the tablespaces
+        $database = $this->getSchema()->getDatabase();
+        return $database->getTablespace($this->innodb_table->space);
     }
 
     public function isVirtual(): bool
