@@ -29,6 +29,11 @@ class Database implements Entity
      */
     protected array $accounts;
 
+    /**
+     * @var array<Tablespace>
+     */
+    protected array $tablespaces;
+
     private Connection $connection;
 
     public function __construct(?Connection $connection)
@@ -119,6 +124,39 @@ class Database implements Entity
     public function addAccount(Account $account): void
     {
         $this->accounts[] = $account;
+    }
+
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @return string[]
+     */
+    public function getTablespaces(): array
+    {
+        return $this->tablespaces;
+    }
+
+    public function getTablespace(int $id): ?Tablespace
+    {
+        foreach ($this->tablespaces as $tablespace) {
+            if ($tablespace->getId() === $id) {
+                return $tablespace;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @param Tablespace ...$tablespaces
+     */
+    public function setTablespaces(Tablespace...$tablespaces): void
+    {
+        $this->tablespaces = $tablespaces;
     }
 
     /**

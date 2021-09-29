@@ -26,18 +26,48 @@ class EmptyTable implements Check
             );
         }
 
+        // Find out what the next auto-increment value is. The assumption is
+        // that if this value is > 1, then entries have been issued. This is
+        // only effective if the table has an auto-increment column.
         $auto_increment_column = $entity->getSchemaAutoIncrementColumn();
         $auto_increment_issued = 0;
         if ($auto_increment_column !== null) {
-            $auto_increment_issued = $auto_increment_column->auto_increment - 1;
+            $auto_increment_issued = $auto_increment_column->auto_increment
+                ? $auto_increment_column->auto_increment - 1
+                : 0;
         }
 
-        if ($entity->information_schema->data_free > 0 || $auto_increment_issued) {
+        if ($auto_increment_issued) {
             return new Report(
                 $this,
                 $entity,
-                Report::STATUS_INFO,
-                [ "Table is empty but has free space. It is probably used as a some form of queue." ]
+                Report::STATUS_CONCERN,
+                [
+                    "Table is empty but previously had records inserted.",
+                    "It is possible it is used as a some form of queue or has had all records deleted."
+                ]
+            );
+        }
+
+        if ($entity->information_schema->data_free) {
+            $messages = [
+                "Table is empty but has allocated free space.",
+            ];
+
+            // Is this table in a weird tablespace?
+            if (is_null($entity->getTablespace())) {
+                // If so, we can't rely on data free to give us an indication of
+                // the usage of this table.
+                $messages[] = "This table is in a shared tablespace so this doesn't mean much.";
+            } else {
+                $messages[] = "It is possible it is used as a some form of queue or has had all records deleted.";
+            }
+
+            return new Report(
+                $this,
+                $entity,
+                Report::STATUS_CONCERN,
+                $messages
             );
         }
 
