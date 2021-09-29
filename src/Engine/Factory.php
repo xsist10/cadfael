@@ -47,6 +47,23 @@ class Factory
      */
     private $table_lookup = [];
 
+    // TODO: Move permission related functionality to a subclass
+
+    // These information schema tables require the PROCESS permission to access
+    const PROCESS_TABLE_PERMISSION = [
+        'information_schema.innodb_sys_tablespaces',
+        'information_schema.innodb_tablespaces'
+    ];
+
+    // These are information schema tables that don't require PROCESS rights
+    const INFORMATION_SCHEMA_TABLES = [
+        'TABLES',
+        'COLUMNS',
+        'STATISTICS',
+        'SCHEMATA',
+        'SCHEMA_PRIVILEGES'
+    ];
+
     public function __construct(Connection $connection)
     {
         $this->connection = $connection;
@@ -131,17 +148,40 @@ class Factory
                 preg_match('/^GRANT .*?(ALL|SELECT).*? ON (.*?)\.(.*?) TO/', $permission[0], $matches);
                 if (count($matches)) {
                     // Convert the placeholder syntax in MySQL with RegEx
-                    $permission = sprintf(
+                    $perm = sprintf(
                         '/%s\.%s/',
                         $this->convertMySQLFuzzyMatchToRegex($matches[2]),
                         $this->convertMySQLFuzzyMatchToRegex($matches[3])
                     );
-                    $this->permissions[] = $permission;
+                    $this->permissions[] = $perm;
+                }
+
+                preg_match('/^GRANT .*?PROCESS.*? ON (.*?)\.(.*?) TO/', $permission[0], $matches);
+                if (count($matches)) {
+                    // Attempt to check if this permission matches certain
+                    // tables as they are only accessible with the process
+                    // permission.
+
+                    // Convert the placeholder syntax in MySQL with RegEx
+                    $pattern = sprintf(
+                        '/%s\.%s/',
+                        $this->convertMySQLFuzzyMatchToRegex($matches[1]),
+                        $this->convertMySQLFuzzyMatchToRegex($matches[2])
+                    );
+
+                    foreach (self::PROCESS_TABLE_PERMISSION as $table) {
+                        if (preg_match($pattern, $table)) {
+                            $this->permissions[] = preg_quote($table);
+                        }
+                    }
                 }
             }
 
-            // We make the assumption that information_schema is always accessible
-            $this->permissions[] = '/information_schema\..*/';
+            // We make the assumption that certain information_schema tables are
+            // always accessible
+            foreach (self::INFORMATION_SCHEMA_TABLES as $table) {
+                $this->permissions[] = "/information_schema\.$table/";
+            }
         }
 
         $this->logger->info(sprintf("Checking for permission to access %s.%s.", $schema, $table));
@@ -280,7 +320,9 @@ class Factory
         // MySQL stores innodb tablespace information in different table
         // depending on the version.
         foreach (['innodb_tablespaces', 'innodb_sys_tablespaces'] as $table) {
-            if ($this->doesTableExist($connection, 'information_schema', $table)) {
+            $table_exists = $this->doesTableExist($connection, 'information_schema', $table);
+            $table_accessible = $this->hasPermission('information_schema', $table);
+            if ($table_exists && $table_accessible) {
                 $connection->setFetchMode(FetchMode::ASSOCIATIVE);
                 $this->logger->info("Collecting MySQL tablespaces.");
                 $query = "SELECT * FROM information_schema.$table";
@@ -302,7 +344,9 @@ class Factory
         // MySQL stores innodb tablespace information in different table
         // depending on the version.
         foreach (['innodb_tables', 'innodb_sys_tables'] as $table) {
-            if ($this->doesTableExist($connection, 'information_schema', $table)) {
+            $table_exists = $this->doesTableExist($connection, 'information_schema', $table);
+            $table_accessible = $this->hasPermission('information_schema', $table);
+            if ($table_exists && $table_accessible) {
                 $connection->setFetchMode(FetchMode::ASSOCIATIVE);
                 $this->logger->info("Collecting MySQL innodb table meta.");
                 $query = "SELECT * FROM information_schema.$table WHERE name LIKE :name_pattern";
