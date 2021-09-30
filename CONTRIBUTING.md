@@ -118,20 +118,16 @@ Enhancement suggestions are tracked as [GitHub issues](https://github.com/xsist1
 
 #### Getting Started
 
-First checkout the code to a local folder. We recommend you first [create a fork of the project](https://docs.github.com/en/get-started/quickstart/fork-a-repo).
+> Follow the [First Constributions Guide](https://github.com/firstcontributions/first-contributions) for a detailed guide from checking out the code to creating a pull request to submit your changes.
 
-```bash
-$ git clone https://github.com/<username>/cadfael.git
-$ cd cadfael
-```
-
-Install the dependencies with [composer](https://getcomposer.org/).
+After you've followed the fork and clone steps in the above guide, you're ready to start working with the code.
+First, install the dependencies with [composer](https://getcomposer.org/).
 
 ```bash
 $ composer install
 ```
 
-Ensure all the tests pass
+Then ensure all the tests pass.
 
 ```bash
 $ make
