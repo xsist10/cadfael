@@ -11,6 +11,7 @@ use Cadfael\Engine\Check\Column\ReservedKeywords;
 use Cadfael\Engine\Check\Column\SaneAutoIncrement;
 use Cadfael\Engine\Check\Query\Inefficient;
 use Cadfael\Engine\Check\Database\UnsupportedVersion;
+use Cadfael\Engine\Check\Database\RequirePrimaryKey;
 use Cadfael\Engine\Check\Table\AutoIncrementCapacity;
 use Cadfael\Engine\Check\Table\EmptyTable;
 use Cadfael\Engine\Check\Table\MustHavePrimaryKey;
@@ -119,7 +120,8 @@ class RunCommand extends AbstractDatabaseCommand
             new SaneAutoIncrement(),
             new CorrectUtf8Encoding(),
             new PreferredEngine(),
-            new UnsupportedVersion()
+            new UnsupportedVersion(),
+            new RequirePrimaryKey()
         );
 
         $load_performance_schema = $input->getOption('performance_schema');
