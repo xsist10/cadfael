@@ -36,7 +36,8 @@ class RequirePrimaryKey implements Check
             );
         }
 
-        if ($entity->getVariables()['sql_require_primary_key'] !== 'ON') {
+        $variables = $entity->getVariables();
+        if (isset($variables['sql_require_primary_key']) && $variables['sql_require_primary_key'] !== 'ON') {
             return new Report(
                 $this,
                 $entity,
