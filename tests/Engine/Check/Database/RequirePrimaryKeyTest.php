@@ -15,9 +15,9 @@ class RequirePrimaryKeyTest extends BaseTest
     {
         $this->databases = [
             '5.7' => $this->createDatabase([ 'version' => '5.7.0' ]),
-            '8.0_NOT_SET' => $this->createDatabase([ 'version' => '8.0.0', 'sql_require_primary_key' => null]),
-            '8.0_OFF' => $this->createDatabase([ 'version' => '8.0.0', 'sql_require_primary_key' => 'OFF' ]),
-            '8.0_ON' => $this->createDatabase([ 'version' => '8.0.0', 'sql_require_primary_key' => 'ON' ]),
+            '8.0_NOT_SET' => $this->createDatabase([ 'version' => '8.0.13', 'sql_require_primary_key' => null]),
+            '8.0_OFF' => $this->createDatabase([ 'version' => '8.0.13', 'sql_require_primary_key' => 'OFF' ]),
+            '8.0_ON' => $this->createDatabase([ 'version' => '8.0.13', 'sql_require_primary_key' => 'ON' ]),
         ];
     }
 
