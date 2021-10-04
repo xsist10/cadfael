@@ -4,6 +4,10 @@
 
 Cadfael is static analysis tool to provide critiquing for MySQL databases.
 
+## Documentation
+
+All of the checks and the reasoning, considerations and remediations for them are documented in the [wiki](https://github.com/xsist10/cadfael/wiki).
+
 ## Installation
 
 There are a couple options for installation depending on your personal preference.
