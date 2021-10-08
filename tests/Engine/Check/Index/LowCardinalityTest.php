@@ -8,8 +8,7 @@ use Cadfael\Engine\Entity\Index;
 use Cadfael\Engine\Entity\Table;
 use Cadfael\Engine\Report;
 use Cadfael\Tests\Engine\Check\BaseTest;
-use Cadfael\Tests\Engine\Check\ColumnBuilder;
-use PHPUnit\Framework\TestCase;
+use Cadfael\Tests\Engine\Check\IndexBuilder;
 
 class LowCardinalityTest extends BaseTest
 {
@@ -30,23 +29,16 @@ class LowCardinalityTest extends BaseTest
         $this->mediumTable = $this->createTable([ 'TABLE_ROWS' => 10_000 ]);
         $this->smallTable = $this->createTable([ 'TABLE_ROWS' => 50 ]);
 
-        $builder = new ColumnBuilder();
-        $this->highCardinalityColumn = $builder->name("high_cardinality_value")->generate();
-        $this->highCardinalityColumn->setCardinality(100_000);
-        $this->lowCardinalityColumn = $builder->name("low_cardinality_value")->generate();
-        $this->lowCardinalityColumn->setCardinality(10);
+        $builder = new IndexBuilder();
 
-        $this->highCardinalityIndex = new Index('high_cardinality_index');
-        $this->highCardinalityIndex->setColumns($this->highCardinalityColumn);
-        $this->highCardinalityIndex->setUnique(false);
+        $this->highCardinalityIndex = $builder->name('high_cardinality_index')->generate();
+        $this->highCardinalityIndex->getColumns()[0]->setCardinality(100_000);
 
-        $this->lowCardinalityIndex = new Index('low_cardinality_index');
-        $this->lowCardinalityIndex->setColumns($this->lowCardinalityColumn);
-        $this->lowCardinalityIndex->setUnique(false);
+        $this->lowCardinalityIndex = $builder->name('low_cardinality_index')->generate();
+        $this->lowCardinalityIndex->getColumns()[0]->setCardinality(10);
 
-        $this->uniqueIndex = new Index('unique_index');
-        $this->uniqueIndex->setColumns($this->highCardinalityColumn);
-        $this->uniqueIndex->setUnique(true);
+        $this->uniqueIndex = $builder->name('unique_index')->isUnique(true)->generate();
+        $this->uniqueIndex->getColumns()[0]->setCardinality(100_000);
     }
 
     public function testSupports()
@@ -60,19 +52,22 @@ class LowCardinalityTest extends BaseTest
     public function testRun()
     {
         $check = new LowCardinality();
+
         $this->highCardinalityIndex->setTable($this->largeTable);
         $this->assertEquals(
             Report::STATUS_OK,
             $check->run($this->highCardinalityIndex)->getStatus(),
             "Ensure that an OK report is returned for $this->highCardinalityIndex with a large table."
         );
-        $this->highCardinalityColumn->setTable($this->mediumTable);
+
+        $this->highCardinalityIndex->setTable($this->mediumTable);
         $this->assertEquals(
             Report::STATUS_OK,
             $check->run($this->highCardinalityIndex)->getStatus(),
             "Ensure that an OK report is returned for $this->highCardinalityIndex with a medium table."
         );
-        $this->highCardinalityColumn->setTable($this->smallTable);
+
+        $this->highCardinalityIndex->setTable($this->smallTable);
         $this->assertEquals(
             Report::STATUS_OK,
             $check->run($this->highCardinalityIndex)->getStatus(),
@@ -85,12 +80,14 @@ class LowCardinalityTest extends BaseTest
             $check->run($this->lowCardinalityIndex)->getStatus(),
             "Ensure that an OK report is returned for $this->lowCardinalityIndex with a large table."
         );
+
         $this->lowCardinalityIndex->setTable($this->mediumTable);
         $this->assertEquals(
             Report::STATUS_CONCERN,
             $check->run($this->lowCardinalityIndex)->getStatus(),
             "Ensure that an OK report is returned for $this->lowCardinalityIndex with a medium table."
         );
+
         $this->lowCardinalityIndex->setTable($this->smallTable);
         $this->assertEquals(
             Report::STATUS_OK,

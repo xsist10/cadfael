@@ -7,6 +7,7 @@ namespace Cadfael\Engine;
 use Cadfael\Engine\Entity\Account;
 use Cadfael\Engine\Entity\Account\NotClosedProperly;
 use Cadfael\Engine\Entity\Database;
+use Cadfael\Engine\Entity\Index\Statistics;
 use Cadfael\Engine\Entity\Query;
 use Cadfael\Engine\Entity\Query\EventsStatementsSummary;
 use Cadfael\Engine\Entity\Schema;
@@ -19,13 +20,11 @@ use Cadfael\Engine\Entity\Table;
 use Cadfael\Engine\Entity\Column;
 use Cadfael\Engine\Entity\Index;
 use Cadfael\Engine\Entity\Tablespace;
-use Cadfael\Engine\Entity\Index\Statistics;
+use Cadfael\Engine\Entity\Index\SchemaIndexStatistics;
 use Cadfael\Engine\Exception\MissingPermissions;
 use Cadfael\Engine\Exception\MissingInformationSchema;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\DBALException;
 use Doctrine\DBAL\Exception\InvalidFieldNameException;
-use Doctrine\DBAL\FetchMode;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
 
@@ -41,22 +40,26 @@ class Factory
     /**
      * @var array<string>
      */
+    private $information_schema_permissions = [];
+    /**
+     * @var array<string>
+     */
     private $schemas = [];
     /**
-     * @var array<boolean>
+     * @var array<bool>
      */
     private $table_lookup = [];
 
     // TODO: Move permission related functionality to a subclass
 
     // These information schema tables require the PROCESS permission to access
-    const PROCESS_TABLE_PERMISSION = [
+    private const PROCESS_TABLE_PERMISSION = [
         'information_schema.innodb_sys_tablespaces',
         'information_schema.innodb_tablespaces'
     ];
 
     // These are information schema tables that don't require PROCESS rights
-    const INFORMATION_SCHEMA_TABLES = [
+    private const INFORMATION_SCHEMA_TABLES = [
         'TABLES',
         'COLUMNS',
         'STATISTICS',
@@ -79,26 +82,32 @@ class Factory
     }
 
     /**
-     * @return array<string>
+     * @return array
+     * @throws \Doctrine\DBAL\Exception
      */
     private function collectGrants(): array
     {
         $query = 'SHOW GRANTS FOR CURRENT_USER();';
-        $this->connection->setFetchMode(FetchMode::NUMERIC);
-        return $this->connection->fetchAll($query);
+        return $this->connection->fetchAllNumeric($query);
     }
 
     /**
      * @return array<string>
+     * @throws \Doctrine\DBAL\Exception
      */
     private function collectSchemas(): array
     {
         $query = 'SELECT SCHEMA_NAME FROM information_schema.SCHEMATA';
         return array_map(function ($row): string {
             return $row['SCHEMA_NAME'];
-        }, $this->connection->fetchAll($query));
+        }, $this->connection->fetchAllAssociative($query));
     }
 
+    /**
+     * @param Schema $schema
+     * @throws \Doctrine\DBAL\Driver\Exception
+     * @throws \Doctrine\DBAL\Exception
+     */
     private function getEventStatementsSummary(Schema $schema): void
     {
         try {
@@ -139,6 +148,12 @@ class Factory
         return str_replace(['*', '%', '`'], ['.*', '.*', ''], $pattern);
     }
 
+    /**
+     * @param string $schema
+     * @param string $table
+     * @return bool
+     * @throws \Doctrine\DBAL\Exception
+     */
     public function hasPermission(string $schema, string $table): bool
     {
         if (!count($this->permissions)) {
@@ -171,7 +186,7 @@ class Factory
 
                     foreach (self::PROCESS_TABLE_PERMISSION as $table) {
                         if (preg_match($pattern, $table)) {
-                            $this->permissions[] = preg_quote($table);
+                            $this->information_schema_permissions[] = '/' . preg_quote($table) . '/';
                         }
                     }
                 }
@@ -180,24 +195,38 @@ class Factory
             // We make the assumption that certain information_schema tables are
             // always accessible
             foreach (self::INFORMATION_SCHEMA_TABLES as $table) {
-                $this->permissions[] = "/information_schema\.$table/";
+                $this->information_schema_permissions[] = "/information_schema\.$table/";
             }
         }
 
         $this->logger->info(sprintf("Checking for permission to access %s.%s.", $schema, $table));
         $subject = "$schema.$table";
-        foreach ($this->permissions as $pattern) {
-            if (preg_match($pattern, $subject)) {
-                return true;
+        // There is a special list of permissions for some information_schema tables
+        if ($schema === 'information_schema') {
+            foreach ($this->information_schema_permissions as $pattern) {
+                if (preg_match($pattern, $subject)) {
+                    return true;
+                }
+            }
+        } else {
+            foreach ($this->permissions as $pattern) {
+                if (preg_match($pattern, $subject)) {
+                    return true;
+                }
             }
         }
         return false;
     }
 
+    /**
+     * @param string $schema
+     * @return bool
+     * @throws \Doctrine\DBAL\Exception
+     */
     protected function hasSchema(string $schema): bool
     {
         if (!count($this->schemas)) {
-            $this->logger->info("Collecting SCHEMAs.");
+            $this->logger->info("Collecting schemas.");
             // First we attempt to figure out what permissions the user has
             $this->schemas = $this->collectSchemas();
         }
@@ -207,6 +236,7 @@ class Factory
 
     /**
      * @param string $schema
+     * @throws \Doctrine\DBAL\Exception
      * @throws MissingPermissions
      */
     protected function checkRequiredPermissions(string $schema): void
@@ -246,13 +276,13 @@ class Factory
     /**
      * @param Connection $connection
      * @return array<string>
+     * @throws \Doctrine\DBAL\Exception
      */
     public function getVariables(Connection $connection): array
     {
-        $connection->setFetchMode(FetchMode::ASSOCIATIVE);
         $this->logger->info("Collecting MySQL VARIABLES.");
         $query = 'SHOW VARIABLES';
-        $rows = $connection->fetchAll($query);
+        $rows = $connection->fetchAllAssociative($query);
         $variables = [];
         foreach ($rows as $row) {
             $variables[$row['Variable_name']] = $row['Value'];
@@ -263,13 +293,13 @@ class Factory
     /**
      * @param Connection $connection
      * @return array<string>
+     * @throws \Doctrine\DBAL\Exception
      */
     public function getStatus(Connection $connection): array
     {
-        $connection->setFetchMode(FetchMode::ASSOCIATIVE);
         $this->logger->info("Collecting MySQL GLOBAL STATUS.");
         $query = 'SHOW GLOBAL STATUS';
-        $rows = $connection->fetchAll($query);
+        $rows = $connection->fetchAllAssociative($query);
         $variables = [];
         foreach ($rows as $row) {
             $variables[$row['Variable_name']] = $row['Value'];
@@ -280,28 +310,39 @@ class Factory
     /**
      * @param Connection $connection
      * @return array<Account>
+     * @throws \Doctrine\DBAL\Exception
      */
     public function getAccounts(Connection $connection): array
     {
         $accounts = [];
         if ($this->hasPermission('mysql', 'user')) {
-            $connection->setFetchMode(FetchMode::ASSOCIATIVE);
             $this->logger->info("Collecting MySQL user accounts.");
             $query = 'SELECT * FROM mysql.user';
-            foreach ($connection->fetchAll($query) as $row) {
+            foreach ($connection->fetchAllAssociative($query) as $row) {
                 $accounts[] = new Account($row['User'], $row['Host']);
             }
         }
         return $accounts;
     }
 
-    public function doesTableExist(Connection $connection, string $schema, string $table)
+    /**
+     * @param Connection $connection
+     * @param string $schema
+     * @param string $table
+     * @return bool
+     * @throws \Doctrine\DBAL\Exception
+     */
+    public function doesTableExist(Connection $connection, string $schema, string $table): bool
     {
         if (!count($this->table_lookup)) {
             $this->logger->info("Collecting all table names in database.");
-            $connection->setFetchMode(FetchMode::ASSOCIATIVE);
-            $query = 'SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.TABLES';
-            foreach ($connection->fetchAll($query) as $row) {
+            $query = 'SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA IN '
+                   . '("information_schema", "sys", "mysql", "performance_schema", :schema)';
+            $statement = $this->connection->prepare($query);
+            $statement->bindValue(":schema", $schema);
+            $statement->execute();
+
+            foreach ($statement->fetchAllAssociative() as $row) {
                 $key = $row['TABLE_SCHEMA'] . '.' . $row['TABLE_NAME'];
                 $this->table_lookup[strtoupper($key)] = true;
             }
@@ -313,6 +354,7 @@ class Factory
     /**
      * @param Connection $connection
      * @return array<Tablespace>
+     * @throws \Doctrine\DBAL\Exception
      */
     public function getTablespaces(Connection $connection): array
     {
@@ -323,10 +365,9 @@ class Factory
             $table_exists = $this->doesTableExist($connection, 'information_schema', $table);
             $table_accessible = $this->hasPermission('information_schema', $table);
             if ($table_exists && $table_accessible) {
-                $connection->setFetchMode(FetchMode::ASSOCIATIVE);
-                $this->logger->info("Collecting MySQL tablespaces.");
+                $this->logger->info("Collecting MySQL tablespaces from information_schema.$table.");
                 $query = "SELECT * FROM information_schema.$table";
-                foreach ($connection->fetchAll($query) as $row) {
+                foreach ($connection->fetchAllAssociative($query) as $row) {
                     $tablespaces[] = Tablespace::createFromInformationSchema($row);
                 }
             }
@@ -336,7 +377,10 @@ class Factory
 
     /**
      * @param Connection $connection
+     * @param Schema $schema
      * @return array<InnoDbTable>
+     * @throws \Doctrine\DBAL\Exception
+     * @throws \Doctrine\DBAL\Driver\Exception
      */
     public function getInnodbTableMeta(Connection $connection, Schema $schema): array
     {
@@ -347,8 +391,7 @@ class Factory
             $table_exists = $this->doesTableExist($connection, 'information_schema', $table);
             $table_accessible = $this->hasPermission('information_schema', $table);
             if ($table_exists && $table_accessible) {
-                $connection->setFetchMode(FetchMode::ASSOCIATIVE);
-                $this->logger->info("Collecting MySQL innodb table meta.");
+                $this->logger->info("Collecting MySQL innodb table meta from information_schema.$table.");
                 $query = "SELECT * FROM information_schema.$table WHERE name LIKE :name_pattern";
                 $statement = $this->connection->prepare($query);
                 $statement->bindValue(":name_pattern", $schema->getName() . "/%");
@@ -368,11 +411,12 @@ class Factory
 
     /**
      * @param Connection $connection
-     * @param array<string> $schema_names
+     * @param array $schema_names
      * @return Database
-     * @throws DBALException
+     * @throws \Doctrine\DBAL\Exception
      * @throws MissingInformationSchema
      * @throws MissingPermissions
+     * @throws \Doctrine\DBAL\Driver\Exception
      */
     public function buildDatabase(Connection $connection, array $schema_names): Database
     {
@@ -385,7 +429,6 @@ class Factory
         $schemas = [];
         foreach ($schema_names as $schema_name) {
             $this->checkRequiredPermissions($schema_name);
-            $this->connection->setFetchMode(FetchMode::ASSOCIATIVE);
 
             $schema = new Schema($schema_name);
             $schemas[] = $schema;
@@ -431,7 +474,8 @@ class Factory
             foreach ($rows as $row) {
                 $col = $columns[$row['TABLE_NAME']][$row['COLUMN_NAME']];
                 $col->setCardinality((int)$row['CARDINALITY']);
-                $indexes[$row['TABLE_NAME']][$row['INDEX_NAME']][$row['SEQ_IN_INDEX']] = $col;
+                $indexes[$row['TABLE_NAME']][$row['INDEX_NAME']][$row['SEQ_IN_INDEX']] =
+                    Statistics::createFromInformationSchema($col, $row);
                 $indexUnique[$row['TABLE_NAME']][$row['INDEX_NAME']] = !(bool)$row['NON_UNIQUE'];
             }
 
@@ -458,24 +502,6 @@ class Factory
                     $this->logger->warning("Missing GRANT to access sys.schema_auto_increment_columns. Skipping.");
                 }
 
-                if ($this->hasPermission('sys', 'schema_redundant_indexes')) {
-                    $this->logger->info("Collecting sys.schema_redundant_indexes.");
-                    $query = 'SELECT * FROM sys.schema_redundant_indexes WHERE table_schema=:schema';
-                    $statement = $this->connection->prepare($query);
-                    $statement->bindValue("schema", $schema_name);
-                    $statement->execute();
-
-                    $rows = $statement->fetchAllAssociative();
-                    foreach ($rows as $row) {
-                        $schemaRedundantIndexes[$row['table_name']][] = SchemaRedundantIndex::createFromSys(
-                            $tables[$row['table_name']],
-                            $row
-                        );
-                    }
-                } else {
-                    $this->logger->warning("Missing GRANT to access sys.schema_redundant_indexes. Skipping.");
-                }
-
                 if ($this->hasPermission('sys', 'schema_index_statistics')) {
                     $this->logger->info("Collecting sys.schema_index_statistics.");
                     $query = 'SELECT * FROM sys.schema_index_statistics WHERE table_schema=:schema';
@@ -485,7 +511,8 @@ class Factory
 
                     $rows = $statement->fetchAllAssociative();
                     foreach ($rows as $row) {
-                        $index_statistics[$row['table_name']][$row['index_name']] = Statistics::createFromSys($row);
+                        $index_statistics[$row['table_name']][$row['index_name']] =
+                            SchemaIndexStatistics::createFromSys($row);
                     }
                 } else {
                     $this->logger->warning("Missing GRANT to access sys.schema_redundant_indexes. Skipping.");
@@ -494,6 +521,7 @@ class Factory
 
             $indexSize = [];
             if ($this->hasPermission('mysql', 'innodb_index_stats')) {
+                $this->logger->info("Collecting mysql.innodb_index_stats.");
                 // Collect the size of indexes
                 $statement = $this->getConnection()->prepare("
                     SELECT
@@ -512,19 +540,40 @@ class Factory
                     $size = $row['stat_value'] * $database->getVariables()['innodb_page_size'];
                     $indexSize[$row['table_name']][$row['index_name']] = $size;
                 }
+            } else {
+                $this->logger->warning("Missing GRANT to access mysql.innodb_index_stats. Skipping.");
             }
 
+            $this->logger->info("Constructing indexes.");
             foreach ($indexes as $table_name => $table_indexes) {
                 foreach ($table_indexes as $index_name => $index_columns) {
                     $index = new Index((string)$index_name);
-                    $index->setColumns(...$index_columns);
+                    $index->setStatistics(...$index_columns);
                     $index->setUnique($indexUnique[$table_name][$index_name]);
                     $index->setSizeInBytes($indexSize[$table_name][$index_name] ?? 0);
                     $table_indexes_objects[$table_name][$index_name] = $index;
                     if (!empty($index_statistics[$table_name][$index_name])) {
-                        $index->setStatistics($index_statistics[$table_name][$index_name]);
+                        $index->setSchemaIndexStatistics($index_statistics[$table_name][$index_name]);
                     }
                 }
+            }
+
+            if ($this->hasSchema('sys') && $this->hasPermission('sys', 'schema_redundant_indexes')) {
+                $this->logger->info("Collecting sys.schema_redundant_indexes.");
+                $query = 'SELECT * FROM sys.schema_redundant_indexes WHERE table_schema=:schema';
+                $statement = $this->connection->prepare($query);
+                $statement->bindValue("schema", $schema_name);
+                $statement->execute();
+
+                $rows = $statement->fetchAllAssociative();
+                foreach ($rows as $row) {
+                    $schemaRedundantIndexes[$row['table_name']][] = SchemaRedundantIndex::createFromSys(
+                        $table_indexes_objects[$row['table_name']],
+                        $row
+                    );
+                }
+            } else {
+                $this->logger->warning("Missing GRANT to access sys.schema_redundant_indexes. Skipping.");
             }
 
             $innodb_tables = $this->getInnodbTableMeta($connection, $schema);
@@ -553,7 +602,7 @@ class Factory
                 $this->getEventStatementsSummary($schema);
 
                 // Collect all accounts who have not been closing connections properly.
-                $accountsNotClosedProperly = $this->getConnection()->fetchAll("
+                $accountsNotClosedProperly = $this->getConnection()->fetchAllAssociative("
                     SELECT
                       ess.user,
                       ess.host,
@@ -580,7 +629,7 @@ class Factory
                     );
                 }
 
-                $accountConnections = $this->getConnection()->fetchAll("
+                $accountConnections = $this->getConnection()->fetchAllAssociative("
                     SELECT * FROM performance_schema.accounts WHERE USER IS NOT NULL AND HOST IS NOT NULL
                 ");
                 foreach ($accountConnections as $accountConnection) {
@@ -611,7 +660,7 @@ class Factory
                 }
             }
 
-            foreach ($tables as $name => $table) {
+            foreach ($tables as $table) {
                 if (!empty($columns[$table->getName()])) {
                     $table->setColumns(...array_values($columns[$table->getName()]));
                 }

@@ -58,30 +58,16 @@ class SchemaRedundantIndex
     }
 
     /**
-     * @param Table $table
+     * @param array<Index> $indexes Hash of indexes (key is index name, value is Index object)
      * @param array<string> $schema This is a raw record from sys.schema_redundant_indexes
      * @return SchemaRedundantIndex
      */
-    public static function createFromSys(Table $table, array $schema): SchemaRedundantIndex
+    public static function createFromSys(array $indexes, array $schema): SchemaRedundantIndex
     {
-        $redundantIndex = new Index($schema['redundant_index_name']);
-        $redundantIndex->setTable($table);
-        $redundantIndex->setColumns(
-            ...self::getFilteredColumns(
-                $table,
-                explode(',', $schema['redundant_index_columns'])
-            )
-        );
+        $redundantIndex = $indexes[$schema['redundant_index_name']];
         $redundantIndex->setUnique(!(bool)$schema['redundant_index_non_unique']);
 
-        $dominantIndex = new Index($schema['dominant_index_name']);
-        $dominantIndex->setTable($table);
-        $dominantIndex->setColumns(
-            ...self::getFilteredColumns(
-                $table,
-                explode(',', $schema['dominant_index_columns'])
-            )
-        );
+        $dominantIndex = $indexes[$schema['dominant_index_name']];
         $dominantIndex->setUnique(!(bool)$schema['dominant_index_non_unique']);
 
         return new SchemaRedundantIndex(
