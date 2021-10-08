@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Cadfael\Engine\Entity;
 
 use Cadfael\Engine\Entity;
+use Cadfael\Engine\Entity\Index\SchemaIndexStatistics;
 use Cadfael\Engine\Entity\Index\Statistics;
 
 class Index implements Entity
@@ -12,13 +13,13 @@ class Index implements Entity
     protected string $name;
     protected Table $table;
     /**
-     * @var array<Column>
+     * @var array<Statistics>
      */
-    protected array $columns = [];
+    protected array $statistics = [];
     protected bool $is_unique;
     protected int $size_in_bytes;
 
-    protected Statistics $statistics;
+    protected SchemaIndexStatistics $schema_index_statistics;
 
     public function __construct(string $name)
     {
@@ -67,19 +68,32 @@ class Index implements Entity
     }
 
     /**
-     * @param \Cadfael\Engine\Entity\Index\Statistics $statistics
+     * @param SchemaIndexStatistics $schema_index_statistics
      */
-    public function setStatistics(\Cadfael\Engine\Entity\Index\Statistics $statistics): void
+    public function setSchemaIndexStatistics(SchemaIndexStatistics $schema_index_statistics): void
     {
-        $this->statistics = $statistics;
+        $this->schema_index_statistics = $schema_index_statistics;
     }
 
     /**
-     * @return \Cadfael\Engine\Entity\Index\Statistics
+     * @return SchemaIndexStatistics
      */
-    public function getStatistics(): \Cadfael\Engine\Entity\Index\Statistics
+    public function getSchemaIndexStatistics(): SchemaIndexStatistics
     {
-        return $this->statistics;
+        return $this->schema_index_statistics;
+    }
+
+    /**
+     * @return array<Column>
+     */
+    public function getColumns(): array
+    {
+        return array_map(
+            function (Statistics $statistics) : Column {
+                return $statistics->column;
+            },
+            $this->getStatistics()
+        );
     }
 
     public function setSizeInBytes(int $bytes): void
@@ -92,14 +106,14 @@ class Index implements Entity
         return $this->size_in_bytes;
     }
 
-    public function setColumns(Column ...$columns): void
+    public function setStatistics(Statistics ...$statistics): void
     {
-        $this->columns = $columns;
+        $this->statistics = $statistics;
     }
 
-    public function getColumns(): array
+    public function getStatistics(): array
     {
-        return $this->columns;
+        return $this->statistics;
     }
 
     public function __toString(): string

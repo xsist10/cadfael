@@ -7,6 +7,7 @@ use Cadfael\Engine\Check\Table\RedundantIndexes;
 use Cadfael\Engine\Entity\Table\SchemaRedundantIndex;
 use Cadfael\Engine\Report;
 use Cadfael\Tests\Engine\Check\BaseTest;
+use Cadfael\Tests\Engine\Check\IndexBuilder;
 
 class RedundantIndexesTest extends BaseTest
 {
@@ -24,10 +25,16 @@ class RedundantIndexesTest extends BaseTest
     }
 
     public function providerTableDataForRun() {
+        $builder = new IndexBuilder();
+        $indexes = [
+            "id_some" => $builder->name("id_some")->generate(),
+            "PRIMARY" => $builder->name("PRIMARY")->generate()
+        ];
+
         $tableWithRedundantIndex = $this->createTable();
         $tableWithRedundantIndex->setSchemaRedundantIndexes(
             SchemaRedundantIndex::createFromSys(
-                $tableWithRedundantIndex,
+                $indexes,
                 [
                     "table_schema"                  => "tests",
                     "table_name"                    => "table_with_unused_index",

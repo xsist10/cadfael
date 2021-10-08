@@ -8,6 +8,7 @@ use Cadfael\Engine\Report;
 
 use Cadfael\Tests\Engine\Check\BaseTest;
 use Cadfael\Tests\Engine\Check\ColumnBuilder;
+use Cadfael\Tests\Engine\Check\IndexBuilder;
 
 
 class SaneInnoDbPrimaryKeyTest extends BaseTest
@@ -54,6 +55,8 @@ class SaneInnoDbPrimaryKeyTest extends BaseTest
     {
         $check = new SaneInnoDbPrimaryKey();
 
+        $builder = new IndexBuilder();
+
         $this->assertNull($check->run($this->createTable()), "Ensure table without a PRIMARY KEY is ignored.");
 
         $tableWithNoOtherIndex = $this->createTable();
@@ -63,40 +66,35 @@ class SaneInnoDbPrimaryKeyTest extends BaseTest
         $smallIndexColumn = clone $this->intColumn;
         $tableWithSmallIndex = $this->createTable();
         $tableWithSmallIndex->setColumns(clone $this->simplePrimaryKeyColumn, $smallIndexColumn);
-        $index = new Index('simple');
-        $index->setColumns($smallIndexColumn);
+        $index = $builder->name('simple')->setColumn($smallIndexColumn)->generate();
         $tableWithSmallIndex->setIndexes($index);
         $this->assertEquals(Report::STATUS_OK, $check->run($tableWithSmallIndex)->getStatus(), "Ensure table with a small PRIMARY KEY and a small indexes is fine.");
 
         $largeIndexColumn = clone $this->stringColumn;
         $tableWithLargeIndex = $this->createTable();
         $tableWithLargeIndex->setColumns(clone $this->simplePrimaryKeyColumn, $largeIndexColumn);
-        $index = new Index('large');
-        $index->setColumns($largeIndexColumn);
+        $index = $builder->name('large')->setColumn($largeIndexColumn)->generate();
         $tableWithLargeIndex->setIndexes($index);
         $this->assertEquals(Report::STATUS_OK, $check->run($tableWithLargeIndex)->getStatus(), "Ensure table with a small PRIMARY KEY and a large indexes is fine.");
 
         $smallIndexColumn = clone $this->intColumn;
         $tableWithMediumPrimaryAndSmallIndex = $this->createTable();
         $tableWithMediumPrimaryAndSmallIndex->setColumns(clone $this->mediumPrimaryKeyColumn, $smallIndexColumn);
-        $index = new Index('simple');
-        $index->setColumns($smallIndexColumn);
+        $index = $builder->name('simple')->setColumn($smallIndexColumn)->generate();
         $tableWithMediumPrimaryAndSmallIndex->setIndexes($index);
         $this->assertEquals(Report::STATUS_OK, $check->run($tableWithMediumPrimaryAndSmallIndex)->getStatus(), "Ensure table with a medium PRIMARY KEY and a small indexes is a warning.");
 
         $smallIndexColumn = clone $this->intColumn;
         $tableWithLargePrimaryAndSmallIndex = $this->createTable();
         $tableWithLargePrimaryAndSmallIndex->setColumns(clone $this->complexPrimaryKeyColumn, $smallIndexColumn);
-        $index = new Index('simple');
-        $index->setColumns($smallIndexColumn);
+        $index = $builder->name('simple')->setColumn($smallIndexColumn)->generate();
         $tableWithLargePrimaryAndSmallIndex->setIndexes($index);
         $this->assertEquals(Report::STATUS_WARNING, $check->run($tableWithLargePrimaryAndSmallIndex)->getStatus(), "Ensure table with a large PRIMARY KEY and a small indexes is a warning.");
 
         $largeIndexColumn = clone $this->stringColumn;
         $tableWithLargePrimaryAndLargeIndex = $this->createTable();
         $tableWithLargePrimaryAndLargeIndex->setColumns(clone $this->complexPrimaryKeyColumn, $largeIndexColumn);
-        $index = new Index('large');
-        $index->setColumns($largeIndexColumn);
+        $index = $builder->name('large')->setColumn($largeIndexColumn)->generate();
         $tableWithLargePrimaryAndLargeIndex->setIndexes($index);
         $this->assertEquals(Report::STATUS_WARNING, $check->run($tableWithLargePrimaryAndLargeIndex)->getStatus(), "Ensure table with a large PRIMARY KEY and a large indexes is a warning.");
     }
