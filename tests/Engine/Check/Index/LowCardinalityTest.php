@@ -54,6 +54,7 @@ class LowCardinalityTest extends BaseTest
         $check = new LowCardinality();
 
         $this->highCardinalityIndex->setTable($this->largeTable);
+        $this->highCardinalityIndex->getColumns()[0]->setTable($this->largeTable);
         $this->assertEquals(
             Report::STATUS_OK,
             $check->run($this->highCardinalityIndex)->getStatus(),
@@ -61,6 +62,7 @@ class LowCardinalityTest extends BaseTest
         );
 
         $this->highCardinalityIndex->setTable($this->mediumTable);
+        $this->highCardinalityIndex->getColumns()[0]->setTable($this->mediumTable);
         $this->assertEquals(
             Report::STATUS_OK,
             $check->run($this->highCardinalityIndex)->getStatus(),
@@ -68,6 +70,7 @@ class LowCardinalityTest extends BaseTest
         );
 
         $this->highCardinalityIndex->setTable($this->smallTable);
+        $this->highCardinalityIndex->getColumns()[0]->setTable($this->smallTable);
         $this->assertEquals(
             Report::STATUS_OK,
             $check->run($this->highCardinalityIndex)->getStatus(),
@@ -75,6 +78,7 @@ class LowCardinalityTest extends BaseTest
         );
 
         $this->lowCardinalityIndex->setTable($this->largeTable);
+        $this->lowCardinalityIndex->getColumns()[0]->setTable($this->largeTable);
         $this->assertEquals(
             Report::STATUS_WARNING,
             $check->run($this->lowCardinalityIndex)->getStatus(),
@@ -82,6 +86,7 @@ class LowCardinalityTest extends BaseTest
         );
 
         $this->lowCardinalityIndex->setTable($this->mediumTable);
+        $this->lowCardinalityIndex->getColumns()[0]->setTable($this->mediumTable);
         $this->assertEquals(
             Report::STATUS_CONCERN,
             $check->run($this->lowCardinalityIndex)->getStatus(),
@@ -89,6 +94,7 @@ class LowCardinalityTest extends BaseTest
         );
 
         $this->lowCardinalityIndex->setTable($this->smallTable);
+        $this->lowCardinalityIndex->getColumns()[0]->setTable($this->smallTable);
         $this->assertEquals(
             Report::STATUS_OK,
             $check->run($this->lowCardinalityIndex)->getStatus(),
@@ -96,6 +102,7 @@ class LowCardinalityTest extends BaseTest
         );
 
         $this->uniqueIndex->setTable($this->largeTable);
+        $this->uniqueIndex->getColumns()[0]->setTable($this->largeTable);
         $this->assertEquals(
             Report::STATUS_OK,
             $check->run($this->uniqueIndex)->getStatus(),

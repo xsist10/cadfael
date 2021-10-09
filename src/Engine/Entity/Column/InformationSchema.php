@@ -13,14 +13,14 @@ namespace Cadfael\Engine\Entity\Column;
  */
 class InformationSchema
 {
-    const KEYS = [
+    public const KEYS = [
         '',
         'MUL',
         'PRI',
         'UNI'
     ];
 
-    const DATA_TYPES = [
+    public const DATA_TYPES = [
         'bigint',
         'binary',
         'bit',
