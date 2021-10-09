@@ -61,6 +61,13 @@ class InformationSchema
         'year',
     ];
 
+    public const PREFIX_ALLOWED_DATA_TYPES = [
+        'char',
+        'varchar',
+        'binary',
+        'varbinary'
+    ];
+
     public int $ordinal_position;
     public ?string $default;
     public bool $is_nullable = false;

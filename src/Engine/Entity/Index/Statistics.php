@@ -16,7 +16,7 @@ class Statistics
     public Column $column;
     public int $seq_in_index;
     public ?string $collation;
-    public ?string $cardinality;
+    public ?int $cardinality;
     public ?int $sub_part;
     public ?int $packed;
     public bool $nullable;
@@ -41,7 +41,7 @@ class Statistics
         $statistics->column = $column;
         $statistics->seq_in_index = (int)$payload['SEQ_IN_INDEX'];
         $statistics->collation = $payload['COLLATION'];
-        $statistics->cardinality = $payload['CARDINALITY'];
+        $statistics->cardinality = (int)$payload['CARDINALITY'];
         $statistics->sub_part = (int)$payload['SUB_PART'];
         $statistics->packed = isset($payload['PACKED']) ? (int)$payload['PACKED'] : null;
         $statistics->nullable = $payload['NULLABLE'] == 'YES';
