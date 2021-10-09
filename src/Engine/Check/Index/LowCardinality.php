@@ -29,17 +29,30 @@ class LowCardinality implements Check
         // If the index is also a primary key, we can skip it
         // However we currently don't build those, so no worries :)
 
+        // Get the first column since it's cardinality is the most important
+        $column = $entity->getColumns()[0];
+
+        // Not sure why cardinality can be 0 for now. Until I find out why,
+        // I will just skip the check if I find it with a notice
+        // TODO: Find out why and see if we can make a judgement
+        if ($column->getCardinality() === 0) {
+            return new Report(
+                $this,
+                $entity,
+                Report::STATUS_OK,
+                [ "Cardinality for the first column is 0. Not sure how to handle this yet." ]
+            );
+        }
+
         // Identify the cardinality as a ratio of the size of the table
         // Cardinality in older version of MySQL aren't distinct per column
-        $table_size = $entity->getTable()->information_schema->table_rows;
-        $cardinality = $entity->getColumns()[0]->cardinality;
-
-        $ratio = $table_size / $cardinality;
+        $ratio = $column->getCardinalityRatio();
 
         // The closer to 1 this value is, the more unique it is.
         // The larger it is, the less unique the results are.
         $messages = [
-            "The ratio of cardinality for this index is $ratio."
+            "The ratio of cardinality for this index is $ratio (lower is better).",
+            "It is calculated by dividing the table size by column cardinality."
         ];
         $status = Report::STATUS_OK;
         if ($ratio >= 1_000) {

@@ -9,6 +9,8 @@ use Cadfael\Engine\Check\Account\NotProperlyClosingConnections;
 use Cadfael\Engine\Check\Column\CorrectUtf8Encoding;
 use Cadfael\Engine\Check\Column\ReservedKeywords;
 use Cadfael\Engine\Check\Column\SaneAutoIncrement;
+use Cadfael\Engine\Check\Index\IndexPrefix;
+use Cadfael\Engine\Check\Index\LowCardinality;
 use Cadfael\Engine\Check\Query\Inefficient;
 use Cadfael\Engine\Check\Database\UnsupportedVersion;
 use Cadfael\Engine\Check\Database\RequirePrimaryKey;
@@ -121,7 +123,9 @@ class RunCommand extends AbstractDatabaseCommand
             new CorrectUtf8Encoding(),
             new PreferredEngine(),
             new UnsupportedVersion(),
-            new RequirePrimaryKey()
+            new RequirePrimaryKey(),
+            new LowCardinality(),
+            new IndexPrefix()
         );
 
         $load_performance_schema = $input->getOption('performance_schema');
@@ -191,6 +195,7 @@ class RunCommand extends AbstractDatabaseCommand
             $orchestrator->addEntities(...$schema->getQueries());
             foreach ($tables as $entity) {
                 $orchestrator->addEntities(...$entity->getColumns());
+                $orchestrator->addEntities(...$entity->getIndexes());
             }
 
             $reports = $orchestrator->run();

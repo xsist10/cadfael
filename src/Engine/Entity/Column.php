@@ -87,6 +87,11 @@ class Column implements Entity
             || in_array($this->information_schema->data_type, [ 'bit', 'decimal', 'double', 'float' ]);
     }
 
+    public function isPrefixAllowed(): bool
+    {
+        return in_array($this->information_schema->data_type, InformationSchema::PREFIX_ALLOWED_DATA_TYPES);
+    }
+
     public function getStorageByteSize(): float
     {
         $size = [
@@ -245,5 +250,22 @@ class Column implements Entity
     public function getCardinality(): int
     {
         return $this->cardinality;
+    }
+
+    public function getCardinalityRatio(): float
+    {
+        if (isset($this)) {
+            $information_schema = $this->getTable()->information_schema;
+            if (!$information_schema) {
+                return 0;
+            }
+
+            // Identify the cardinality as a ratio of the size of the table
+            // Cardinality in older version of MySQL aren't distinct per column
+            $table_size = $information_schema->table_rows;
+            return $this->cardinality ? ($table_size / $this->cardinality) : 0;
+        }
+
+        return 0;
     }
 }

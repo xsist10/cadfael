@@ -13,14 +13,14 @@ namespace Cadfael\Engine\Entity\Column;
  */
 class InformationSchema
 {
-    const KEYS = [
+    public const KEYS = [
         '',
         'MUL',
         'PRI',
         'UNI'
     ];
 
-    const DATA_TYPES = [
+    public const DATA_TYPES = [
         'bigint',
         'binary',
         'bit',
@@ -59,6 +59,13 @@ class InformationSchema
         'varbinary',
         'varchar',
         'year',
+    ];
+
+    public const PREFIX_ALLOWED_DATA_TYPES = [
+        'char',
+        'varchar',
+        'binary',
+        'varbinary'
     ];
 
     public int $ordinal_position;
