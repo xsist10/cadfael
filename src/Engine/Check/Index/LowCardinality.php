@@ -71,4 +71,19 @@ class LowCardinality implements Check
             $messages
         );
     }
+
+    public function getReferenceUri(): string
+    {
+        return 'https://github.com/xsist10/cadfael/wiki/Low-Cardinality';
+    }
+
+    public function getName(): string
+    {
+        return 'Low Cardinality Index';
+    }
+
+    public function getDescription(): string
+    {
+        return 'Large tables with indexes that start with low cardinality columns are inefficient.';
+    }
 }

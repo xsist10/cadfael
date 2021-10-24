@@ -96,4 +96,19 @@ class UnsupportedVersion implements Check
             [ "Your version of MySQL (" . $entity->getVersion() . ") is supported until $eol_date." ]
         );
     }
+
+    public function getReferenceUri(): string
+    {
+        return 'https://github.com/xsist10/cadfael/wiki/Unsupported-Version';
+    }
+
+    public function getName(): string
+    {
+        return 'Unsupported MySQL version';
+    }
+
+    public function getDescription(): string
+    {
+        return 'Spot if your MySQL version is out of support and no longer receiving security updates.';
+    }
 }

@@ -73,4 +73,19 @@ class Inefficient implements Check
             $messages
         );
     }
+
+    public function getReferenceUri(): string
+    {
+        return 'https://github.com/xsist10/cadfael/wiki/Inefficient-Query';
+    }
+
+    public function getName(): string
+    {
+        return 'Inefficient Query';
+    }
+
+    public function getDescription(): string
+    {
+        return "Queries run that haven't perform well since the server restarted.";
+    }
 }

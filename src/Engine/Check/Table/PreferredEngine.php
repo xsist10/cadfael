@@ -38,4 +38,19 @@ class PreferredEngine implements Check
             ]
         );
     }
+
+    public function getReferenceUri(): string
+    {
+        return 'https://github.com/xsist10/cadfael/wiki/Preferred-Engine';
+    }
+
+    public function getName(): string
+    {
+        return 'InnoDB as preferred Table Engine';
+    }
+
+    public function getDescription(): string
+    {
+        return "Since MySLQ 5.7 InnoDB has been the preferred engine over MyISAM.";
+    }
 }

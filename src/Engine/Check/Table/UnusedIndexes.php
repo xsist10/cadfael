@@ -48,4 +48,19 @@ class UnusedIndexes implements Check
             $messages
         );
     }
+
+    public function getReferenceUri(): string
+    {
+        return 'https://github.com/xsist10/cadfael/wiki/Unused-Indexes';
+    }
+
+    public function getName(): string
+    {
+        return 'Unused Indexes';
+    }
+
+    public function getDescription(): string
+    {
+        return "An index that, since the server last restarted, hasn't been used.";
+    }
 }

@@ -35,4 +35,19 @@ class NotProperlyClosingConnections implements Check
             ]
         );
     }
+
+    public function getReferenceUri(): string
+    {
+        return 'https://github.com/xsist10/cadfael/wiki/Not-Properly-Closing-Connections';
+    }
+
+    public function getName(): string
+    {
+        return 'Accounts not properly closing connections';
+    }
+
+    public function getDescription(): string
+    {
+        return 'Accounts are not properly closing connections which could lead to connection pool exhaustion.';
+    }
 }

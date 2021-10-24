@@ -56,4 +56,19 @@ class SaneAutoIncrement implements Check
             Report::STATUS_OK
         );
     }
+
+    public function getReferenceUri(): string
+    {
+        return 'https://github.com/xsist10/cadfael/wiki/Sane-Auto-Increment';
+    }
+
+    public function getName(): string
+    {
+        return 'Sane AUTO_INCREMENT definition';
+    }
+
+    public function getDescription(): string
+    {
+        return "AUTO_INCREMENT definitions should follow some basic guidelines.";
+    }
 }

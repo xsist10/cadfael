@@ -46,4 +46,19 @@ class UnusedTable implements Check
             ["Table has not been written to or read from since the last server restart."]
         );
     }
+
+    public function getReferenceUri(): string
+    {
+        return 'https://github.com/xsist10/cadfael/wiki/Unused-Table';
+    }
+
+    public function getName(): string
+    {
+        return 'Unused Table';
+    }
+
+    public function getDescription(): string
+    {
+        return "An table that, since the server last restarted, hasn't been queried.";
+    }
 }
