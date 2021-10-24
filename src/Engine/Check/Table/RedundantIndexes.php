@@ -51,4 +51,19 @@ class RedundantIndexes implements Check
             $messages
         );
     }
+
+    public function getReferenceUri(): string
+    {
+        return 'https://github.com/xsist10/cadfael/wiki/Redundant-Indexes';
+    }
+
+    public function getName(): string
+    {
+        return 'Redundant Indexes';
+    }
+
+    public function getDescription(): string
+    {
+        return 'An index that will never be used by MySQL due to better alternatives.';
+    }
 }

@@ -68,4 +68,19 @@ class IndexPrefix implements Check
             $messages
         );
     }
+
+    public function getReferenceUri(): string
+    {
+        return 'https://github.com/xsist10/cadfael/wiki/Index-Prefix';
+    }
+
+    public function getName(): string
+    {
+        return 'Index Prefix';
+    }
+
+    public function getDescription(): string
+    {
+        return 'High cardinality indexes with text columns should consider using prefixes.';
+    }
 }

@@ -61,4 +61,19 @@ class RequirePrimaryKey implements Check
             [ "You have sql_require_primary_key enabled." ]
         );
     }
+
+    public function getReferenceUri(): string
+    {
+        return 'https://github.com/xsist10/cadfael/wiki/Force-Primary-Key-Requirement';
+    }
+
+    public function getName(): string
+    {
+        return 'Require Primary Key Configuration';
+    }
+
+    public function getDescription(): string
+    {
+        return 'Ensure MySQL is configured to block the creation of tables without PRIMARY KEYs.';
+    }
 }

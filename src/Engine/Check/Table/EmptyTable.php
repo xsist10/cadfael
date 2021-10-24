@@ -78,4 +78,19 @@ class EmptyTable implements Check
             [ "Table contains no records." ]
         );
     }
+
+    public function getReferenceUri(): string
+    {
+        return 'https://github.com/xsist10/cadfael/wiki/Empty-Table';
+    }
+
+    public function getName(): string
+    {
+        return 'Empty table';
+    }
+
+    public function getDescription(): string
+    {
+        return "Empty tables adds unnecessary cognitive load similar to dead code.";
+    }
 }
