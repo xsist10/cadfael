@@ -1,5 +1,26 @@
 {
   "force-autodiscovery": true,
   "main": "bin/cadfael",
+  "blacklist": [
+    "vendor/amphp",
+    "vendor/dnoegel",
+    "vendor/felixfbecker",
+    "vendor/myclabs",
+    "vendor/netresearch",
+    "vendor/nikic",
+    "vendor/openlss",
+    "vendor/phar-io",
+    "vendor/phpdocumentor",
+    "vendor/phpspec",
+    "vendor/phpstan",
+    "vendor/phpunit",
+    "vendor/psalm",
+    "vendor/rector",
+    "vendor/sebastian",
+    "vendor/squizlabs",
+    "vendor/theseer",
+    "vendor/vimeo",
+    "vendor/webmozart"
+  ],
   "output": "cadfael.phar"
 }
