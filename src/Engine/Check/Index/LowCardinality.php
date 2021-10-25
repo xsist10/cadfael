@@ -51,7 +51,7 @@ class LowCardinality implements Check
         // The closer to 1 this value is, the more unique it is.
         // The larger it is, the less unique the results are.
         $messages = [
-            "The ratio of cardinality for this index is $ratio (lower is better).",
+            "The ratio of cardinality for this index is " . number_format($ratio) ." (lower is better).",
             "It is calculated by dividing the table size by column cardinality."
         ];
         $status = Report::STATUS_OK;
