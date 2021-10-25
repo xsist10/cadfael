@@ -26,6 +26,7 @@ use Cadfael\Engine\Factory;
 use Cadfael\Engine\Orchestrator;
 use Cadfael\Engine\Report;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -40,9 +41,16 @@ class RunCommand extends AbstractDatabaseCommand
     // the name of the command (the part after "bin/console")
     protected static $defaultName = 'run';
 
+    protected const TEST_BLOCK_WIDTH = 60;
+
     protected int $worstReportStatus = Report::STATUS_OK;
 
-    const STATUS_COLOUR = [
+    /**
+     * @var array<Report>
+     */
+    public array $reports = [];
+
+    private const STATUS_COLOUR = [
         1 => '<fg=green>',
         2 => '<fg=blue>',
         3 => '<fg=cyan>',
@@ -53,6 +61,18 @@ class RunCommand extends AbstractDatabaseCommand
     protected function renderStatus(Report $report): string
     {
         return self::STATUS_COLOUR[$report->getStatus()]. $report->getStatusLabel() . "</>";
+    }
+
+    protected function renderStatusLegend(Report $report): string
+    {
+        $legend = [
+            Report::STATUS_OK       => '.',
+            Report::STATUS_INFO     => 'i',
+            Report::STATUS_CONCERN  => 'o',
+            Report::STATUS_WARNING  => 'w',
+            Report::STATUS_CRITICAL => 'c',
+        ];
+        return self::STATUS_COLOUR[$report->getStatus()]. $legend[$report->getStatus()] . "</>";
     }
 
     protected function configure(): void
@@ -74,18 +94,67 @@ class RunCommand extends AbstractDatabaseCommand
         ;
     }
 
-    protected function addReportToTable(?Report $report, Table $table): void
+    private function returnUptimeInBestUnits(int $uptime_in_seconds): string
     {
-        if (!is_null($report) && $report->getStatus() != Report::STATUS_OK) {
-            if ($report->getStatus() > $this->worstReportStatus) {
-                $this->worstReportStatus = $report->getStatus();
+        if ($uptime_in_seconds < 60) {
+            return $uptime_in_seconds . ' secs';
+        } elseif ($uptime_in_seconds < 3600) {
+            return round($uptime_in_seconds / 60) . ' mins';
+        } elseif ($uptime_in_seconds < 216000) {
+            return round($uptime_in_seconds / 3600, 1) . ' hours';
+        } else {
+            return round($uptime_in_seconds / 216000, 1) . ' days';
+        }
+    }
+
+    public function addReport(Report $report): void
+    {
+        $this->reports[] = $report;
+    }
+
+    public function renderReports(OutputInterface $output): void
+    {
+        $issues = 0;
+        $grouped = [];
+        foreach ($this->reports as $report) {
+            if ($report->getStatus() !== Report::STATUS_OK) {
+                $issues++;
+                $grouped[$report->getCheckLabel()][] = $report;
             }
-            $table->addRow([
-                $report->getCheckLabel(),
-                $report->getEntity(),
-                $this->renderStatus($report),
-                implode("\n", $report->getMessages())
-            ]);
+        }
+
+        $report_count = count($this->reports);
+        $output->writeln('');
+        $output->writeln('<info>Checks passed:</info> ' . ($report_count - $issues) . "/" . $report_count);
+        $output->writeln('');
+
+        ksort($grouped);
+
+        foreach ($grouped as $check_name => $reports) {
+            $table = new Table($output);
+            $table->setHeaders(['Entity', 'Status', 'Message']);
+
+            $check = $reports[0]->getCheck();
+
+            $output->writeln('<title>> ' . $check->getName() . '</title>');
+            $output->writeln('');
+            if ($check->getDescription()) {
+                $output->writeln('<info>Description:</info> ' . $check->getDescription());
+            }
+            if ($check->getReferenceUri()) {
+                $output->writeln('<info>Reference:</info> <href=' . $check->getReferenceUri() . '>'
+                    . $check->getReferenceUri() . '</>');
+            }
+            $output->writeln('');
+            foreach ($reports as $report) {
+                $table->addRow([
+                    $report->getEntity(),
+                    $this->renderStatus($report),
+                    implode("\n", $report->getMessages())
+                ]);
+            }
+            $table->render();
+            $output->writeln('');
         }
     }
 
@@ -97,6 +166,8 @@ class RunCommand extends AbstractDatabaseCommand
      * @throws MissingPermissions
      * @throws DBALException
      * @throws MissingInformationSchema
+     * @throws \Doctrine\DBAL\Driver\Exception
+     * @throws \Exception
      */
     protected function runChecksAgainstSchema(
         InputInterface $input,
@@ -109,9 +180,23 @@ class RunCommand extends AbstractDatabaseCommand
         $database = $factory->buildDatabase($factory->getConnection(), $schemaNames);
         $uptime = (int)$database->getStatus()['Uptime'];
         $output->writeln('<info>MySQL Version:</info> ' . $database->getVersion());
-        $output->writeln('<info>Uptime:</info> ' . round($uptime / 60) . ' min');
+        $output->writeln('<info>Uptime:</info> ' . $this->returnUptimeInBestUnits($uptime));
 
         $orchestrator = new Orchestrator();
+
+        // Add callbacks to handle the rendering
+        $command = $this;
+        $orchestrator->addCallbacks(function (Report $report) use ($command, $output) {
+
+            $output->write($command->renderStatusLegend($report));
+            $command->addReport($report);
+            if (count($command->reports) % $command::TEST_BLOCK_WIDTH === 0) {
+                $output->writeln('');
+            }
+        });
+
+        // Setup the checks we want to perform
+        // TODO: Make this configurable so 3rd party checks can be added or only specific subsets are run
         $orchestrator->addChecks(
             new MustHavePrimaryKey(),
             new SaneInnoDbPrimaryKey(),
@@ -169,14 +254,6 @@ class RunCommand extends AbstractDatabaseCommand
         }
 
         foreach ($database->getSchemas() as $schema) {
-            $table = new Table($output);
-            $table->setHeaders(['Check', 'Entity', 'Status', 'Message']);
-            $table->setColumnMaxWidth(0, 22);
-            $table->setColumnMaxWidth(1, 40);
-            $table->setColumnMaxWidth(2, 8);
-            $table->setColumnMaxWidth(3, 82);
-
-
             $tables = $schema->getTables();
             $output->writeln('');
             $output->writeln("Attempting to scan schema <info>" . $schema->getName() . "</info>");
@@ -198,12 +275,11 @@ class RunCommand extends AbstractDatabaseCommand
                 $orchestrator->addEntities(...$entity->getIndexes());
             }
 
-            $reports = $orchestrator->run();
-            foreach ($reports as $report) {
-                $this->addReportToTable($report, $table);
-            }
+            $orchestrator->run();
 
-            $table->render();
+            $output->writeln('');
+
+            $this->renderReports($output);
             $output->writeln('');
         }
     }
@@ -229,12 +305,10 @@ class RunCommand extends AbstractDatabaseCommand
             $factory = $this->getFactory($input, $schemas[0], $password);
             $this->runChecksAgainstSchema($input, $schemas, $factory, $output);
             $factory->getConnection()->close();
-        } catch (DBALException $e) {
+        } catch (DBALException | MissingPermissions $e) {
             $output->writeln('<error>' . $e->getMessage() . '</error>');
         } catch (MissingInformationSchema $e) {
             $output->writeln('<error>Unable to retrieve information for ' . $schemas[0] . '</error>');
-        } catch (MissingPermissions $e) {
-            $output->writeln('<error>' . $e->getMessage() . '</error>');
         }
 
         // If we get anything serious, our script should fail
@@ -248,6 +322,9 @@ class RunCommand extends AbstractDatabaseCommand
     {
         $output->writeln('Cadfael CLI Tool');
         $output->writeln('');
+
+        $outputStyle = new OutputFormatterStyle('white', null, ['bold']);
+        $output->getFormatter()->setStyle('title', $outputStyle);
 
         $this->displayDatabaseDetails($input, $output);
         $password = $this->getDatabasePassword($input, $output);

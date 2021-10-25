@@ -33,8 +33,7 @@ class PreferredEngine implements Check
             Report::STATUS_CONCERN,
             [
                 "This table uses the MyISAM engine instead of the InnoDB engine.",
-                "MyISAM is not ACID compliant, does not support row-level locking, foreign keys or transactions.",
-                "InnoDB has been the default for MySQL since 5.5."
+                "MyISAM is not ACID compliant, does not support row-level locking, foreign keys or transactions."
             ]
         );
     }

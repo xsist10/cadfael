@@ -67,8 +67,7 @@ class UnsupportedVersion implements Check
                 [
                     "Your version of MySQL (" . $entity->getVersion() . ") is no longer supported.",
                     "This means it is no longer receiving security patches.",
-                    "Please upgrade to a supported version ASAP.",
-                    "Reference: https://en.wikipedia.org/wiki/MySQL#Release_history"
+                    "Please upgrade to a supported version ASAP."
                 ]
             );
         }
@@ -83,8 +82,7 @@ class UnsupportedVersion implements Check
                 [
                     "Your version of MySQL (" . $entity->getVersion() . ") will end support on $eol_date.",
                     "This means it will no longer receiving security patches beyond that date.",
-                    "Ensure you have planned how to remove blockers to upgrading to a newer version.",
-                    "Reference: https://en.wikipedia.org/wiki/MySQL#Release_history"
+                    "Ensure you have planned how to remove blockers to upgrading to a newer version."
                 ]
             );
         }

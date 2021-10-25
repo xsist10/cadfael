@@ -42,7 +42,6 @@ class RedundantIndexes implements Check
                 );
             }
         }
-        $messages[] = "Reference: https://dev.mysql.com/doc/refman/8.0/en/sys-schema-redundant-indexes.html";
 
         return new Report(
             $this,

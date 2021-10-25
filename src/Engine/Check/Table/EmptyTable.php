@@ -91,6 +91,6 @@ class EmptyTable implements Check
 
     public function getDescription(): string
     {
-        return "Empty tables adds unnecessary cognitive load similar to dead code.";
+        return "Empty tables add unnecessary cognitive load similar to dead code.";
     }
 }

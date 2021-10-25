@@ -32,7 +32,7 @@ class SaneAutoIncrement implements Check
         if (!$entity->isPartOfPrimaryKey()) {
             $messages[] = 'This field should be set as the primary key.';
         } else {
-            // If should be the ONLY part of the primary key
+            // It should be the ONLY part of the primary key
             $primary_columns = $entity->getTable()->getPrimaryKeys();
 
             if (count($primary_columns) > 1) {

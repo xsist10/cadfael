@@ -30,15 +30,11 @@ class CorrectUtf8Encoding implements Check
             );
         }
 
-        $reference = "https://www.eversql.com/mysql-utf8-vs-utf8mb4-whats-the-difference-between-utf8-and-utf8mb4/";
         return new Report(
             $this,
             $entity,
             Report::STATUS_CONCERN,
-            [
-                "Character set should be utf8mb4 not utf8.",
-                "Reference: $reference"
-            ]
+            [ "Character set should be utf8mb4 not utf8." ]
         );
     }
 
