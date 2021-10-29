@@ -17,6 +17,15 @@ class IndexPrefix implements Check
 
     public function run($entity): ?Report
     {
+        // We can ignore unique indexes since they will always have a cardinality of 1
+        if ($entity->isUnique()) {
+            return new Report(
+                $this,
+                $entity,
+                Report::STATUS_OK
+            );
+        }
+
         // Get all the parts of the index that are a string type
         $string_parts = array_filter($entity->getStatistics(), function ($statistics) {
             return $statistics->column->isPrefixAllowed();
