@@ -23,6 +23,7 @@ use Cadfael\Engine\Entity\Tablespace;
 use Cadfael\Engine\Entity\Index\SchemaIndexStatistics;
 use Cadfael\Engine\Exception\MissingPermissions;
 use Cadfael\Engine\Exception\MissingInformationSchema;
+use Cadfael\Engine\Exception\NonSupportedVersion;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\InvalidFieldNameException;
 use Psr\Log\LoggerAwareTrait;
@@ -49,6 +50,9 @@ class Factory
      * @var array<bool>
      */
     private $table_lookup = [];
+
+    // We don't want to support versions of MySQL before 5.6.
+    private const MIN_SUPPORTED_VERSION = '5.6.0';
 
     // TODO: Move permission related functionality to a subclass
 
@@ -274,6 +278,22 @@ class Factory
     }
 
     /**
+     * @param Database $database
+     * @throws NonSupportedVersion
+     */
+    protected function checkMySqlVersion(Database $database): void
+    {
+        $message = '%s is not a supported version of MySQL. Please upgrade to %s or higher.';
+        // Get the database version
+        $version = $database->getVersion();
+        // Check if the version is supported
+        if (version_compare($version, self::MIN_SUPPORTED_VERSION, '<')) {
+            $this->logger->warning(sprintf($message, $version, self::MIN_SUPPORTED_VERSION));
+            throw new NonSupportedVersion(sprintf($message, $version, self::MIN_SUPPORTED_VERSION));
+        }
+    }
+
+    /**
      * @param Connection $connection
      * @return array<string>
      * @throws \Doctrine\DBAL\Exception
@@ -425,6 +445,8 @@ class Factory
         $database->setStatus($this->getStatus($connection));
         $database->setAccounts(...$this->getAccounts($connection));
         $database->setTablespaces(...$this->getTablespaces($connection));
+
+        $this->checkMySqlVersion($database);
 
         $schemas = [];
         foreach ($schema_names as $schema_name) {
