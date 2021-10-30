@@ -283,13 +283,13 @@ class Factory
      */
     protected function checkMySqlVersion(Database $database): void
     {
-        $message = '%s is not a supported version of MySQL.';
+        $message = '%s is not a supported version of MySQL. Please upgrade to %s or higher.';
         // Get the database version
         $version = $database->getVersion();
         // Check if the version is supported
         if (version_compare($version, self::MIN_SUPPORTED_VERSION, '<')) {
-            $this->logger->warning(sprintf($message, $version));
-            throw new NonSupportedVersion(sprintf($message, $version));
+            $this->logger->warning(sprintf($message, $version, self::MIN_SUPPORTED_VERSION));
+            throw new NonSupportedVersion(sprintf($message, $version, self::MIN_SUPPORTED_VERSION));
         }
     }
 
