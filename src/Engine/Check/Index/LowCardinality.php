@@ -39,7 +39,7 @@ class LowCardinality implements Check
             return new Report(
                 $this,
                 $entity,
-                Report::STATUS_OK,
+                Report::STATUS_INFO,
                 [ "Cardinality for the first column is 0. Not sure how to handle this yet." ]
             );
         }
