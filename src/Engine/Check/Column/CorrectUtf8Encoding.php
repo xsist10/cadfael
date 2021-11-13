@@ -38,16 +38,25 @@ class CorrectUtf8Encoding implements Check
         );
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getReferenceUri(): string
     {
         return 'https://github.com/xsist10/cadfael/wiki/Correct-UTF-8-Encoding';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getName(): string
     {
         return 'Correct UTF-8 Character Set Encoding';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getDescription(): string
     {
         return "UTF-8 character set should use utf8mb4 to avoid lossy storage of text.";

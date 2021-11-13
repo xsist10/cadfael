@@ -35,16 +35,25 @@ class NotConnecting implements Check
         );
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getReferenceUri(): string
     {
         return 'https://github.com/xsist10/cadfael/wiki/Not-Connecting';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getName(): string
     {
         return 'Accounts not being used';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getDescription(): string
     {
         return "Accounts that haven't made a connection since the server restarted.";

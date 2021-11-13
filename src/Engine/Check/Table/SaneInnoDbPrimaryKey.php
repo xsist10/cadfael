@@ -74,16 +74,25 @@ class SaneInnoDbPrimaryKey implements Check
         );
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getReferenceUri(): string
     {
         return 'https://github.com/xsist10/cadfael/wiki/Sane-InnoDb-Primary-Key';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getName(): string
     {
         return 'Sane InnoDB PRIMARY KEY';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getDescription(): string
     {
         return "Due to how InnoDB uses PRIMARY KEYS, certain types or combinations should be avoided.";

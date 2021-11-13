@@ -33,6 +33,7 @@ interface Check
     /**
      * Provide a short and meaningful name for the check (64 characters is a good maximum length).
      * This will be displayed on the output to the user.
+     *
      * @return string
      */
     public function getName(): string;

@@ -95,16 +95,25 @@ class UnsupportedVersion implements Check
         );
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getReferenceUri(): string
     {
         return 'https://github.com/xsist10/cadfael/wiki/Unsupported-Version';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getName(): string
     {
         return 'Unsupported MySQL version';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getDescription(): string
     {
         return 'Spot if your MySQL version is out of support and no longer receiving security updates.';

@@ -60,16 +60,25 @@ class RequirePrimaryKey implements Check
         );
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getReferenceUri(): string
     {
         return 'https://github.com/xsist10/cadfael/wiki/Force-Primary-Key-Requirement';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getName(): string
     {
         return 'Require Primary Key Configuration';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getDescription(): string
     {
         return 'Ensure MySQL is configured to block the creation of tables without PRIMARY KEYs.';

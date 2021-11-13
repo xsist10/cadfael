@@ -76,16 +76,25 @@ class AutoIncrementCapacity implements Check
         );
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getReferenceUri(): string
     {
         return '';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getName(): string
     {
         return 'AUTO_INCREMENT Capacity';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getDescription(): string
     {
         return "This spots the risk of capacity exhaustion of an AUTO_INCREMENT field.";

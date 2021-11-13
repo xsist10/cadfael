@@ -742,16 +742,25 @@ class ReservedKeywords implements Check
         );
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getReferenceUri(): string
     {
         return 'https://dev.mysql.com/doc/refman/8.0/en/keywords.html';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getName(): string
     {
         return 'Reserved Keywords';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getDescription(): string
     {
         return 'Identifies all columns whose names match reserved keywords.';
