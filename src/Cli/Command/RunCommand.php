@@ -201,11 +201,16 @@ class RunCommand extends AbstractDatabaseCommand
             }
 
             $reports = $orchestrator->run();
-            foreach ($reports as $report) {
-                $this->addReportToTable($report, $table);
+            if (count($reports)) {
+                foreach ($reports as $report) {
+                    $this->addReportToTable($report, $table);
+                }
+
+                $table->render();
+            } else {
+                $output->writeln("No reports generated.");
             }
 
-            $table->render();
             $output->writeln('');
         }
     }

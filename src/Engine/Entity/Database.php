@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Cadfael\Engine\Entity;
 
 use Cadfael\Engine\Entity;
+use Cadfael\Engine\Exception\MySQL\UnknownVersion;
 use Doctrine\DBAL\Connection;
 
 class Database implements Entity
@@ -238,8 +239,14 @@ class Database implements Entity
         $this->schemas = $schemas;
     }
 
+    /**
+     * @throws UnknownVersion
+     */
     public function getVersion(): string
     {
+        if (!$this->variables['version']) {
+            throw new UnknownVersion();
+        }
         return $this->variables['version'];
     }
 

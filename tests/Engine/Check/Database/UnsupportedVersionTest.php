@@ -11,7 +11,7 @@ class UnsupportedVersionTest extends BaseTest
 {
     private array $databases;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         $this->databases = [
             '1.1' => $this->createDatabase([ 'version' => '1.1.0' ]),
