@@ -9,6 +9,7 @@ use Cadfael\Engine\Check\Account\NotProperlyClosingConnections;
 use Cadfael\Engine\Check\Column\CorrectUtf8Encoding;
 use Cadfael\Engine\Check\Column\ReservedKeywords;
 use Cadfael\Engine\Check\Column\SaneAutoIncrement;
+use Cadfael\Engine\Check\Column\UUIDStorage;
 use Cadfael\Engine\Check\Index\IndexPrefix;
 use Cadfael\Engine\Check\Index\LowCardinality;
 use Cadfael\Engine\Check\Query\Inefficient;
@@ -125,7 +126,8 @@ class RunCommand extends AbstractDatabaseCommand
             new UnsupportedVersion(),
             new RequirePrimaryKey(),
             new LowCardinality(),
-            new IndexPrefix()
+            new IndexPrefix(),
+            new UUIDStorage()
         );
 
         $load_performance_schema = $input->getOption('performance_schema');
