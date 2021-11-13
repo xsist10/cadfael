@@ -77,12 +77,22 @@ class ColumnBuilder
         return $this;
     }
 
+    private function lengthType(string $type, int $length): ColumnBuilder
+    {
+        $this->override["DATA_TYPE"] = $type;
+        $this->override["CHARACTER_MAXIMUM_LENGTH"] = $length;
+        $this->override["COLUMN_TYPE"] = "$type($length)";
+        return $this;
+    }
+
+    public function binary(int $length = 10): ColumnBuilder
+    {
+        return $this->lengthType('binary', $length);
+    }
+
     public function varchar(int $length = 10): ColumnBuilder
     {
-        $this->override["DATA_TYPE"] = "varchar";
-        $this->override["CHARACTER_MAXIMUM_LENGTH"] = $length;
-        $this->override["COLUMN_TYPE"] = "varchar($length)";
-        return $this;
+        return $this->lengthType('varchar', $length);
     }
 
     public function generated(): ColumnBuilder
