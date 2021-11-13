@@ -51,8 +51,8 @@ class Factory
      */
     private $table_lookup = [];
 
-    // We don't want to support versions of MySQL before 5.6.
-    private const MIN_SUPPORTED_VERSION = '5.6.0';
+    // We don't want to support versions of MySQL before 5.5.
+    private const MIN_SUPPORTED_VERSION = '5.5.0';
 
     // TODO: Move permission related functionality to a subclass
 
