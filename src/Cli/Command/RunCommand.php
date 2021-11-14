@@ -115,6 +115,13 @@ class RunCommand extends AbstractDatabaseCommand
 
     public function renderReports(OutputInterface $output): void
     {
+        $report_count = count($this->reports);
+        // Bail out early if we have no reports to report on
+        if (!$report_count) {
+            $output->writeln("No reports generated.");
+            return;
+        }
+
         $issues = 0;
         $grouped = [];
         foreach ($this->reports as $report) {
@@ -124,7 +131,6 @@ class RunCommand extends AbstractDatabaseCommand
             }
         }
 
-        $report_count = count($this->reports);
         $output->writeln('');
         $output->writeln('<info>Checks passed:</info> ' . ($report_count - $issues) . "/" . $report_count);
         $output->writeln('');
