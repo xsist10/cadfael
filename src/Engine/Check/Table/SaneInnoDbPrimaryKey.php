@@ -47,7 +47,7 @@ class SaneInnoDbPrimaryKey implements Check
             );
         }
 
-        // If these is, lets work out if it's more space efficient to create a UNIQUE
+        // If there is, lets work out if it's more space efficient to create a UNIQUE
         // KEY of the PRIMARY KEY and add an AUTO_INCREMENT field (4 bytes) instead.
         $current_cost = $primary_key_size + ($index_count * $primary_key_size);
         $unique_key_cost = 4 + ($primary_key_size + 4) + ($index_count * 4);

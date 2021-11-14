@@ -18,6 +18,7 @@ class RequirePrimaryKeyTest extends BaseTest
             '8.0_NOT_SET' => $this->createDatabase([ 'version' => '8.0.13', 'sql_require_primary_key' => null]),
             '8.0_OFF' => $this->createDatabase([ 'version' => '8.0.13', 'sql_require_primary_key' => 'OFF' ]),
             '8.0_ON' => $this->createDatabase([ 'version' => '8.0.13', 'sql_require_primary_key' => 'ON' ]),
+            'unknown' => $this->createDatabase([ 'version' => null ])
         ];
     }
 
@@ -38,27 +39,27 @@ class RequirePrimaryKeyTest extends BaseTest
         $check = new RequirePrimaryKey();
 
         $this->assertEquals(
-          Report::STATUS_OK,
-          $check->run($this->databases['5.7'])->getStatus(),
-	        "Ensure we return " . Report::STATUS_OK . " for MySQL versions <8."
-	       );
+            Report::STATUS_OK,
+            $check->run($this->databases['5.7'])->getStatus(),
+            "Ensure we return " . Report::STATUS_OK . " for MySQL versions <8."
+        );
 
         $this->assertEquals(
-          Report::STATUS_WARNING,
-          $check->run($this->databases['8.0_NOT_SET'])->getStatus(),
-	        "Ensure we return " . Report::STATUS_WARNING . " for MySQL versions >=8 with sql_require_primary_key not set."
-	      );
+            Report::STATUS_WARNING,
+            $check->run($this->databases['8.0_NOT_SET'])->getStatus(),
+            "Ensure we return " . Report::STATUS_WARNING . " for MySQL versions >=8 with sql_require_primary_key not set."
+        );
 
         $this->assertEquals(
-          Report::STATUS_WARNING,
-          $check->run($this->databases['8.0_OFF'])->getStatus(),
-	        "Ensure we return " . Report::STATUS_WARNING . " for MySQL versions >=8 with sql_require_primary_key set to OFF."
-	      );
+            Report::STATUS_WARNING,
+            $check->run($this->databases['8.0_OFF'])->getStatus(),
+            "Ensure we return " . Report::STATUS_WARNING . " for MySQL versions >=8 with sql_require_primary_key set to OFF."
+        );
 
         $this->assertEquals(
-          Report::STATUS_OK,
-          $check->run($this->databases['8.0_ON'])->getStatus(),
-	        "Ensure we return " . Report::STATUS_OK . " for MySQL versions >=8 with sql_require_primary_key set to ON."
-	      );
+            Report::STATUS_CONCERN,
+            $check->run($this->databases['unknown'])->getStatus(),
+            "Ensure we return " . Report::STATUS_CONCERN . " for unknown MySQL versions."
+        );
     }
 }

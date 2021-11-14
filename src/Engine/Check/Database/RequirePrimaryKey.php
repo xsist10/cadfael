@@ -39,7 +39,7 @@ class RequirePrimaryKey implements Check
         $variables = $entity->getVariables();
         $opt_name = 'sql_require_primary_key';
         $require_pk_disabled = (!isset($variables[$opt_name]) || $variables[$opt_name] !== 'ON');
-        if (version_compare($entity->getVersion(), '8.0.13', '>=') && $require_pk_disabled) {
+        if (version_compare($version, '8.0.13', '>=') && $require_pk_disabled) {
             return new Report(
                 $this,
                 $entity,

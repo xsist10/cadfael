@@ -87,6 +87,17 @@ class Column implements Entity
             || in_array($this->information_schema->data_type, [ 'bit', 'decimal', 'double', 'float' ]);
     }
 
+    public function isString(): bool
+    {
+        $string_types = [ 'char', 'longtext', 'mediumtext', 'text', 'tinytext', 'varchar' ];
+        return in_array($this->information_schema->data_type, $string_types);
+    }
+
+    public function isBinary(): bool
+    {
+        return in_array($this->information_schema->data_type, ['binary', 'varbinary']);
+    }
+
     public function isPrefixAllowed(): bool
     {
         return in_array($this->information_schema->data_type, InformationSchema::PREFIX_ALLOWED_DATA_TYPES);
