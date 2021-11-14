@@ -18,17 +18,19 @@ class LowCardinalityTest extends BaseTest
     protected Index $highCardinalityIndex;
     protected Index $lowCardinalityIndex;
     protected Index $uniqueIndex;
-    protected Index $brokenCardinalityIndex;
+    protected Index $emptyCardinalityIndex;
 
     protected Table $largeTable;
     protected Table $mediumTable;
     protected Table $smallTable;
+    protected Table $emptyTable;
 
     public function setUp(): void
     {
         $this->largeTable = $this->createTable([ 'TABLE_ROWS' => 500_000 ]);
         $this->mediumTable = $this->createTable([ 'TABLE_ROWS' => 10_000 ]);
         $this->smallTable = $this->createTable([ 'TABLE_ROWS' => 50 ]);
+        $this->emptyTable = $this->createTable([ 'TABLE_ROWS' => 0 ]);
 
         $builder = new IndexBuilder();
 
@@ -41,10 +43,10 @@ class LowCardinalityTest extends BaseTest
         $this->uniqueIndex = $builder->name('unique_index')->isUnique(true)->generate();
         $this->uniqueIndex->getColumns()[0]->setCardinality(100_000);
 
-        $this->brokenCardinalityIndex = $builder->name('broken_cardinality')->generate();
-        $this->brokenCardinalityIndex->getColumns()[0]->setCardinality(0);
-        $this->brokenCardinalityIndex->setTable($this->smallTable);
-        $this->brokenCardinalityIndex->getColumns()[0]->setTable($this->smallTable);
+        $this->emptyCardinalityIndex = $builder->name('empty_cardinality')->generate();
+        $this->emptyCardinalityIndex->getColumns()[0]->setCardinality(0);
+        $this->emptyCardinalityIndex->setTable($this->emptyTable);
+        $this->emptyCardinalityIndex->getColumns()[0]->setTable($this->emptyTable);
     }
 
     public function testSupports()
@@ -53,7 +55,7 @@ class LowCardinalityTest extends BaseTest
         $this->assertTrue($check->supports($this->highCardinalityIndex), "Ensure that the supports for a column returns true.");
         $this->assertTrue($check->supports($this->lowCardinalityIndex), "Ensure that the supports for a column returns true.");
         $this->assertTrue($check->supports($this->uniqueIndex), "Ensure that the supports for a column returns true.");
-        $this->assertTrue($check->supports($this->brokenCardinalityIndex), "Ensure that the supports for a column returns true.");
+        $this->assertTrue($check->supports($this->emptyCardinalityIndex), "Ensure that the supports for a column returns true.");
     }
 
     public function testRun()
@@ -117,9 +119,9 @@ class LowCardinalityTest extends BaseTest
         );
 
         $this->assertEquals(
-            Report::STATUS_INFO,
-            $check->run($this->brokenCardinalityIndex)->getStatus(),
-            "Ensure that an INFO report is returned for $this->brokenCardinalityIndex with any table."
+            Report::STATUS_OK,
+            $check->run($this->emptyCardinalityIndex)->getStatus(),
+            "Ensure that an OK report is returned for $this->emptyCardinalityIndex with any table."
         );
 
     }

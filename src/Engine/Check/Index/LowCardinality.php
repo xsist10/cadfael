@@ -18,7 +18,8 @@ class LowCardinality implements Check
     public function run($entity): ?Report
     {
         // If the index is unique, then the cardinality is as high as it can be
-        if ($entity->isUnique()) {
+        // Or if the table is empty, then it won't have any cardinality
+        if ($entity->isUnique() || !$entity->getTable()->information_schema->table_rows) {
             return new Report(
                 $this,
                 $entity,
@@ -31,18 +32,6 @@ class LowCardinality implements Check
 
         // Get the first column since it's cardinality is the most important
         $column = $entity->getColumns()[0];
-
-        // Not sure why cardinality can be 0 for now. Until I find out why,
-        // I will just skip the check if I find it with a notice
-        // TODO: Find out why and see if we can make a judgement
-        if ($column->getCardinality() === 0) {
-            return new Report(
-                $this,
-                $entity,
-                Report::STATUS_INFO,
-                [ "Cardinality for the first column is 0. Not sure how to handle this yet." ]
-            );
-        }
 
         // Identify the cardinality as a ratio of the size of the table
         // Cardinality in older version of MySQL aren't distinct per column
