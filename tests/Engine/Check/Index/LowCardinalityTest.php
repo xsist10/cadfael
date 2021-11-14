@@ -18,6 +18,7 @@ class LowCardinalityTest extends BaseTest
     protected Index $highCardinalityIndex;
     protected Index $lowCardinalityIndex;
     protected Index $uniqueIndex;
+    protected Index $brokenCardinalityIndex;
 
     protected Table $largeTable;
     protected Table $mediumTable;
@@ -39,6 +40,11 @@ class LowCardinalityTest extends BaseTest
 
         $this->uniqueIndex = $builder->name('unique_index')->isUnique(true)->generate();
         $this->uniqueIndex->getColumns()[0]->setCardinality(100_000);
+
+        $this->brokenCardinalityIndex = $builder->name('broken_cardinality')->generate();
+        $this->brokenCardinalityIndex->getColumns()[0]->setCardinality(0);
+        $this->brokenCardinalityIndex->setTable($this->smallTable);
+        $this->brokenCardinalityIndex->getColumns()[0]->setTable($this->smallTable);
     }
 
     public function testSupports()
@@ -47,6 +53,7 @@ class LowCardinalityTest extends BaseTest
         $this->assertTrue($check->supports($this->highCardinalityIndex), "Ensure that the supports for a column returns true.");
         $this->assertTrue($check->supports($this->lowCardinalityIndex), "Ensure that the supports for a column returns true.");
         $this->assertTrue($check->supports($this->uniqueIndex), "Ensure that the supports for a column returns true.");
+        $this->assertTrue($check->supports($this->brokenCardinalityIndex), "Ensure that the supports for a column returns true.");
     }
 
     public function testRun()
@@ -108,5 +115,12 @@ class LowCardinalityTest extends BaseTest
             $check->run($this->uniqueIndex)->getStatus(),
             "Ensure that an OK report is returned for $this->uniqueIndex with any table."
         );
+
+        $this->assertEquals(
+            Report::STATUS_INFO,
+            $check->run($this->brokenCardinalityIndex)->getStatus(),
+            "Ensure that an INFO report is returned for $this->brokenCardinalityIndex with any table."
+        );
+
     }
 }
