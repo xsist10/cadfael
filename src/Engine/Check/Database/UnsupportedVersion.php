@@ -32,7 +32,7 @@ class UnsupportedVersion implements Check
             }
         }
 
-        throw new UnknownVersion("$active_version is not a valid MySQL version.");
+        throw new UnknownVersion("$active_version is not a supported version of MySQL.");
     }
 
     public function supports($entity): bool
