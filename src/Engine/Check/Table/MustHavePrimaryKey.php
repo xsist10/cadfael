@@ -18,10 +18,7 @@ class MustHavePrimaryKey implements Check
 
     public function run($entity): ?Report
     {
-        $messages = [ "Table must have a PRIMARY KEY" ];
-        if ($entity->information_schema->engine === 'InnoDB') {
-            $messages[] = "MySQL 8 replication will break if you have InnoDB tables without a PRIMARY KEY.";
-        }
+        $messages = [ "Table SHOULD have a PRIMARY KEY" ];
         return new Report(
             $this,
             $entity,
