@@ -79,18 +79,27 @@ class EmptyTable implements Check
         );
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getReferenceUri(): string
     {
         return 'https://github.com/xsist10/cadfael/wiki/Empty-Table';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getName(): string
     {
         return 'Empty table';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getDescription(): string
     {
-        return "Empty tables adds unnecessary cognitive load similar to dead code.";
+        return "Empty tables add unnecessary cognitive load similar to dead code.";
     }
 }

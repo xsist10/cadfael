@@ -45,11 +45,9 @@ class RequirePrimaryKey implements Check
                 $entity,
                 Report::STATUS_WARNING,
                 [
-                   "You are running MySQL 8.0+ (MySQL " . $entity->getVersion() . ")"
+                   "You are running MySQL 8.0.13+ (MySQL " . $entity->getVersion() . ")"
                    .  " without sql_require_primary_key enabled.",
-                    "Every table should have a primary key, so it's better to enforce.",
-                    "Reference 1: https://dev.mysql.com/doc/mysqld-version-reference/en/options-variables.html",
-                    "Reference 2: https://vettabase.com/blog/why-tables-need-a-primary-key-in-mariadb-and-mysql/"
+                    "Every table should have a primary key, so it's better to enforce it via configuration.",
                 ]
             );
         }
@@ -62,16 +60,25 @@ class RequirePrimaryKey implements Check
         );
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getReferenceUri(): string
     {
         return 'https://github.com/xsist10/cadfael/wiki/Force-Primary-Key-Requirement';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getName(): string
     {
         return 'Require Primary Key Configuration';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getDescription(): string
     {
         return 'Ensure MySQL is configured to block the creation of tables without PRIMARY KEYs.';

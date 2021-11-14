@@ -42,7 +42,6 @@ class RedundantIndexes implements Check
                 );
             }
         }
-        $messages[] = "Reference: https://dev.mysql.com/doc/refman/8.0/en/sys-schema-redundant-indexes.html";
 
         return new Report(
             $this,
@@ -52,16 +51,25 @@ class RedundantIndexes implements Check
         );
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getReferenceUri(): string
     {
         return 'https://github.com/xsist10/cadfael/wiki/Redundant-Indexes';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getName(): string
     {
         return 'Redundant Indexes';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getDescription(): string
     {
         return 'An index that will never be used by MySQL due to better alternatives.';

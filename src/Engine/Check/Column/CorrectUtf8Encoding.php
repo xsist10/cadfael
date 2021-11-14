@@ -30,28 +30,33 @@ class CorrectUtf8Encoding implements Check
             );
         }
 
-        $reference = "https://www.eversql.com/mysql-utf8-vs-utf8mb4-whats-the-difference-between-utf8-and-utf8mb4/";
         return new Report(
             $this,
             $entity,
             Report::STATUS_CONCERN,
-            [
-                "Character set should be utf8mb4 not utf8.",
-                "Reference: $reference"
-            ]
+            [ "Character set should be utf8mb4 not utf8." ]
         );
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getReferenceUri(): string
     {
         return 'https://github.com/xsist10/cadfael/wiki/Correct-UTF-8-Encoding';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getName(): string
     {
         return 'Correct UTF-8 Character Set Encoding';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getDescription(): string
     {
         return "UTF-8 character set should use utf8mb4 to avoid lossy storage of text.";

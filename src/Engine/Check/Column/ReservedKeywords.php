@@ -737,23 +737,30 @@ class ReservedKeywords implements Check
             $entity,
             Report::STATUS_CONCERN,
             [
-                "`" . $entity->getName() . "` is a reserved keyword in MySQL 8.0.",
-                "Avoid using reserved words as a column name.",
-                "Reference: https://dev.mysql.com/doc/refman/8.0/en/keywords.html",
+                "`" . $entity->getName() . "` is a reserved keyword in MySQL 8.0."
             ]
         );
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getReferenceUri(): string
     {
         return 'https://dev.mysql.com/doc/refman/8.0/en/keywords.html';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getName(): string
     {
         return 'Reserved Keywords';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getDescription(): string
     {
         return 'Identifies all columns whose names match reserved keywords.';

@@ -18,10 +18,7 @@ class MustHavePrimaryKey implements Check
 
     public function run($entity): ?Report
     {
-        $messages = [
-            "Table must have a PRIMARY KEY",
-            "Reference: https://federico-razzoli.com/why-mysql-tables-need-a-primary-key.",
-        ];
+        $messages = [ "Table must have a PRIMARY KEY" ];
         if ($entity->information_schema->engine === 'InnoDB') {
             $messages[] = "MySQL 8 replication will break if you have InnoDB tables without a PRIMARY KEY.";
         }
@@ -35,16 +32,25 @@ class MustHavePrimaryKey implements Check
         );
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getReferenceUri(): string
     {
         return 'https://github.com/xsist10/cadfael/wiki/Must-Have-Primary-Key';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getName(): string
     {
         return 'Table must have PRIMARY KEY';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getDescription(): string
     {
         return "All tables should have a PRIMARY KEY specified.";
