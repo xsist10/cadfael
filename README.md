@@ -61,61 +61,90 @@ Cadfael CLI Tool
 Host: localhost:3306
 User: [username]
 
-Attempting to scan schema tests
-What is the database password?
+What is the database password? 
 
-+----------------------+------------------------------------------+----------+----------------------------------------------------------------------------------+
-| Check                | Entity                                   | Status   | Message                                                                          |
-+----------------------+------------------------------------------+----------+----------------------------------------------------------------------------------+
-| SaneInnoDbPrimaryKey | table_with_insane_primary_key            | Warning  | In InnoDB tables, the PRIMARY KEY is appended to other indexes.                  |
-|                      |                                          |          | If the PRIMARY KEY is big, other indexes will use more space.                    |
-|                      |                                          |          | Maybe turn your PRIMARY KEY into UNIQUE and add an auto_increment PRIMARY KEY.   |
-|                      |                                          |          | Reference: https://dev.mysql.com/doc/refman/5.7/en/innodb-index-types.html       |
-| EmptyTable           | table_with_insane_primary_key            | Warning  | Table contains no records.                                                       |
-| RedundantIndexes     | table_with_insane_primary_key            | Concern  | Redundant index full_name (superseded by full_name_height_in_cm).                |
-|                      |                                          |          | A redundant index can probably drop it (unless it's a UNIQUE, in which case the  |
-|                      |                                          |          | dominant index might be a better candidate for reworking).                       |
-|                      |                                          |          | Reference: https://dev.mysql.com/doc/refman/5.7/en/sys-schema-redundant-indexes. |
-|                      |                                          |          | html                                                                             |
-| ReservedKeywords     | table_with_insane_primary_key.name       | Concern  | `name` is a reserved keyword in MySQL 8.0.                                       |
-|                      |                                          |          | Avoid using reserved words as a column name.                                     |
-|                      |                                          |          | Reference: https://dev.mysql.com/doc/refman/8.0/en/keywords.html                 |
-| ReservedKeywords     | table_with_keyword_columns.some          | Concern  | `some` is a reserved keyword in MySQL 8.0.                                       |
-|                      |                                          |          | Avoid using reserved words as a column name.                                     |
-|                      |                                          |          | Reference: https://dev.mysql.com/doc/refman/8.0/en/keywords.html                 |
-| ReservedKeywords     | table_with_keyword_columns.avg           | Concern  | `avg` is a reserved keyword in MySQL 8.0.                                        |
-|                      |                                          |          | Avoid using reserved words as a column name.                                     |
-|                      |                                          |          | Reference: https://dev.mysql.com/doc/refman/8.0/en/keywords.html                 |
-| SaneAutoIncrement    | table_with_non_primary_autoincrement.aut | Warning  | This field should be set as the primary key.                                     |
-|                      | o_incremental                            |          |                                                                                  |
-| EmptyTable           | table_with_signed_autoincrement          | Warning  | Table contains no records.                                                       |
-| SaneAutoIncrement    | table_with_signed_autoincrement.id       | Warning  | This field should be an unsigned integer type.                                   |
-| RedundantIndexes     | table_with_unused_index                  | Concern  | Redundant index some (superseded by some_avg).                                   |
-|                      |                                          |          | A redundant index can probably drop it (unless it's a UNIQUE, in which case the  |
-|                      |                                          |          | dominant index might be a better candidate for reworking).                       |
-|                      |                                          |          | Reference: https://dev.mysql.com/doc/refman/5.7/en/sys-schema-redundant-indexes. |
-|                      |                                          |          | html                                                                             |
-| ReservedKeywords     | table_with_unused_index.some             | Concern  | `some` is a reserved keyword in MySQL 8.0.                                       |
-|                      |                                          |          | Avoid using reserved words as a column name.                                     |
-|                      |                                          |          | Reference: https://dev.mysql.com/doc/refman/8.0/en/keywords.html                 |
-| ReservedKeywords     | table_with_unused_index.avg              | Concern  | `avg` is a reserved keyword in MySQL 8.0.                                        |
-|                      |                                          |          | Avoid using reserved words as a column name.                                     |
-|                      |                                          |          | Reference: https://dev.mysql.com/doc/refman/8.0/en/keywords.html                 |
-| EmptyTable           | table_with_utf8_encoding                 | Warning  | Table contains no records.                                                       |
-| CorrectUtf8Encoding  | table_with_utf8_encoding.utf8_encoding   | Concern  | Character set should be utf8mb2 not utf8.                                        |
-|                      |                                          |          | Reference: https://www.eversql.com/mysql-utf8-vs-utf8mb4-whats-the-difference-be |
-|                      |                                          |          | tween-utf8-and-utf8mb4/                                                          |
-| MustHavePrimaryKey   | table_without_primary_key                | Critical | Table must have a PRIMARY KEY                                                    |
-|                      |                                          |          | Reference: https://federico-razzoli.com/why-mysql-tables-need-a-primary-key.     |
-|                      |                                          |          | MySQL 8 replication will break if you have InnoDB tables without a PRIMARY KEY.  |
-| ReservedKeywords     | table_without_primary_key.name           | Concern  | `name` is a reserved keyword in MySQL 8.0.                                       |
-|                      |                                          |          | Avoid using reserved words as a column name.                                     |
-|                      |                                          |          | Reference: https://dev.mysql.com/doc/refman/8.0/en/keywords.html                 |
-| EmptyTable           | table_without_rows_but_data_free         | Info     | Table is empty but has free space. It is probably used as a some form of queue.  |
-| ReservedKeywords     | table_without_rows_but_data_free.name    | Concern  | `name` is a reserved keyword in MySQL 8.0.                                       |
-|                      |                                          |          | Avoid using reserved words as a column name.                                     |
-|                      |                                          |          | Reference: https://dev.mysql.com/doc/refman/8.0/en/keywords.html                 |
-+----------------------+------------------------------------------+----------+----------------------------------------------------------------------------------+
+MySQL Version: 8.0.27-0ubuntu0.21.10.1
+Uptime: 3.6 days
+
+Attempting to scan schema test
+Tables Found: 6
+
+.w..w.....w.....w.....w.....o............wo.......o........w
+o.....wo.....w.o.o...o..
+
+Checks passed: 67/84
+
+> Empty table
+
+Description: Empty tables add unnecessary cognitive load similar to dead code.
+Reference: https://github.com/xsist10/cadfael/wiki/Empty-Table
+
++-----------------------------+---------+-----------------------------------------------------------------+
+| Entity                      | Status  | Message                                                         |
++-----------------------------+---------+-----------------------------------------------------------------+
+| table_empty                 | Warning | Table contains no records.                                      |
+| table_with_index_prefix     | Warning | Table contains no records.                                      |
+| table_with_large_text_index | Warning | Table contains no records.                                      |
+| table_without_index_prefix  | Warning | Table contains no records.                                      |
+| user                        | Concern | Table is empty but has allocated free space.                    |
+|                             |         | This table is in a shared tablespace so this doesn't mean much. |
++-----------------------------+---------+-----------------------------------------------------------------+
+
+> Index Prefix
+
+Description: High cardinality indexes with text columns should consider using prefixes.
+Reference: https://github.com/xsist10/cadfael/wiki/Index-Prefix
+
++-------------+---------+-----------------------------------------------------------------------------------------------------+
+| Entity      | Status  | Message                                                                                             |
++-------------+---------+-----------------------------------------------------------------------------------------------------+
+| users.email | Concern | Column `email` (length 255) has no index prefix and a cardinality ratio of 1.                       |
+|             |         | Since the column has high cardinality, it's recommended that you limit the index by using a prefix. |
+|             |         | This will reduce disk space usage and insert/update performance on this table.                      |
++-------------+---------+-----------------------------------------------------------------------------------------------------+
+
+> Require Primary Key Configuration
+
+Description: Ensure MySQL is configured to block the creation of tables without PRIMARY KEYs.
+Reference: https://github.com/xsist10/cadfael/wiki/Force-Primary-Key-Requirement
+
++----------------+---------+--------------------------------------------------------------------------------------------------------+
+| Entity         | Status  | Message                                                                                                |
++----------------+---------+--------------------------------------------------------------------------------------------------------+
+| localhost:3306 | Warning | You are running MySQL 8.0.13+ (MySQL 8.0.27-0ubuntu0.21.10.1) without sql_require_primary_key enabled. |
+|                |         | Every table should have a primary key, so it's better to enforce it via configuration.                 |
++----------------+---------+--------------------------------------------------------------------------------------------------------+
+
+> Reserved Keywords
+
+Description: Identifies all columns whose names match reserved keywords.
+Reference: https://dev.mysql.com/doc/refman/8.0/en/keywords.html
+
++----------------------------------+---------+------------------------------------------------+
+| Entity                           | Status  | Message                                        |
++----------------------------------+---------+------------------------------------------------+
+| table_with_index_prefix.name     | Concern | `name` is a reserved keyword in MySQL 8.0.     |
+| table_with_large_text_index.name | Concern | `name` is a reserved keyword in MySQL 8.0.     |
+| table_without_index_prefix.name  | Concern | `name` is a reserved keyword in MySQL 8.0.     |
+| user.name                        | Concern | `name` is a reserved keyword in MySQL 8.0.     |
+| users.name                       | Concern | `name` is a reserved keyword in MySQL 8.0.     |
+| users.password                   | Concern | `password` is a reserved keyword in MySQL 8.0. |
++----------------------------------+---------+------------------------------------------------+
+
+> Sane AUTO_INCREMENT definition
+
+Description: AUTO_INCREMENT definitions should follow some basic guidelines.
+Reference: https://github.com/xsist10/cadfael/wiki/Sane-Auto-Increment
+
++-------------------------------+---------+------------------------------------------------+
+| Entity                        | Status  | Message                                        |
++-------------------------------+---------+------------------------------------------------+
+| table_with_index_prefix.id    | Warning | This field should be an unsigned integer type. |
+| table_without_index_prefix.id | Warning | This field should be an unsigned integer type. |
+| user.id                       | Warning | This field should be an unsigned integer type. |
+| users.id                      | Warning | This field should be an unsigned integer type. |
++-------------------------------+---------+------------------------------------------------+
+
 ```
 
 ## Take it for a spin
