@@ -228,7 +228,7 @@ class Column implements Entity
         throw new UnknownColumnType($this->information_schema->data_type . " is an unknown data type.");
     }
 
-    public function getCapacity(): int
+    public function getCapacity(): float
     {
         if (!$this->isInteger()) {
             throw new InvalidColumnType('Column is not an integer type.');

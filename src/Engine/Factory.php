@@ -27,6 +27,7 @@ use Cadfael\Engine\Exception\NonSupportedVersion;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\InvalidFieldNameException;
 use Psr\Log\LoggerAwareTrait;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 class Factory
@@ -74,7 +75,14 @@ class Factory
     public function __construct(Connection $connection)
     {
         $this->connection = $connection;
-        $this->logger = new NullLogger();
+    }
+
+    public function log(): LoggerInterface
+    {
+        if (!$this->logger) {
+            return new NullLogger();
+        }
+        return $this->logger;
     }
 
     /**
@@ -161,7 +169,7 @@ class Factory
     public function hasPermission(string $schema, string $table): bool
     {
         if (!count($this->permissions)) {
-            $this->logger->info("Collecting GRANTs.");
+            $this->log()->info("Collecting GRANTs.");
             // First we attempt to figure out what permissions the user has
             foreach ($this->collectGrants() as $permission) {
                 preg_match('/^GRANT .*?(ALL|SELECT).*? ON (.*?)\.(.*?) TO/', $permission[0], $matches);
@@ -203,7 +211,7 @@ class Factory
             }
         }
 
-        $this->logger->info(sprintf("Checking for permission to access %s.%s.", $schema, $table));
+        $this->log()->info(sprintf("Checking for permission to access %s.%s.", $schema, $table));
         $subject = "$schema.$table";
         // There is a special list of permissions for some information_schema tables
         if ($schema === 'information_schema') {
@@ -230,7 +238,7 @@ class Factory
     protected function hasSchema(string $schema): bool
     {
         if (!count($this->schemas)) {
-            $this->logger->info("Collecting schemas.");
+            $this->log()->info("Collecting schemas.");
             // First we attempt to figure out what permissions the user has
             $this->schemas = $this->collectSchemas();
         }
@@ -267,7 +275,7 @@ class Factory
 
         foreach ($accesses as $access) {
             if (!$this->hasPermission($access['schema'], $access['table'])) {
-                $this->logger->warning(sprintf(
+                $this->log()->warning(sprintf(
                     "Missing critical permission to access %s.%s.",
                     $access['schema'],
                     $access['table']
@@ -288,7 +296,7 @@ class Factory
         $version = $database->getVersion();
         // Check if the version is supported
         if (version_compare($version, self::MIN_SUPPORTED_VERSION, '<')) {
-            $this->logger->warning(sprintf($message, $version, self::MIN_SUPPORTED_VERSION));
+            $this->log()->warning(sprintf($message, $version, self::MIN_SUPPORTED_VERSION));
             throw new NonSupportedVersion(sprintf($message, $version, self::MIN_SUPPORTED_VERSION));
         }
     }
@@ -300,7 +308,7 @@ class Factory
      */
     public function getVariables(Connection $connection): array
     {
-        $this->logger->info("Collecting MySQL VARIABLES.");
+        $this->log()->info("Collecting MySQL VARIABLES.");
         $query = 'SHOW VARIABLES';
         $rows = $connection->fetchAllAssociative($query);
         $variables = [];
@@ -317,7 +325,7 @@ class Factory
      */
     public function getStatus(Connection $connection): array
     {
-        $this->logger->info("Collecting MySQL GLOBAL STATUS.");
+        $this->log()->info("Collecting MySQL GLOBAL STATUS.");
         $query = 'SHOW GLOBAL STATUS';
         $rows = $connection->fetchAllAssociative($query);
         $variables = [];
@@ -336,7 +344,7 @@ class Factory
     {
         $accounts = [];
         if ($this->hasPermission('mysql', 'user')) {
-            $this->logger->info("Collecting MySQL user accounts.");
+            $this->log()->info("Collecting MySQL user accounts.");
             $query = 'SELECT * FROM mysql.user';
             foreach ($connection->fetchAllAssociative($query) as $row) {
                 $accounts[] = new Account($row['User'], $row['Host']);
@@ -355,7 +363,7 @@ class Factory
     public function doesTableExist(Connection $connection, string $schema, string $table): bool
     {
         if (!count($this->table_lookup)) {
-            $this->logger->info("Collecting all table names in database.");
+            $this->log()->info("Collecting all table names in database.");
             $query = 'SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA IN '
                    . '("information_schema", "sys", "mysql", "performance_schema", :schema)';
             $statement = $this->connection->prepare($query);
@@ -385,7 +393,7 @@ class Factory
             $table_exists = $this->doesTableExist($connection, 'information_schema', $table);
             $table_accessible = $this->hasPermission('information_schema', $table);
             if ($table_exists && $table_accessible) {
-                $this->logger->info("Collecting MySQL tablespaces from information_schema.$table.");
+                $this->log()->info("Collecting MySQL tablespaces from information_schema.$table.");
                 $query = "SELECT * FROM information_schema.$table";
                 foreach ($connection->fetchAllAssociative($query) as $row) {
                     $tablespaces[] = Tablespace::createFromInformationSchema($row);
@@ -411,7 +419,7 @@ class Factory
             $table_exists = $this->doesTableExist($connection, 'information_schema', $table);
             $table_accessible = $this->hasPermission('information_schema', $table);
             if ($table_exists && $table_accessible) {
-                $this->logger->info("Collecting MySQL innodb table meta from information_schema.$table.");
+                $this->log()->info("Collecting MySQL innodb table meta from information_schema.$table.");
                 $query = "SELECT * FROM information_schema.$table WHERE name LIKE :name_pattern";
                 $statement = $this->connection->prepare($query);
                 $statement->bindValue(":name_pattern", $schema->getName() . "/%");
@@ -456,7 +464,7 @@ class Factory
             $schemas[] = $schema;
 
             // Collect and generate all the tables
-            $this->logger->info("Collecting information_schema.TABLES.");
+            $this->log()->info("Collecting information_schema.TABLES.");
             $query = 'SELECT * FROM information_schema.TABLES WHERE TABLE_SCHEMA=:schema';
             $statement = $this->connection->prepare($query);
             $statement->bindValue("schema", $schema_name);
@@ -470,7 +478,7 @@ class Factory
             }
 
             // Collect and generate all the columns
-            $this->logger->info("Collecting information_schema.COLUMNS.");
+            $this->log()->info("Collecting information_schema.COLUMNS.");
             $query = 'SELECT * FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=:schema';
             $statement = $this->connection->prepare($query);
             $statement->bindValue("schema", $schema_name);
@@ -484,7 +492,7 @@ class Factory
             }
 
             // Collect and generate all the indexes
-            $this->logger->info("Collecting information_schema.STATISTICS.");
+            $this->log()->info("Collecting information_schema.STATISTICS.");
             $query = 'SELECT * FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=:schema';
             $statement = $this->connection->prepare($query);
             $statement->bindValue("schema", $schema_name);
@@ -510,7 +518,7 @@ class Factory
             if ($this->hasSchema('sys')) {
                 if ($this->hasPermission('sys', 'schema_auto_increment_columns')) {
                     // Collect and generate all sys.* information
-                    $this->logger->info("Collecting sys.schema_auto_increment_columns.");
+                    $this->log()->info("Collecting sys.schema_auto_increment_columns.");
                     $query = 'SELECT * FROM sys.schema_auto_increment_columns WHERE table_schema=:schema';
                     $statement = $this->connection->prepare($query);
                     $statement->bindValue("schema", $schema_name);
@@ -521,11 +529,11 @@ class Factory
                         $autoIncrementColumns[$row['table_name']] = SchemaAutoIncrementColumn::createFromSys($row);
                     }
                 } else {
-                    $this->logger->warning("Missing GRANT to access sys.schema_auto_increment_columns. Skipping.");
+                    $this->log()->warning("Missing GRANT to access sys.schema_auto_increment_columns. Skipping.");
                 }
 
                 if ($this->hasPermission('sys', 'schema_index_statistics')) {
-                    $this->logger->info("Collecting sys.schema_index_statistics.");
+                    $this->log()->info("Collecting sys.schema_index_statistics.");
                     $query = 'SELECT * FROM sys.schema_index_statistics WHERE table_schema=:schema';
                     $statement = $this->connection->prepare($query);
                     $statement->bindValue("schema", $schema_name);
@@ -537,13 +545,13 @@ class Factory
                             SchemaIndexStatistics::createFromSys($row);
                     }
                 } else {
-                    $this->logger->warning("Missing GRANT to access sys.schema_redundant_indexes. Skipping.");
+                    $this->log()->warning("Missing GRANT to access sys.schema_redundant_indexes. Skipping.");
                 }
             }
 
             $indexSize = [];
             if ($this->hasPermission('mysql', 'innodb_index_stats')) {
-                $this->logger->info("Collecting mysql.innodb_index_stats.");
+                $this->log()->info("Collecting mysql.innodb_index_stats.");
                 // Collect the size of indexes
                 $statement = $this->getConnection()->prepare("
                     SELECT
@@ -563,10 +571,10 @@ class Factory
                     $indexSize[$row['table_name']][$row['index_name']] = $size;
                 }
             } else {
-                $this->logger->warning("Missing GRANT to access mysql.innodb_index_stats. Skipping.");
+                $this->log()->warning("Missing GRANT to access mysql.innodb_index_stats. Skipping.");
             }
 
-            $this->logger->info("Constructing indexes.");
+            $this->log()->info("Constructing indexes.");
             foreach ($indexes as $table_name => $table_indexes) {
                 foreach ($table_indexes as $index_name => $index_columns) {
                     $index = new Index((string)$index_name);
@@ -581,7 +589,7 @@ class Factory
             }
 
             if ($this->hasSchema('sys') && $this->hasPermission('sys', 'schema_redundant_indexes')) {
-                $this->logger->info("Collecting sys.schema_redundant_indexes.");
+                $this->log()->info("Collecting sys.schema_redundant_indexes.");
                 $query = 'SELECT * FROM sys.schema_redundant_indexes WHERE table_schema=:schema';
                 $statement = $this->connection->prepare($query);
                 $statement->bindValue("schema", $schema_name);
@@ -595,14 +603,14 @@ class Factory
                     );
                 }
             } else {
-                $this->logger->warning("Missing GRANT to access sys.schema_redundant_indexes. Skipping.");
+                $this->log()->warning("Missing GRANT to access sys.schema_redundant_indexes. Skipping.");
             }
 
             $innodb_tables = $this->getInnodbTableMeta($connection, $schema);
 
             if (!$database->hasPerformanceSchema() || !$this->hasPermission('performance_schema', '?')) {
                 $message = "Missing critical permission to access performance_schema.?.";
-                $this->logger->warning($message);
+                $this->log()->warning($message);
             } else {
                 // Collect all indexes that haven't been used
                 $statement = $this->getConnection()->prepare("

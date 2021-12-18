@@ -131,7 +131,7 @@ class Database implements Entity
      * @codeCoverageIgnore
      * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
      *
-     * @return string[]
+     * @return array<Tablespace>
      */
     public function getTablespaces(): array
     {
