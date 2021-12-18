@@ -17,7 +17,7 @@ class NotProperlyClosingConnections implements Check
 
     public function run($entity): ?Report
     {
-        if (!$entity->account_not_closed_properly) {
+        if (!$entity->account_not_closed_properly || !$entity->account_not_closed_properly->count) {
             return new Report(
                 $this,
                 $entity,
