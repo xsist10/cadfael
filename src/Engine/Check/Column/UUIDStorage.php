@@ -54,16 +54,25 @@ class UUIDStorage implements Check
         }
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getReferenceUri(): string
     {
         return 'https://github.com/xsist10/cadfael/wiki/UUID-Storage';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getName(): string
     {
         return 'UUID Storage';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function getDescription(): string
     {
         return 'Verify that a column storing UUIDs is correctly structured.';

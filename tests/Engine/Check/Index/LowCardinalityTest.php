@@ -3,7 +3,6 @@
 namespace Cadfael\Tests\Engine\Check\Index;
 
 use Cadfael\Engine\Check\Index\LowCardinality;
-use Cadfael\Engine\Entity\Column;
 use Cadfael\Engine\Entity\Index;
 use Cadfael\Engine\Entity\Table;
 use Cadfael\Engine\Report;
@@ -12,9 +11,6 @@ use Cadfael\Tests\Engine\Check\IndexBuilder;
 
 class LowCardinalityTest extends BaseTest
 {
-    protected Column $highCardinalityColumn;
-    protected Column $lowCardinalityColumn;
-
     protected Index $highCardinalityIndex;
     protected Index $lowCardinalityIndex;
     protected Index $uniqueIndex;
