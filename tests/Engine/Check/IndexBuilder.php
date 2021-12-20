@@ -52,6 +52,16 @@ class IndexBuilder
         return $this;
     }
 
+    public function setSubPart(int $sub_part) {
+        $this->override['SUB_PART'] = $sub_part;
+        return $this;
+    }
+
+    public function setCardinality(int $cardinality) {
+        $this->override['CARDINALITY'] = $cardinality;
+        return $this;
+    }
+
     public function setColumn(Column $column): IndexBuilder
     {
         $this->column = $column;

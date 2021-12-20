@@ -81,7 +81,7 @@ class Orchestrator
                 $report = $check->run($entity);
                 if (!is_null($report)) {
                     // Trigger all our callbacks
-                    foreach ($this->callbacks as $callback) {
+                    foreach ($this->getCallbacks() as $callback) {
                         call_user_func($callback, $report);
                     }
                     $reports[] = $report;

@@ -228,7 +228,7 @@ class Column implements Entity
         throw new UnknownColumnType($this->information_schema->data_type . " is an unknown data type.");
     }
 
-    public function getCapacity(): int
+    public function getCapacity(): float
     {
         if (!$this->isInteger()) {
             throw new InvalidColumnType('Column is not an integer type.');
@@ -274,7 +274,7 @@ class Column implements Entity
             // Identify the cardinality as a ratio of the size of the table
             // Cardinality in older version of MySQL aren't distinct per column
             $table_size = $information_schema->table_rows;
-            return $this->cardinality ? ($table_size / $this->cardinality) : 0;
+            return $this->getCardinality() ? ($table_size / $this->getCardinality()) : 0;
         }
 
         return 0;
