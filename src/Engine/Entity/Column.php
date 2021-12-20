@@ -274,7 +274,7 @@ class Column implements Entity
             // Identify the cardinality as a ratio of the size of the table
             // Cardinality in older version of MySQL aren't distinct per column
             $table_size = $information_schema->table_rows;
-            return $this->cardinality ? ($table_size / $this->cardinality) : 0;
+            return $this->getCardinality() ? ($table_size / $this->getCardinality()) : 0;
         }
 
         return 0;

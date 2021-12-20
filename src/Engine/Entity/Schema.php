@@ -65,17 +65,6 @@ class Schema implements Entity
     }
 
     /**
-     * @codeCoverageIgnore
-     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
-     *
-     * @param Query ...$queries
-     */
-    public function setQueries(Query...$queries): void
-    {
-        $this->queries = $queries;
-    }
-
-    /**
      * @param Query $query
      */
     public function addQuery(Query $query): void
