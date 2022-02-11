@@ -2,11 +2,15 @@
 
 ![Build](https://github.com/xsist10/cadfael/workflows/build/badge.svg?branch=master)
 
+![Cadfael, a golem in a monk cowl, hunched over a desk examining a the contents of a vial and consulting a book](resources/images/scene.png)
+[Artwork Copyright by Ben Fleuter](https://benfleuter.com)
+
+
 Cadfael is static analysis tool to provide critiquing for MySQL databases.
 
 ## Documentation
 
-All of the checks and the reasoning, considerations and remediations for them are documented in the [wiki](https://github.com/xsist10/cadfael/wiki).
+All the checks and the reasoning, considerations and remediations for them are documented in the [wiki](https://github.com/xsist10/cadfael/wiki).
 
 ## Installation
 
