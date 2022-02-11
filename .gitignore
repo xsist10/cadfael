@@ -2,6 +2,5 @@
 /.idea/
 composer.phar
 build/
-resources/
 cadfael.phar
 .phpunit.result.cache
