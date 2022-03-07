@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Cadfael\Cli\Command;
 
+use Cadfael\Cli\Formatter\Cli;
+use Cadfael\Cli\Formatter\Json;
 use Cadfael\Engine\Check\Account\NotConnecting;
 use Cadfael\Engine\Check\Account\NotProperlyClosingConnections;
 use Cadfael\Engine\Check\Column\CorrectUtf8Encoding;
@@ -27,8 +29,6 @@ use Cadfael\Engine\Factory;
 use Cadfael\Engine\Orchestrator;
 use Cadfael\Engine\Report;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Formatter\OutputFormatterStyle;
-use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -42,39 +42,12 @@ class RunCommand extends AbstractDatabaseCommand
     // the name of the command (the part after "bin/console")
     protected static $defaultName = 'run';
 
-    protected const TEST_BLOCK_WIDTH = 60;
-
     protected int $worstReportStatus = Report::STATUS_OK;
 
     /**
      * @var array<Report>
      */
     public array $reports = [];
-
-    private const STATUS_COLOUR = [
-        1 => '<fg=green>',
-        2 => '<fg=blue>',
-        3 => '<fg=cyan>',
-        4 => '<fg=yellow>',
-        5 => '<fg=red>',
-    ];
-
-    protected function renderStatus(Report $report): string
-    {
-        return self::STATUS_COLOUR[$report->getStatus()]. $report->getStatusLabel() . "</>";
-    }
-
-    protected function renderStatusLegend(Report $report): string
-    {
-        $legend = [
-            Report::STATUS_OK       => '.',
-            Report::STATUS_INFO     => 'i',
-            Report::STATUS_CONCERN  => 'o',
-            Report::STATUS_WARNING  => 'w',
-            Report::STATUS_CRITICAL => 'c',
-        ];
-        return self::STATUS_COLOUR[$report->getStatus()]. $legend[$report->getStatus()] . "</>";
-    }
 
     protected function configure(): void
     {
@@ -85,9 +58,16 @@ class RunCommand extends AbstractDatabaseCommand
             ->setDescription('Run a collection of checks against a database.')
             ->addOption(
                 'performance_schema',
-                null,
+                'ps',
                 InputOption::VALUE_NONE,
                 'Include performance_schema metric checks. Only useful if the database has been running for a while.'
+            )
+            ->addOption(
+                'output-format',
+                'o',
+                InputOption::VALUE_REQUIRED,
+                'Changes the output format (json or cli)',
+                'cli'
             )
             // the full command description shown when running the command with
             // the "--help" option
@@ -108,17 +88,12 @@ class RunCommand extends AbstractDatabaseCommand
         }
     }
 
-    public function addReport(Report $report): void
-    {
-        $this->reports[] = $report;
-    }
-
-    public function renderReports(OutputInterface $output): void
+    public function renderReports(): void
     {
         $report_count = count($this->reports);
         // Bail out early if we have no reports to report on
         if (!$report_count) {
-            $output->writeln("No reports generated.");
+            $this->formatter->write("No reports generated.")->eol();
             return;
         }
 
@@ -131,38 +106,19 @@ class RunCommand extends AbstractDatabaseCommand
             }
         }
 
-        $output->writeln('');
-        $output->writeln('<info>Checks passed:</info> ' . ($report_count - $issues) . "/" . $report_count);
-        $output->writeln('');
+        $this->formatter
+            ->eol()
+            ->write(sprintf(
+                "<info>Checks passed:</info> %d/%s",
+                $report_count - $issues,
+                $report_count
+            ))
+            ->eol()
+            ->eol();
 
         ksort($grouped);
 
-        foreach ($grouped as $check_name => $reports) {
-            $table = new Table($output);
-            $table->setHeaders(['Entity', 'Status', 'Message']);
-
-            $check = $reports[0]->getCheck();
-
-            $output->writeln('<title>> ' . $check->getName() . '</title>');
-            $output->writeln('');
-            if ($check->getDescription()) {
-                $output->writeln('<info>Description:</info> ' . $check->getDescription());
-            }
-            if ($check->getReferenceUri()) {
-                $output->writeln('<info>Reference:</info> <href=' . $check->getReferenceUri() . '>'
-                    . $check->getReferenceUri() . '</>');
-            }
-            $output->writeln('');
-            foreach ($reports as $report) {
-                $table->addRow([
-                    $report->getEntity(),
-                    $this->renderStatus($report),
-                    implode("\n", $report->getMessages())
-                ]);
-            }
-            $table->render();
-            $output->writeln('');
-        }
+        $this->formatter->renderGroupedReports($grouped);
     }
 
     /**
@@ -186,21 +142,13 @@ class RunCommand extends AbstractDatabaseCommand
 
         $database = $factory->buildDatabase($factory->getConnection(), $schemaNames);
         $uptime = (int)$database->getStatus()['Uptime'];
-        $output->writeln('<info>MySQL Version:</info> ' . $database->getVersion());
-        $output->writeln('<info>Uptime:</info> ' . $this->returnUptimeInBestUnits($uptime));
+        $this->formatter->write('<info>MySQL Version:</info> ' . $database->getVersion())->eol();
+        $this->formatter->write('<info>Uptime:</info> ' . $this->returnUptimeInBestUnits($uptime))->eol();
 
         $orchestrator = new Orchestrator();
 
         // Add callbacks to handle the rendering
-        $command = $this;
-        $orchestrator->addCallbacks(function (Report $report) use ($command, $output) {
-
-            $output->write($command->renderStatusLegend($report));
-            $command->addReport($report);
-            if (count($command->reports) % $command::TEST_BLOCK_WIDTH === 0) {
-                $output->writeln('');
-            }
-        });
+        $this->formatter->prepareCallback($orchestrator);
 
         // Setup the checks we want to perform
         // TODO: Make this configurable so 3rd party checks can be added or only specific subsets are run
@@ -223,23 +171,27 @@ class RunCommand extends AbstractDatabaseCommand
 
         $load_performance_schema = $input->getOption('performance_schema');
         if ($load_performance_schema) {
-            $output->writeln('');
-            $output->writeln('Enabling performance_schema checks.');
+            $this->formatter->eol();
+            $this->formatter->write('Enabling performance_schema checks.')->eol();
             // Either the performance schema isn't enabled
             if (!$database->hasPerformanceSchema()) {
-                $output->writeln('<comment>This server does not have the performance_schema enabled.</comment>');
-                $output->writeln('<comment>Disabling the flag and continuing.</comment>');
+                $this->formatter
+                    ->write('<comment>This server does not have the performance_schema enabled.</comment>')
+                    ->eol();
+                $this->formatter->write('<comment>Disabling the flag and continuing.</comment>')->eol();
                 $load_performance_schema = false;
             // Or we don't have access to it
             } elseif (!$factory->hasPermission('performance_schema', '?')) {
-                $output->writeln('<error>User account does not have permission to query performance_schema.</error>');
-                $output->writeln('Try run the command without the --performance_schema flag.');
-                $output->writeln('');
+                $this->formatter->error('User account does not have permission to query performance_schema.')->eol();
+                $this->formatter->write('Try run the command without the --performance_schema flag.')->eol();
+                $this->formatter->eol();
                 return;
             // Or the server really hasn't been on long enough for good results.
             } elseif ($uptime < 86400) {
-                $output->writeln('<comment>This server has been running for less than 24 hours.</comment>');
-                $output->writeln('<comment>Certain checks may be incomplete or misleading.</comment>');
+                $this->formatter
+                    ->write('<comment>This server has been running for less than 24 hours.</comment>')
+                    ->eol();
+                $this->formatter->write('<comment>Certain checks may be incomplete or misleading.</comment>')->eol();
 
                 $question = new ConfirmationQuestion(
                     'Run with performance schema checks anyway [Y/N]? ',
@@ -263,13 +215,14 @@ class RunCommand extends AbstractDatabaseCommand
 
         foreach ($database->getSchemas() as $schema) {
             $tables = $schema->getTables();
-            $output->writeln('');
-            $output->writeln("Attempting to scan schema <info>" . $schema->getName() . "</info>");
-            $output->writeln('<info>Tables Found:</info> ' . count($tables));
-            $output->writeln('');
+            $this->formatter->eol();
+            $this->formatter
+                ->write("Attempting to scan schema <info>" . $schema->getName() . "</info>")
+                ->eol();
+            $this->formatter->write('<info>Tables Found:</info> ' . count($tables))->eol();
 
             if (!count($tables)) {
-                $output->writeln('No tables found in this schema.');
+                $this->formatter->write('No tables found in this schema.')->eol();
                 return;
             }
 
@@ -283,12 +236,11 @@ class RunCommand extends AbstractDatabaseCommand
                 $orchestrator->addEntities(...$entity->getIndexes());
             }
 
-            $orchestrator->run();
+            $this->reports = $orchestrator->run();
 
-            $output->writeln('');
-
-            $this->renderReports($output);
-            $output->writeln('');
+            $this->formatter->eol();
+            $this->renderReports();
+            $this->formatter->eol();
         }
     }
 
@@ -298,6 +250,7 @@ class RunCommand extends AbstractDatabaseCommand
      * @param String $password
      * @param array $schemas
      * @return int
+     * @throws \Doctrine\DBAL\Driver\Exception
      */
     protected function processSchemas(
         InputInterface $input,
@@ -314,9 +267,9 @@ class RunCommand extends AbstractDatabaseCommand
             $this->runChecksAgainstSchema($input, $schemas, $factory, $output);
             $factory->getConnection()->close();
         } catch (DBALException | MissingPermissions $e) {
-            $output->writeln('<error>' . $e->getMessage() . '</error>');
+            $this->formatter->error($e->getMessage())->eol();
         } catch (MissingInformationSchema $e) {
-            $output->writeln('<error>Unable to retrieve information for ' . $schemas[0] . '</error>');
+            $this->formatter->error('Unable to retrieve information for ' . $schemas[0])->eol();
         }
 
         // If we get anything serious, our script should fail
@@ -328,13 +281,14 @@ class RunCommand extends AbstractDatabaseCommand
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $output->writeln('Cadfael CLI Tool');
-        $output->writeln('');
+        $this->formatter = new Cli($output);
+        if ($input->getOption('output-format') === 'json') {
+            $this->formatter = new Json($output);
+        }
+        $this->formatter->write('Cadfael CLI Tool')->eol();
+        $this->formatter->eol();
 
-        $outputStyle = new OutputFormatterStyle('white', null, ['bold']);
-        $output->getFormatter()->setStyle('title', $outputStyle);
-
-        $this->displayDatabaseDetails($input, $output);
+        $this->displayDatabaseDetails($input);
         $password = $this->getDatabasePassword($input, $output);
 
         return $this->processSchemas($input, $output, $password, (array)$input->getArgument('schema'));

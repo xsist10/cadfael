@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Cadfael\Cli\Command;
 
+use Cadfael\Cli\Formatter;
 use Cadfael\Engine\Factory;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
@@ -18,6 +19,8 @@ use Symfony\Component\Console\Question\Question;
 
 abstract class AbstractDatabaseCommand extends Command
 {
+    protected Formatter $formatter;
+
     protected function configure(): void
     {
         $this
@@ -27,11 +30,15 @@ abstract class AbstractDatabaseCommand extends Command
             ->addArgument('schema', InputArgument::REQUIRED | InputArgument::IS_ARRAY, 'The schema(s) to use.');
     }
 
-    protected function displayDatabaseDetails(InputInterface $input, OutputInterface $output): void
+    protected function displayDatabaseDetails(InputInterface $input): void
     {
-        $output->writeln('<info>Host:</info> ' . $input->getOption('host') . ':' . $input->getOption('port'));
-        $output->writeln('<info>User:</info> ' . $input->getOption('username'));
-        $output->writeln('');
+        $this->formatter->write(sprintf(
+            "<info>Host:</info> %s:%s",
+            $input->getOption('host'),
+            $input->getOption('port')
+        ))->eol();
+        $this->formatter->write('<info>User:</info> ' . $input->getOption('username'))->eol();
+        $this->formatter->eol();
     }
 
     protected function getDatabasePassword(InputInterface $input, OutputInterface $output): string
@@ -73,6 +80,9 @@ abstract class AbstractDatabaseCommand extends Command
         return $factory;
     }
 
+    /**
+     * @throws \Doctrine\DBAL\Exception
+     */
     protected function getLocalStorage(string $name): Connection
     {
         $connectionParams = array(
@@ -80,7 +90,6 @@ abstract class AbstractDatabaseCommand extends Command
             'driver' => 'pdo_sqlite',
             'path' => $name . '.sqlite',
         );
-        $connection = DriverManager::getConnection($connectionParams);
-        return $connection;
+        return DriverManager::getConnection($connectionParams);
     }
 }
