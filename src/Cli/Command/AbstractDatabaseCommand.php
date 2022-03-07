@@ -24,6 +24,12 @@ abstract class AbstractDatabaseCommand extends Command
             ->addOption('host', null, InputOption::VALUE_REQUIRED, 'The host of the database.', 'localhost')
             ->addOption('port', 'p', InputOption::VALUE_REQUIRED, 'The port of the database.', 3306)
             ->addOption('username', 'u', InputOption::VALUE_REQUIRED, 'The username of the database.', 'root')
+            ->addOption(
+                'secret',
+                's',
+                InputOption::VALUE_REQUIRED,
+                'Specify a secrets file that contains the database password.'
+            )
             ->addArgument('schema', InputArgument::REQUIRED | InputArgument::IS_ARRAY, 'The schema(s) to use.');
     }
 
@@ -36,6 +42,13 @@ abstract class AbstractDatabaseCommand extends Command
 
     protected function getDatabasePassword(InputInterface $input, OutputInterface $output): string
     {
+        if ($input->getOption('secret')) {
+            $file = $input->getOption('secret');
+            if (file_exists($file)) {
+                $password = trim(file_get_contents($file));
+                return $password ?? '';
+            }
+        }
         $question = new Question('What is the database password? ');
         $question->setHidden(true);
         $question->setHiddenFallback(false);
