@@ -12,6 +12,7 @@ use Cadfael\Engine\Check\Column\SaneAutoIncrement;
 use Cadfael\Engine\Check\Column\UUIDStorage;
 use Cadfael\Engine\Check\Index\IndexPrefix;
 use Cadfael\Engine\Check\Index\LowCardinality;
+use Cadfael\Engine\Check\Query\FunctionsOnIndex;
 use Cadfael\Engine\Check\Query\Inefficient;
 use Cadfael\Engine\Check\Database\UnsupportedVersion;
 use Cadfael\Engine\Check\Database\RequirePrimaryKey;
@@ -218,7 +219,8 @@ class RunCommand extends AbstractDatabaseCommand
             new RequirePrimaryKey(),
             new LowCardinality(),
             new IndexPrefix(),
-            new UUIDStorage()
+            new UUIDStorage(),
+            new FunctionsOnIndex()
         );
 
         $load_performance_schema = $input->getOption('performance_schema');
