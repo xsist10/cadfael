@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Cadfael\Engine\Entity;
 
 use Cadfael\Engine\Entity;
+use Cadfael\Engine\Exception\InvalidSchema;
+use Cadfael\Engine\Exception\InvalidTable;
 use Doctrine\DBAL\Connection;
 
 class Schema implements Entity
@@ -51,6 +53,25 @@ class Schema implements Entity
     public function getTables(): array
     {
         return $this->tables;
+    }
+
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @param $name
+     * @return Table
+     * @throws InvalidTable
+     */
+    public function getTable($name): Table
+    {
+        foreach ($this->getTables() as $table) {
+            if ($table->getName() === $name) {
+                return $table;
+            }
+        }
+
+        throw new InvalidTable("Invalid table specified: $name");
     }
 
     /**

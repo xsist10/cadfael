@@ -117,10 +117,11 @@ class Factory
 
     /**
      * @param Schema $schema
+     * @param Database $database
      * @throws \Doctrine\DBAL\Driver\Exception
      * @throws \Doctrine\DBAL\Exception
      */
-    private function getEventStatementsSummary(Schema $schema): void
+    private function getEventStatementsSummary(Schema $schema, Database $database): void
     {
         try {
             // Collect all query digests that have been run so far.
@@ -151,6 +152,7 @@ class Factory
             $query = new Query($querySummaryByDigest['DIGEST_TEXT']);
             $summary = EventsStatementsSummary::createFromPerformanceSchema($querySummaryByDigest);
             $query->setEventsStatementsSummary($summary);
+            $query->linkTablesToQuery($schema, $database);
             $schema->addQuery($query);
         }
     }
@@ -629,8 +631,6 @@ class Factory
                     $schema_unused_indexes[$row['object_name']][] = new SchemaUnusedIndex($index);
                 }
 
-                $this->getEventStatementsSummary($schema);
-
                 // Collect all accounts who have not been closing connections properly.
                 $accountsNotClosedProperly = $this->getConnection()->fetchAllAssociative("
                     SELECT
@@ -722,7 +722,11 @@ class Factory
             $schema->setTables(...array_values($tables));
         }
 
-        $database->setSchemas($schemas);
+        $database->setSchemas(...$schemas);
+        foreach ($schemas as $schema) {
+            $this->getEventStatementsSummary($schema, $database);
+        }
+
         return $database;
     }
 }

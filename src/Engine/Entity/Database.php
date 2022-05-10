@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Cadfael\Engine\Entity;
 
 use Cadfael\Engine\Entity;
+use Cadfael\Engine\Exception\InvalidSchema;
 use Cadfael\Engine\Exception\MySQL\UnknownVersion;
 use Doctrine\DBAL\Connection;
 
@@ -229,9 +230,27 @@ class Database implements Entity
     }
 
     /**
-     * @param Schema[] $schemas
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @return Schema
+     * @throws InvalidSchema
      */
-    public function setSchemas(array $schemas): void
+    public function getSchema($name): Schema
+    {
+        foreach ($this->getSchemas() as $schema) {
+            if ($schema->getName() === $name) {
+                return $schema;
+            }
+        }
+
+        throw new InvalidSchema("Invalid schema specified: $name");
+    }
+
+    /**
+     * @param Schema ...$schemas
+     */
+    public function setSchemas(Schema ...$schemas): void
     {
         array_walk($schemas, function (Schema $schema) {
             $schema->setDatabase($this);
