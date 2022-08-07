@@ -153,7 +153,15 @@ Reference: https://github.com/xsist10/cadfael/wiki/Sane-Auto-Increment
 
 ## Take it for a spin
 
-Try testing Cadfael on a few open data sources
+You can use `resources/sample.sql` to create a test database of tables to see some examples of Cadfael's checks.
+
+```bash
+mysql -h <host> -u <user> -p <database> < resources/sample.sql
+```
+
+Or you can try testing Cadfael on a few open data sources
+
+**WARNING:** These are not always online and available.
 
 ```
 +-----------------------------+------+-----------+----------+--------------------------+
