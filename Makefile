@@ -1,4 +1,4 @@
-build: psalm phpcs phpunit
+build: psalm phpcs phpunit box
 
 psalm:
 	./vendor/bin/psalm --use-baseline resources/pslam-baseline
@@ -9,5 +9,7 @@ phpcs:
 phpunit:
 	./vendor/bin/phpunit
 
+box:
+	box compile
 
 .DEFAULT_GOAL := build
