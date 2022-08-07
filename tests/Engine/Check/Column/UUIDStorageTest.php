@@ -5,7 +5,7 @@ declare(strict_types = 1);
 namespace Cadfael\Tests\Engine\Check\Column;
 
 use Cadfael\Engine\Report;
-use Cadfael\Tests\Engine\Check\BaseTest;
+use Cadfael\Tests\Engine\BaseTest;
 use Cadfael\Tests\Engine\Check\ColumnBuilder;
 use Cadfael\Engine\Check\Column\UUIDStorage;
 

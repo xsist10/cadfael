@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 use Cadfael\Engine\Check\Column\SaneAutoIncrement;
 use Cadfael\Engine\Report;
-use Cadfael\Tests\Engine\Check\BaseTest;
+use Cadfael\Tests\Engine\BaseTest;
 use Cadfael\Tests\Engine\Check\ColumnBuilder;
 
 class SaneAutoIncrementTest extends BaseTest

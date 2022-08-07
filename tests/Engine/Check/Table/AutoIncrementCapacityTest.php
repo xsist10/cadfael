@@ -6,7 +6,7 @@ use Cadfael\Engine\Entity\Table\SchemaAutoIncrementColumn;
 use Cadfael\Engine\Exception\MissingSysData;
 use Cadfael\Engine\Report;
 
-use Cadfael\Tests\Engine\Check\BaseTest;
+use Cadfael\Tests\Engine\BaseTest;
 
 class AutoIncrementCapacityTest extends BaseTest
 {

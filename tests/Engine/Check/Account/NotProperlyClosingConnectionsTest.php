@@ -7,7 +7,7 @@ use Cadfael\Engine\Check\Account\NotProperlyClosingConnections;
 use Cadfael\Engine\Entity\Account;
 use Cadfael\Engine\Entity\Account\NotClosedProperly;
 use Cadfael\Engine\Report;
-use Cadfael\Tests\Engine\Check\BaseTest;
+use Cadfael\Tests\Engine\BaseTest;
 
 class NotProperlyClosingConnectionsTest extends BaseTest
 {

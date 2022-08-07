@@ -9,7 +9,7 @@ use Cadfael\Engine\Entity\Query;
 use Cadfael\Engine\Entity\Schema;
 use Cadfael\Engine\Entity\Table;
 use Cadfael\Engine\Report;
-use Cadfael\Tests\Engine\Check\BaseTest;
+use Cadfael\Tests\Engine\BaseTest;
 use Cadfael\Tests\Engine\Check\IndexBuilder;
 
 class FunctionsOnIndexTest extends BaseTest

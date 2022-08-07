@@ -6,7 +6,7 @@ namespace Cadfael\Tests\Engine\Check\Table;
 use Cadfael\Engine\Check\Table\PreferredEngine;
 use Cadfael\Engine\Entity\Table;
 use Cadfael\Engine\Report;
-use Cadfael\Tests\Engine\Check\BaseTest;
+use Cadfael\Tests\Engine\BaseTest;
 
 class PreferredEngineTest extends BaseTest
 {

@@ -5,7 +5,7 @@ namespace Cadfael\Tests\Engine\Check\Database;
 
 use Cadfael\Engine\Check\Database\UnsupportedVersion;
 use Cadfael\Engine\Report;
-use Cadfael\Tests\Engine\Check\BaseTest;
+use Cadfael\Tests\Engine\BaseTest;
 
 class UnsupportedVersionTest extends BaseTest
 {
