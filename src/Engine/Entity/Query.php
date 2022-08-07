@@ -203,18 +203,23 @@ class Query implements Entity
     protected function fetchColumnsModifiedByFunctionsRecursively(mixed $tree): array
     {
         $functions = [];
-        if (is_array($tree)) {
-            foreach ($tree as $node) {
-                $functions += $this->fetchColumnsModifiedByFunctionsRecursively($node);
-            }
-        }
+
+        // Deal with sub-statements
         if (!empty($tree['sub_tree'])) {
             foreach ($tree['sub_tree'] as $sub_tree) {
                 $functions += $this->fetchColumnsModifiedByFunctionsRecursively($sub_tree);
             }
         }
+        // We found a function! Extract the column involved
         if (!empty($tree['expr_type']) && $tree['expr_type'] === 'function') {
             $functions += $this->extractColumn($tree['sub_tree']);
+        }
+
+        // We have multiple parts of the statement. Examine each.
+        if (is_array($tree)) {
+            foreach ($tree as $node) {
+                $functions += $this->fetchColumnsModifiedByFunctionsRecursively($node);
+            }
         }
 
         return $functions;
@@ -225,9 +230,33 @@ class Query implements Entity
         if (empty($this->getQueryParser()->parsed['WHERE'])) {
             return [];
         }
-        return array_values(
-            $this->fetchColumnsModifiedByFunctionsRecursively(
-                $this->getQueryParser()->parsed['WHERE']
+
+        $query = $this;
+        // Remove any empty entries
+        return array_filter(
+            // Convert the text labels of the table and columns into objects
+            array_map(
+                function ($column) use ($query) {
+                    if (count($column) >= 2) {
+                        $table = $query->getTableByAlias(array_shift($column));
+                    } else {
+                        $table = $query->getTables()[0];
+                    }
+                    $first_entry = array_shift($column);
+                    if ($first_entry === '?') {
+                        return [];
+                    }
+
+                    return [
+                        "table" => $table,
+                        "column" => $table->getColumn($first_entry)
+                    ];
+                },
+                array_values(
+                    $this->fetchColumnsModifiedByFunctionsRecursively(
+                        $this->getQueryParser()->parsed['WHERE']
+                    )
+                )
             )
         );
     }

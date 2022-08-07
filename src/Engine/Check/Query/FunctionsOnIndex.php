@@ -25,17 +25,8 @@ class FunctionsOnIndex implements Check
         $functions = $entity->fetchColumnsModifiedByFunctions();
         if (!empty($functions)) {
             foreach ($functions as $function) {
-                if (count($function) >= 2) {
-                    $table = $entity->getTableByAlias(array_shift($function));
-                } else {
-                    $table = $entity->getTables()[0];
-                }
-                $column_name = array_shift($function);
-
-                if ($column_name === '?') {
-                    continue;
-                }
-                $column = $table->getColumn($column_name);
+                $table = $function['table'];
+                $column = $function['column'];
 
                 foreach ($table->getIndexes() as $index) {
                     foreach ($index->getColumns() as $indexColumn) {
