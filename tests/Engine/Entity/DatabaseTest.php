@@ -73,7 +73,7 @@ class DatabaseTest extends TestCase
     public function test__setSchema()
     {
         $schema = new Schema('test');
-        $this->database->setSchemas([$schema]);
+        $this->database->setSchemas($schema);
 
         $this->assertEquals($this->database, $schema->getDatabase(), "Ensure that the assignment of a schema ensures injecting the database into the schema.");
     }

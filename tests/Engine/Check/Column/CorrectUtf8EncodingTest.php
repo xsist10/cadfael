@@ -5,7 +5,7 @@ namespace Cadfael\Tests\Engine\Check\Column;
 
 use Cadfael\Engine\Check\Column\CorrectUtf8Encoding;
 use Cadfael\Engine\Report;
-use Cadfael\Tests\Engine\Check\BaseTest;
+use Cadfael\Tests\Engine\BaseTest;
 use Cadfael\Tests\Engine\Check\ColumnBuilder;
 
 class CorrectUtf8EncodingTest extends BaseTest

@@ -4,7 +4,7 @@ declare(strict_types=1);
 use Cadfael\Engine\Check\Column\ReservedKeywords;
 use Cadfael\Engine\Report;
 use Cadfael\Tests\Engine\Check\ColumnBuilder;
-use Cadfael\Tests\Engine\Check\BaseTest;
+use Cadfael\Tests\Engine\BaseTest;
 
 class ReservedKeywordsTest extends BaseTest
 {

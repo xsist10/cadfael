@@ -6,7 +6,7 @@ use Cadfael\Engine\Entity\Column;
 use Cadfael\Engine\Entity\Index;
 use Cadfael\Engine\Report;
 
-use Cadfael\Tests\Engine\Check\BaseTest;
+use Cadfael\Tests\Engine\BaseTest;
 use Cadfael\Tests\Engine\Check\ColumnBuilder;
 use Cadfael\Tests\Engine\Check\IndexBuilder;
 

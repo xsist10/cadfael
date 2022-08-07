@@ -6,7 +6,7 @@ namespace Cadfael\Tests\Engine\Check\Table;
 use Cadfael\Engine\Check\Table\RedundantIndexes;
 use Cadfael\Engine\Entity\Table\SchemaRedundantIndex;
 use Cadfael\Engine\Report;
-use Cadfael\Tests\Engine\Check\BaseTest;
+use Cadfael\Tests\Engine\BaseTest;
 use Cadfael\Tests\Engine\Check\IndexBuilder;
 
 class RedundantIndexesTest extends BaseTest

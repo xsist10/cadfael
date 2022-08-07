@@ -6,7 +6,7 @@ namespace Cadfael\Tests\Engine\Check\Account;
 use Cadfael\Engine\Check\Account\NotConnecting;
 use Cadfael\Engine\Entity\Account;
 use Cadfael\Engine\Report;
-use Cadfael\Tests\Engine\Check\BaseTest;
+use Cadfael\Tests\Engine\BaseTest;
 
 class NotConnectingTest extends BaseTest
 {

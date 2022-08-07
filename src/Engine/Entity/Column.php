@@ -16,8 +16,9 @@ class Column implements Entity
     public InformationSchema $information_schema;
     public int $cardinality;
 
-    private function __construct()
+    public function __construct(string $name)
     {
+        $this->name = $name;
     }
 
     /**
@@ -26,8 +27,7 @@ class Column implements Entity
      */
     public static function createFromInformationSchema(array $schema)
     {
-        $column = new Column();
-        $column->name = $schema['COLUMN_NAME'];
+        $column = new Column($schema['COLUMN_NAME']);
         $column->information_schema = InformationSchema::createFromInformationSchema($schema);
 
         return $column;

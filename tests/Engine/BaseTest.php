@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Cadfael\Tests\Engine\Check;
+namespace Cadfael\Tests\Engine;
 
 use Cadfael\Engine\Entity\Database;
 use Cadfael\Engine\Entity\Schema;

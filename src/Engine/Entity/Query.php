@@ -6,16 +6,25 @@ namespace Cadfael\Engine\Entity;
 
 use Cadfael\Engine\Entity;
 use Cadfael\Engine\Entity\Query\EventsStatementsSummary;
+use PHPSQLParser\PHPSQLParser;
 
 class Query implements Entity
 {
     protected Schema $schema;
     protected string $digest;
     protected EventsStatementsSummary $eventsStatementsSummary;
+    protected PHPSQLParser $query_parser;
+    /**
+     * @var array Table
+     */
+    protected array $tables = [];
 
     public function __construct(string $digest)
     {
         $this->digest = $digest;
+        // Quick hack because performance schema DIGEST and PHPSQLParser don't agree on some things
+        $query = str_replace('` . `', '`.`', $digest);
+        $this->query_parser = new PHPSQLParser($query);
     }
 
     public function getName(): string
@@ -84,5 +93,171 @@ class Query implements Entity
     public function setEventsStatementsSummary(EventsStatementsSummary $eventsStatementsSummary): void
     {
         $this->eventsStatementsSummary = $eventsStatementsSummary;
+    }
+
+    /**
+     * This links table objects that a query affects to the query itself
+     *
+     * @param Schema $schema The contextual schema (if none is specified, the table should be from here)
+     * @param Database $database
+     * @return void
+     * @throws \Cadfael\Engine\Exception\InvalidSchema
+     * @throws \Cadfael\Engine\Exception\InvalidTable
+     */
+    public function linkTablesToQuery(Schema $schema, Database $database)
+    {
+        $tables = $this->getTableNamesInQuery();
+        foreach ($tables as $table) {
+            if (empty($table['schema'])) {
+                $this->tables[$table['alias']] = $schema->getTable($table['name']);
+            } else {
+                $this->tables[$table['alias']] = $database->getSchema($table['schema'])->getTable($table['name']);
+            }
+        }
+    }
+
+    /**
+     * Return all the tables that are used in this query
+     * @return array
+     */
+    public function getTableNamesInQuery(): array
+    {
+        $parsed = $this->query_parser->parsed;
+        if (!isset($parsed['FROM'])) {
+            return [];
+        }
+
+        $response = [];
+        foreach ($parsed['FROM'] as $from) {
+            // DIGEST should always contain the `schema`.`table`
+            $parts = $from['no_quotes']['parts'];
+            $table = [];
+            $table['name'] = array_pop($parts);
+            if (!empty($parts)) {
+                $table['schema'] = array_pop($parts);
+            }
+            if (!empty($from['alias'])) {
+                $table['alias'] = $from['alias']['name'];
+            } else {
+                $table['alias'] = $table['name'];
+            }
+            $response[] = $table;
+        }
+
+        return $response;
+    }
+
+    /**
+     * @return array
+     */
+    public function getTables(): array
+    {
+        return array_values($this->tables);
+    }
+
+    public function getTableByAlias($alias): Table
+    {
+        return $this->tables[$alias];
+    }
+
+    /**
+     * @return PHPSQLParser
+     */
+    public function getQueryParser(): PHPSQLParser
+    {
+        return $this->query_parser;
+    }
+
+    protected function extractColumn($tree): array
+    {
+        // Skip any ? (placeholders) as they are literals
+        if ($tree === '?') {
+            return [];
+        }
+
+        $columns = [];
+        if (is_array($tree)) {
+            foreach ($tree as $node) {
+                $columns += $this->extractColumn($node);
+            }
+        }
+        if (!empty($tree['sub_tree'])) {
+            foreach ($tree['sub_tree'] as $sub_tree) {
+                $columns += $this->extractColumn($sub_tree);
+            }
+        }
+        if (!empty($tree['expr_type']) && $tree['expr_type'] === 'colref') {
+            $columns[$tree['base_expr']] = $tree['no_quotes']['parts'];
+        }
+
+        return $columns;
+    }
+
+    /**
+     * This function searches through a parsed WHERE statement fragment and returns a list of columns (table alias and
+     * column name pair) that have been modified by a function expression
+     *
+     * @param mixed $tree Parsed statement fragment from the WHERE statement
+     * @return array tuples of table alias and column name
+     */
+    protected function fetchColumnsModifiedByFunctionsRecursively(mixed $tree): array
+    {
+        $functions = [];
+
+        // Deal with sub-statements
+        if (!empty($tree['sub_tree'])) {
+            foreach ($tree['sub_tree'] as $sub_tree) {
+                $functions += $this->fetchColumnsModifiedByFunctionsRecursively($sub_tree);
+            }
+        }
+        // We found a function! Extract the column involved
+        if (!empty($tree['expr_type']) && $tree['expr_type'] === 'function') {
+            $functions += $this->extractColumn($tree['sub_tree']);
+        }
+
+        // We have multiple parts of the statement. Examine each.
+        if (is_array($tree)) {
+            foreach ($tree as $node) {
+                $functions += $this->fetchColumnsModifiedByFunctionsRecursively($node);
+            }
+        }
+
+        return $functions;
+    }
+
+    public function fetchColumnsModifiedByFunctions(): array
+    {
+        if (empty($this->getQueryParser()->parsed['WHERE'])) {
+            return [];
+        }
+
+        $query = $this;
+        // Remove any empty entries
+        return array_filter(
+            // Convert the text labels of the table and columns into objects
+            array_map(
+                function ($column) use ($query) {
+                    if (count($column) >= 2) {
+                        $table = $query->getTableByAlias(array_shift($column));
+                    } else {
+                        $table = $query->getTables()[0];
+                    }
+                    $first_entry = array_shift($column);
+                    if ($first_entry === '?') {
+                        return [];
+                    }
+
+                    return [
+                        "table" => $table,
+                        "column" => $table->getColumn($first_entry)
+                    ];
+                },
+                array_values(
+                    $this->fetchColumnsModifiedByFunctionsRecursively(
+                        $this->getQueryParser()->parsed['WHERE']
+                    )
+                )
+            )
+        );
     }
 }

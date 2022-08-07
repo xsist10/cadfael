@@ -11,6 +11,7 @@ use Cadfael\Engine\Entity\Table\InnoDbTable;
 use Cadfael\Engine\Entity\Table\SchemaAutoIncrementColumn;
 use Cadfael\Engine\Entity\Table\SchemaRedundantIndex;
 use Cadfael\Engine\Entity\Table\SchemaUnusedIndex;
+use Cadfael\Engine\Exception\InvalidColumn;
 
 class Table implements Entity
 {
@@ -74,6 +75,25 @@ class Table implements Entity
             $column->setTable($this);
         });
         $this->columns = $columns;
+    }
+
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @param $name
+     * @return Column
+     * @throws InvalidColumn
+     */
+    public function getColumn($name): Column
+    {
+        foreach ($this->getColumns() as $column) {
+            if ($column->getName() === $name) {
+                return $column;
+            }
+        }
+
+        throw new InvalidColumn("Invalid column specified: $name");
     }
 
     /**
