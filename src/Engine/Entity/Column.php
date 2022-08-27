@@ -14,7 +14,7 @@ class Column implements Entity
     protected string $name;
     protected Table $table;
     public InformationSchema $information_schema;
-    public int $cardinality;
+    public int $cardinality = 0;
 
     public function __construct(string $name)
     {
