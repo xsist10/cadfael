@@ -17,16 +17,17 @@ class RequirePrimaryKey implements Check
 {
     public function supports($entity): bool
     {
+        if (!$entity instanceof Database) {
+            return false;
+        }
         // If we can't determine the version we can't do this check
         try {
             $version = $entity->getVersion();
+            // We only want to examine MySQL versions >= 8.0.13 when the feature was added
+            return version_compare($version, '8.0.13', '>=');
         } catch (UnknownVersion $e) {
             return false;
         }
-
-        // We only want to examine MySQL versions >= 8.0.13 when the feature was added
-        return $entity instanceof Database
-            && version_compare($version, '8.0.13', '>=');
     }
 
     public function run($entity): ?Report
