@@ -26,23 +26,16 @@ class RequirePrimaryKeyTest extends BaseTest
     {
         $check = new RequirePrimaryKey();
 
-        foreach ($this->databases as $database) {
-            $this->assertTrue(
-                $check->supports($database),
-                "Ensure that we care about all databases."
-            );
-        }
+        $this->assertFalse($check->supports($this->databases['5.7']), "We don't care about versions < 8.0.13.");
+        $this->assertTrue($check->supports($this->databases['8.0_NOT_SET']), "Ensure that we care about all databases.");
+        $this->assertTrue($check->supports($this->databases['8.0_OFF']), "Ensure that we care about all databases.");
+        $this->assertTrue($check->supports($this->databases['8.0_ON']), "Ensure that we care about all databases.");
+        $this->assertFalse($check->supports($this->databases['unknown']), "We can't support unknown versions.");
     }
 
     public function testRun()
     {
         $check = new RequirePrimaryKey();
-
-        $this->assertEquals(
-            Report::STATUS_OK,
-            $check->run($this->databases['5.7'])->getStatus(),
-            "Ensure we return " . Report::STATUS_OK . " for MySQL versions <8."
-        );
 
         $this->assertEquals(
             Report::STATUS_WARNING,
@@ -57,9 +50,9 @@ class RequirePrimaryKeyTest extends BaseTest
         );
 
         $this->assertEquals(
-            Report::STATUS_CONCERN,
-            $check->run($this->databases['unknown'])->getStatus(),
-            "Ensure we return " . Report::STATUS_CONCERN . " for unknown MySQL versions."
+            Report::STATUS_OK,
+            $check->run($this->databases['8.0_ON'])->getStatus(),
+            "We are happy if it is enabled."
         );
     }
 }

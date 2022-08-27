@@ -17,29 +17,24 @@ class RequirePrimaryKey implements Check
 {
     public function supports($entity): bool
     {
-        return $entity instanceof Database;
+        // If we can't determine the version we can't do this check
+        try {
+            $version = $entity->getVersion();
+        } catch (UnknownVersion $e) {
+            return false;
+        }
+
+        // We only want to examine MySQL versions >= 8.0.13 when the feature was added
+        return $entity instanceof Database
+            && version_compare($version, '8.0.13', '>=');
     }
 
     public function run($entity): ?Report
     {
-        try {
-            $version = $entity->getVersion();
-        } catch (UnknownVersion $e) {
-            return new Report(
-                $this,
-                $entity,
-                Report::STATUS_CONCERN,
-                [
-                    $e->getMessage(),
-                    "This makes us nervous."
-                ]
-            );
-        }
-
         $variables = $entity->getVariables();
         $opt_name = 'sql_require_primary_key';
         $require_pk_disabled = (!isset($variables[$opt_name]) || $variables[$opt_name] !== 'ON');
-        if (version_compare($version, '8.0.13', '>=') && $require_pk_disabled) {
+        if ($require_pk_disabled) {
             return new Report(
                 $this,
                 $entity,
