@@ -106,15 +106,15 @@ class Column implements Entity
     public function getStorageByteSize(): float
     {
         $size = [
-            'tinytext  ' => [
+            'tinytext' => [
                 'body'   => 255,
                 'header' => 1,
             ],
-            'text      ' => [
+            'text' => [
                 'body'   => 65535,
                 'header' => 2,
             ],
-            'blob      ' => [
+            'blob' => [
                 'body'   => 65535,
                 'header' => 2,
             ],
@@ -138,15 +138,15 @@ class Column implements Entity
                 'body'   => 16777215,
                 'header' => 3,
             ],
-            'longtext  ' => [
+            'longtext' => [
                 'body'   => 4294967295,
                 'header' => 4,
             ],
-            'json  ' => [
+            'json' => [
                 'body'   => 4294967295,
                 'header' => 4,
             ],
-            'longblob  ' => [
+            'longblob' => [
                 'body'   => 4294967295,
                 'header' => 4,
             ],
