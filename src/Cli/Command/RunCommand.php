@@ -9,6 +9,7 @@ use Cadfael\Cli\Formatter\Json;
 use Cadfael\Engine\Check\Account\NotConnecting;
 use Cadfael\Engine\Check\Account\NotProperlyClosingConnections;
 use Cadfael\Engine\Check\Column\CorrectUtf8Encoding;
+use Cadfael\Engine\Check\Column\LowCardinalityExpensiveStorage;
 use Cadfael\Engine\Check\Column\ReservedKeywords;
 use Cadfael\Engine\Check\Column\SaneAutoIncrement;
 use Cadfael\Engine\Check\Column\UUIDStorage;
@@ -168,7 +169,8 @@ class RunCommand extends AbstractDatabaseCommand
             new LowCardinality(),
             new IndexPrefix(),
             new UUIDStorage(),
-            new FunctionsOnIndex()
+            new FunctionsOnIndex(),
+            new LowCardinalityExpensiveStorage(),
         );
 
         $load_performance_schema = $input->getOption('performance_schema');
