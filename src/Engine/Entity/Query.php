@@ -6,6 +6,7 @@ namespace Cadfael\Engine\Entity;
 
 use Cadfael\Engine\Entity;
 use Cadfael\Engine\Entity\Query\EventsStatementsSummary;
+use Cadfael\Engine\Exception\InvalidTable;
 use PHPSQLParser\PHPSQLParser;
 
 class Query implements Entity
@@ -108,10 +109,14 @@ class Query implements Entity
     {
         $tables = $this->getTableNamesInQuery();
         foreach ($tables as $table) {
-            if (empty($table['schema'])) {
-                $this->tables[$table['alias']] = $schema->getTable($table['name']);
-            } else {
-                $this->tables[$table['alias']] = $database->getSchema($table['schema'])->getTable($table['name']);
+            try {
+                if (empty($table['schema'])) {
+                    $this->tables[$table['alias']] = $schema->getTable($table['name']);
+                } else {
+                    $this->tables[$table['alias']] = $database->getSchema($table['schema'])->getTable($table['name']);
+                }
+            } catch (InvalidTable $exception) {
+                // It's possible we'll be dealing with a temporary table here.
             }
         }
     }

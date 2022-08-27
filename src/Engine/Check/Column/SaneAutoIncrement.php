@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Cadfael\Engine\Check\Column;
 
 use Cadfael\Engine\Check;
-use Cadfael\Engine\Entity;
 use Cadfael\Engine\Report;
 use Cadfael\Engine\Entity\Column;
 
