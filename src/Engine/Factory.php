@@ -26,6 +26,7 @@ use Cadfael\Engine\Exception\MissingInformationSchema;
 use Cadfael\Engine\Exception\NonSupportedVersion;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\InvalidFieldNameException;
+use Exception;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -149,11 +150,15 @@ class Factory
         }
 
         foreach ($statement->fetchAllAssociative() as $querySummaryByDigest) {
-            $query = new Query($querySummaryByDigest['DIGEST_TEXT']);
-            $summary = EventsStatementsSummary::createFromPerformanceSchema($querySummaryByDigest);
-            $query->setEventsStatementsSummary($summary);
-            $query->linkTablesToQuery($schema, $database);
-            $schema->addQuery($query);
+            try {
+                $query = new Query($querySummaryByDigest['DIGEST_TEXT']);
+                $summary = EventsStatementsSummary::createFromPerformanceSchema($querySummaryByDigest);
+                $query->setEventsStatementsSummary($summary);
+                $query->linkTablesToQuery($schema, $database);
+                $schema->addQuery($query);
+            } catch (Exception $exception) {
+                $this->log()->warning("Skipped ". $querySummaryByDigest['DIGEST'] ." as subqueries aren't supported.");
+            }
         }
     }
 
