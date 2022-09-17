@@ -13,7 +13,7 @@ class InformationSchema
 {
     public string $table_type;
     public string $engine;
-    public string $version;
+    public ?string $version;
     public string $row_format;
     public int $table_rows;
     public int $avg_row_length;
@@ -26,7 +26,7 @@ class InformationSchema
     public ?string $check_time;
     public string $table_collation;
     public ?string $checksum;
-    public string $create_options;
+    public ?string $create_options;
     public string $table_comment;
 
     protected function __construct()
