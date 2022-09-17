@@ -134,6 +134,11 @@ class Query implements Entity
 
         $response = [];
         foreach ($parsed['FROM'] as $from) {
+            // It's possible that the FROM is a sub-query. We'll need to deal with this soon
+            if (!isset($from['no_quotes'])) {
+                throw new \Exception("Sub-queries not handled at the moment.");
+            }
+
             // DIGEST should always contain the `schema`.`table`
             $parts = $from['no_quotes']['parts'];
             $table = [];
