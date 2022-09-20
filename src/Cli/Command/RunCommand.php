@@ -140,9 +140,8 @@ class RunCommand extends AbstractDatabaseCommand
         Factory $factory,
         OutputInterface $output
     ): void {
-        // outputs multiple lines to the console (adding "\n" at the end of each line)
-
-        $database = $factory->buildDatabase($factory->getConnection(), $schemaNames);
+        $load_performance_schema = $input->getOption('performance_schema');
+        $database = $factory->buildDatabase($factory->getConnection(), $schemaNames, $load_performance_schema);
         $uptime = (int)$database->getStatus()['Uptime'];
         $this->formatter->write('<info>MySQL Version:</info> ' . $database->getVersion())->eol();
         $this->formatter->write('<info>Uptime:</info> ' . $this->returnUptimeInBestUnits($uptime))->eol();
@@ -169,11 +168,9 @@ class RunCommand extends AbstractDatabaseCommand
             new LowCardinality(),
             new IndexPrefix(),
             new UUIDStorage(),
-            new FunctionsOnIndex(),
             new LowCardinalityExpensiveStorage(),
         );
 
-        $load_performance_schema = $input->getOption('performance_schema');
         if ($load_performance_schema) {
             $this->formatter->eol();
             $this->formatter->write('Enabling performance_schema checks.')->eol();
@@ -213,9 +210,13 @@ class RunCommand extends AbstractDatabaseCommand
                 new UnusedIndexes(),
                 new NotConnecting(),
                 new UnusedTable(),
-                new Inefficient()
+                new Inefficient(),
+                new FunctionsOnIndex(),
             );
         }
+
+        $orchestrator->addEntities($database);
+        $orchestrator->addEntities(...$database->getAccounts());
 
         foreach ($database->getSchemas() as $schema) {
             $tables = $schema->getTables();
@@ -230,8 +231,6 @@ class RunCommand extends AbstractDatabaseCommand
                 return;
             }
 
-            $orchestrator->addEntities($database);
-            $orchestrator->addEntities(...$database->getAccounts());
             $orchestrator->addEntities($schema);
             $orchestrator->addEntities(...$tables);
             $orchestrator->addEntities(...$schema->getQueries());
