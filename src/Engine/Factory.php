@@ -126,6 +126,7 @@ class Factory
     {
         try {
             // Collect all query digests that have been run so far.
+            $this->log()->info("Collecting all query digests for schema `" . $schema->getName() . "`.");
             $statement = $this->getConnection()->prepare("
                 SELECT *
                 FROM performance_schema.events_statements_summary_by_digest
@@ -453,7 +454,7 @@ class Factory
      * @throws MissingPermissions
      * @throws \Doctrine\DBAL\Driver\Exception
      */
-    public function buildDatabase(Connection $connection, array $schema_names): Database
+    public function buildDatabase(Connection $connection, array $schema_names, bool $load_performance_schema): Database
     {
         $database = new Database($connection);
         $database->setVariables($this->getVariables($connection));
@@ -462,6 +463,9 @@ class Factory
         $database->setTablespaces(...$this->getTablespaces($connection));
 
         $this->checkMySqlVersion($database);
+
+        $can_load_performance_schema = $database->hasPerformanceSchema()
+            && $this->hasPermission('performance_schema', '?');
 
         $schemas = [];
         foreach ($schema_names as $schema_name) {
@@ -615,83 +619,93 @@ class Factory
 
             $innodb_tables = $this->getInnodbTableMeta($connection, $schema);
 
-            if (!$database->hasPerformanceSchema() || !$this->hasPermission('performance_schema', '?')) {
-                $message = "Missing critical permission to access performance_schema.?.";
-                $this->log()->warning($message);
-            } else {
-                // Collect all indexes that haven't been used
-                $statement = $this->getConnection()->prepare("
-                    SELECT object_schema, object_name, index_name
-                    FROM performance_schema.table_io_waits_summary_by_index_usage
-                    WHERE index_name IS NOT NULL
-                        AND index_name != 'PRIMARY'
-                        AND count_star = 0
-                        AND object_schema = :schema
-                    ORDER BY object_schema, object_name;
-                ");
-                $statement->bindValue("schema", $schema->getName());
-                $statement->execute();
-                foreach ($statement->fetchAllAssociative() as $row) {
-                    $index = $table_indexes_objects[$row['object_name']][$row['index_name']];
-                    $schema_unused_indexes[$row['object_name']][] = new SchemaUnusedIndex($index);
-                }
-
-                // Collect all accounts who have not been closing connections properly.
-                $accountsNotClosedProperly = $this->getConnection()->fetchAllAssociative("
-                    SELECT
-                      ess.user,
-                      ess.host,
-                      (a.total_connections - a.current_connections) - ess.count_star as not_closed,
-                      ((a.total_connections - a.current_connections) - ess.count_star) * 100 /
-                      (a.total_connections - a.current_connections) as not_closed_perc
-                    FROM performance_schema.events_statements_summary_by_account_by_event_name ess
-                    JOIN performance_schema.accounts a on (ess.user = a.user and ess.host = a.host)
-                    WHERE ess.event_name = 'statement/com/quit'
-                        AND (a.total_connections - a.current_connections) > ess.count_star
-                ");
-
-                foreach ($accountsNotClosedProperly as $accountNotClosedProperly) {
-                    $account = $database->getAccount(
-                        $accountNotClosedProperly['user'],
-                        $accountNotClosedProperly['host']
-                    );
-                    if (!$account) {
-                        $account = new Account($accountNotClosedProperly['user'], $accountNotClosedProperly['host']);
-                        $database->addAccount($account);
+            if ($load_performance_schema) {
+                if (!$can_load_performance_schema) {
+                    $message = "Missing critical permission to access performance_schema.?.";
+                    $this->log()->warning($message);
+                } else {
+                    // Collect all indexes that haven't been used
+                    $this->log()->info("Collecting performance_schema.table_io_waits_summary_by_index_usage.");
+                    $statement = $this->getConnection()->prepare("
+                        SELECT object_schema, object_name, index_name
+                        FROM performance_schema.table_io_waits_summary_by_index_usage
+                        WHERE index_name IS NOT NULL
+                            AND index_name != 'PRIMARY'
+                            AND count_star = 0
+                            AND object_schema = :schema
+                        ORDER BY object_schema, object_name;
+                    ");
+                    $statement->bindValue("schema", $schema->getName());
+                    $statement->execute();
+                    foreach ($statement->fetchAllAssociative() as $row) {
+                        $index = $table_indexes_objects[$row['object_name']][$row['index_name']];
+                        $schema_unused_indexes[$row['object_name']][] = new SchemaUnusedIndex($index);
                     }
-                    $account->setAccountNotClosedProperly(
-                        NotClosedProperly::createFromEventSummary($accountNotClosedProperly)
-                    );
-                }
 
-                $accountConnections = $this->getConnection()->fetchAllAssociative("
-                    SELECT * FROM performance_schema.accounts WHERE USER IS NOT NULL AND HOST IS NOT NULL
-                ");
-                foreach ($accountConnections as $accountConnection) {
-                    $account = $database->getAccount($accountConnection['USER'], $accountConnection['HOST']);
-                    if (!$account) {
-                        $account = new Account($accountConnection['USER'], $accountConnection['HOST']);
-                        $database->addAccount($account);
+                    // Collect all accounts who have not been closing connections properly.
+                    $message = "Collecting performance_schema.events_statements_summary_by_account_by_event_name.";
+                    $this->log()->info($message);
+                    $accountsNotClosedProperly = $this->getConnection()->fetchAllAssociative("
+                        SELECT
+                          ess.user,
+                          ess.host,
+                          (a.total_connections - a.current_connections) - ess.count_star as not_closed,
+                          ((a.total_connections - a.current_connections) - ess.count_star) * 100 /
+                          (a.total_connections - a.current_connections) as not_closed_perc
+                        FROM performance_schema.events_statements_summary_by_account_by_event_name ess
+                        JOIN performance_schema.accounts a on (ess.user = a.user and ess.host = a.host)
+                        WHERE ess.event_name = 'statement/com/quit'
+                            AND (a.total_connections - a.current_connections) > ess.count_star
+                    ");
+
+                    foreach ($accountsNotClosedProperly as $accountNotClosedProperly) {
+                        $account = $database->getAccount(
+                            $accountNotClosedProperly['user'],
+                            $accountNotClosedProperly['host']
+                        );
+                        if (!$account) {
+                            $account = new Account(
+                                $accountNotClosedProperly['user'],
+                                $accountNotClosedProperly['host']
+                            );
+                            $database->addAccount($account);
+                        }
+                        $account->setAccountNotClosedProperly(
+                            NotClosedProperly::createFromEventSummary($accountNotClosedProperly)
+                        );
                     }
-                    $account->setCurrentConnections((int)$accountConnection['CURRENT_CONNECTIONS']);
-                    $account->setTotalConnections((int)$accountConnection['TOTAL_CONNECTIONS']);
-                }
 
-                $query = "
-                    SELECT OBJECT_NAME, COUNT_READ, COUNT_WRITE
-                    FROM performance_schema.table_io_waits_summary_by_table
-                    WHERE OBJECT_SCHEMA=:schema
-                ";
-                $statement = $this->connection->prepare($query);
-                $statement->bindValue("schema", $schema_name);
-                $statement->execute();
+                    $this->log()->info("Collecting performance_schema.accounts.");
+                    $accountConnections = $this->getConnection()->fetchAllAssociative("
+                        SELECT * FROM performance_schema.accounts WHERE USER IS NOT NULL AND HOST IS NOT NULL
+                    ");
+                    foreach ($accountConnections as $accountConnection) {
+                        $account = $database->getAccount($accountConnection['USER'], $accountConnection['HOST']);
+                        if (!$account) {
+                            $account = new Account($accountConnection['USER'], $accountConnection['HOST']);
+                            $database->addAccount($account);
+                        }
+                        $account->setCurrentConnections((int)$accountConnection['CURRENT_CONNECTIONS']);
+                        $account->setTotalConnections((int)$accountConnection['TOTAL_CONNECTIONS']);
+                    }
 
-                $access_requests = $statement->fetchAllAssociative();
-                foreach ($access_requests as $access_request) {
-                    $table_access_information[$access_request['OBJECT_NAME']] = new AccessInformation(
-                        (int)$access_request['COUNT_READ'],
-                        (int)$access_request['COUNT_WRITE']
-                    );
+                    $this->log()->info("Collecting performance_schema.table_io_waits_summary_by_table.");
+                    $query = "
+                        SELECT OBJECT_NAME, COUNT_READ, COUNT_WRITE
+                        FROM performance_schema.table_io_waits_summary_by_table
+                        WHERE OBJECT_SCHEMA=:schema
+                    ";
+                    $statement = $this->connection->prepare($query);
+                    $statement->bindValue("schema", $schema->getName());
+                    $statement->execute();
+
+                    $access_requests = $statement->fetchAllAssociative();
+                    foreach ($access_requests as $access_request) {
+                        $table_access_information[$access_request['OBJECT_NAME']] = new AccessInformation(
+                            (int)$access_request['COUNT_READ'],
+                            (int)$access_request['COUNT_WRITE']
+                        );
+                    }
                 }
             }
 
@@ -728,8 +742,10 @@ class Factory
         }
 
         $database->setSchemas(...$schemas);
-        foreach ($schemas as $schema) {
-            $this->getEventStatementsSummary($schema, $database);
+        if ($load_performance_schema && $can_load_performance_schema) {
+            foreach ($schemas as $schema) {
+                $this->getEventStatementsSummary($schema, $database);
+            }
         }
 
         return $database;
