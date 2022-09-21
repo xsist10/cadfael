@@ -21,19 +21,39 @@ abstract class AbstractDatabaseCommand extends Command
 {
     protected Formatter $formatter;
 
+    /**
+     * @param InputInterface $input
+     * @return mixed|string
+     */
+    public function getUsername(InputInterface $input)
+    {
+        return $input->getOption('username')
+            ? $input->getOption('username')
+            : $_SERVER['MYSQL_USER'] ?? 'root';
+    }
+
     protected function configure(): void
     {
         $this
             ->addOption('host', null, InputOption::VALUE_REQUIRED, 'The host of the database.', 'localhost')
             ->addOption('port', 'p', InputOption::VALUE_REQUIRED, 'The port of the database.', 3306)
-            ->addOption('username', 'u', InputOption::VALUE_REQUIRED, 'The username of the database.', 'root')
+            ->addOption(
+                'username',
+                'u',
+                InputOption::VALUE_REQUIRED,
+                'The username of the database (or set environment variable MYSQL_USER).'
+            )
             ->addOption(
                 'secret',
                 's',
                 InputOption::VALUE_REQUIRED,
-                'Specify a secrets file that contains the database password.'
+                'Specify a file that contains the database password (or set environment variable MYSQL_PASSWORD).'
             )
-            ->addArgument('schema', InputArgument::REQUIRED | InputArgument::IS_ARRAY, 'The schema(s) to use.');
+            ->addArgument(
+                'schema',
+                InputArgument::IS_ARRAY,
+                'The schema(s) to use (or set environment variable MYSQL_DATABASE).'
+            );
     }
 
     protected function displayDatabaseDetails(InputInterface $input): void
@@ -43,12 +63,13 @@ abstract class AbstractDatabaseCommand extends Command
             $input->getOption('host'),
             $input->getOption('port')
         ))->eol();
-        $this->formatter->write('<info>User:</info> ' . $input->getOption('username'))->eol();
+        $this->formatter->write('<info>User:</info> ' . $this->getUsername($input))->eol();
         $this->formatter->eol();
     }
 
     protected function getDatabasePassword(InputInterface $input, OutputInterface $output): string
     {
+        // First we see if a secret file is provided
         if ($input->getOption('secret')) {
             $file = $input->getOption('secret');
             if (file_exists($file)) {
@@ -56,6 +77,12 @@ abstract class AbstractDatabaseCommand extends Command
                 return $password ?? '';
             }
         }
+
+        // Then we check if there is an environment variables
+        if (isset($_SERVER['MYSQL_PASSWORD'])) {
+            return $_SERVER['MYSQL_PASSWORD'];
+        }
+
         $question = new Question('What is the database password? ');
         $question->setHidden(true);
         $question->setHiddenFallback(false);
@@ -75,9 +102,12 @@ abstract class AbstractDatabaseCommand extends Command
      */
     protected function getFactory(InputInterface $input, string $schemaName, string $password): Factory
     {
+        // Try use a specified username, otherwise default to the environment variables, finally fall back to root
+        $username = $this->getUsername($input);
+
         $connectionParams = array(
             'dbname' => $schemaName,
-            'user' => $input->getOption('username'),
+            'user' => $username,
             'password' => $password,
             'host' => $input->getOption('host') . ':' . $input->getOption('port'),
             'driver' => 'pdo_mysql',
