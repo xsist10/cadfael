@@ -1,0 +1,37 @@
+FROM php:8.1-cli
+
+# Install the PDO MySQL extension so we can database
+RUN docker-php-ext-install pdo_mysql
+  
+# Update apt
+RUN apt-get update
+  
+# Install Zip extension
+RUN apt-get install -y libzip-dev zip && \
+  docker-php-ext-install zip
+
+# Install git
+RUN apt-get install -y git
+
+ENV MYSQL_DATABASE=test
+ENV MYSQL_USER=admin
+ENV MYSQL_PASSWORD=abc123
+
+# Move our PHP file into the container
+COPY ./bin /usr/src/app/bin
+COPY ./src /usr/src/app/src
+COPY ./composer.lock /usr/src/app/
+COPY ./composer.json /usr/src/app/
+  
+# Make things easier if you shell in
+WORKDIR /usr/src/app
+
+# Install Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# Install vendor dependencies
+RUN export COMPOSER_MEMORY_LIMIT=-1 && \
+  composer self-update && \
+  composer install --no-interaction --optimize-autoloader
+
+# Run command
+CMD [ "php", "./bin/cadfael", "run", "--host", "localhost", "--port", "3306", "--username", "admin", "--performance_schema", "-vvv", "test" ]
