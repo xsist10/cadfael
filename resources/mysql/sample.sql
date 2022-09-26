@@ -1,3 +1,6 @@
+CREATE DATABASE IF NOT EXISTS test;
+USE test;
+
 DROP TABLE IF EXISTS `table_with_large_text_index``;
 CREATE TABLE `table_with_large_text_index` (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,

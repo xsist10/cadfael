@@ -1,0 +1,18 @@
+version: '3.7'
+services:
+  database:
+    container_name: database
+    build:
+      context: .
+      dockerfile: ./resources/mysql/Dockerfile.yaml
+    restart: always
+    ports:
+      - 3306:3306
+  app:
+    container_name: app
+    build:
+      context: .
+      dockerfile: ./resources/php/Dockerfile.yaml
+    restart: always
+    external_links:
+      - database
