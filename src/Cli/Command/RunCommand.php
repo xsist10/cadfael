@@ -73,7 +73,12 @@ class RunCommand extends AbstractDatabaseCommand
             )
             // the full command description shown when running the command with
             // the "--help" option
-//            ->setHelp('.')
+            ->setHelp(
+                "You can set the following environment variables:\n" .
+                "* MYSQL_DATABASE\n" .
+                "* MYSQL_USER\n" .
+                "* MYSQL_PASSWORD\n"
+            )
         ;
     }
 
@@ -294,6 +299,14 @@ class RunCommand extends AbstractDatabaseCommand
         $this->displayDatabaseDetails($input);
         $password = $this->getDatabasePassword($input, $output);
 
-        return $this->processSchemas($input, $output, $password, (array)$input->getArgument('schema'));
+        $schemas = [];
+        if ($input->getArgument('schema')) {
+            $schemas = (array)$input->getArgument('schema');
+        }
+        if (isset($_SERVER['MYSQL_DATABASE'])) {
+            $schemas = [ $_SERVER['MYSQL_DATABASE'] ];
+        }
+
+        return $this->processSchemas($input, $output, $password, $schemas);
     }
 }
