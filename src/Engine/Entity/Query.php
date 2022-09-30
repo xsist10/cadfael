@@ -122,39 +122,61 @@ class Query implements Entity
     }
 
     /**
+     * Return all the tables that are used in an expression
+     * @return array
+     * @throws \Exception
+     */
+    public function findTablesInExpression($fragment): array
+    {
+        if (isset($fragment['expr_type'])) {
+            if ($fragment['expr_type'] === 'table') {
+                // DIGEST should always contain the `schema`.`table`
+                $parts = $fragment['no_quotes']['parts'];
+                $table = [];
+                $table['name'] = array_pop($parts);
+                if (!empty($parts)) {
+                    $table['schema'] = array_pop($parts);
+                }
+                if (!empty($fragment['alias'])) {
+                    $table['alias'] = $fragment['alias']['name'];
+                } else {
+                    $table['alias'] = $table['name'];
+                }
+                return [ $table ];
+            }
+
+            if ($fragment['expr_type'] === 'subquery') {
+                return $this->findTablesInExpression($fragment['sub_tree']);
+            }
+
+            if ($fragment['expr_type'] === 'table_expression') {
+                $tables = [];
+                foreach ($fragment['sub_tree'] as $subtree) {
+                    $tables = array_merge($tables, $this->findTablesInExpression($subtree));
+                }
+
+                return $tables;
+            }
+        } elseif (isset($fragment['FROM'])) {
+            $tables = [];
+            foreach ($fragment['FROM'] as $from) {
+                $tables = array_merge($tables, $this->findTablesInExpression($from));
+            }
+
+            return $tables;
+        }
+
+        // It's possible that we've encountered something we didn't prepare for
+        throw new \Exception("Uncertain on how to parse this query.");
+    }
+
+    /**
      * Return all the tables that are used in this query
      * @return array
      */
     public function getTableNamesInQuery(): array
     {
-        $parsed = $this->query_parser->parsed;
-        if (!isset($parsed['FROM'])) {
-            return [];
-        }
-
-        $response = [];
-        foreach ($parsed['FROM'] as $from) {
-            // It's possible that the FROM is a sub-query. We'll need to deal with this soon
-            if (!isset($from['no_quotes'])) {
-                throw new \Exception("Sub-queries not handled at the moment.");
-            }
-
-            // DIGEST should always contain the `schema`.`table`
-            $parts = $from['no_quotes']['parts'];
-            $table = [];
-            $table['name'] = array_pop($parts);
-            if (!empty($parts)) {
-                $table['schema'] = array_pop($parts);
-            }
-            if (!empty($from['alias'])) {
-                $table['alias'] = $from['alias']['name'];
-            } else {
-                $table['alias'] = $table['name'];
-            }
-            $response[] = $table;
-        }
-
-        return $response;
+        return array_unique($this->findTablesInExpression($this->query_parser->parsed), SORT_REGULAR);
     }
 
     /**

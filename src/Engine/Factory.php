@@ -158,7 +158,7 @@ class Factory
                 $query->linkTablesToQuery($schema, $database);
                 $schema->addQuery($query);
             } catch (Exception $exception) {
-                $this->log()->warning("Skipped ". $querySummaryByDigest['DIGEST'] ." as subqueries aren't supported.");
+                $this->log()->warning("Skipping ". $querySummaryByDigest['DIGEST'] .". " . $exception->getMessage());
             }
         }
     }
