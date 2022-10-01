@@ -13,10 +13,6 @@ RUN apt-get install -y libzip-dev zip && \
 # Install git
 RUN apt-get install -y git
 
-ENV MYSQL_DATABASE=test
-ENV MYSQL_USER=admin
-ENV MYSQL_PASSWORD=abc123
-
 # Move our PHP file into the container
 COPY ./bin /usr/src/app/bin
 COPY ./src /usr/src/app/src
@@ -33,5 +29,5 @@ RUN export COMPOSER_MEMORY_LIMIT=-1 && \
   composer self-update && \
   composer install --no-interaction --optimize-autoloader
 
-# Run command
-CMD [ "php", "./bin/cadfael", "run", "--host", "localhost", "--port", "3306", "--username", "admin", "--performance_schema", "-vvv", "test" ]
+# Run command (prepended with || true so the startup doesn't fail)
+CMD [ "php", "./bin/cadfael", "run", "--host", "database", "--port", "3306", "-vvv", "test", "||", "true" ]

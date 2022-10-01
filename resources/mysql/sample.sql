@@ -1,7 +1,7 @@
 CREATE DATABASE IF NOT EXISTS test;
 USE test;
 
-DROP TABLE IF EXISTS `table_with_large_text_index``;
+DROP TABLE IF EXISTS `table_with_large_text_index`;
 CREATE TABLE `table_with_large_text_index` (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE `table_with_large_text_index` (
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `table_empty`;
-CREATE TABLE `table_empty`` (
+CREATE TABLE `table_empty` (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     PRIMARY KEY (id)
 ) ENGINE=InnoDB;
