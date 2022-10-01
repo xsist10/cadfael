@@ -1,11 +1,5 @@
 FROM mysql:8.0
 
-# Set an insecure password
-ENV MYSQL_DATABASE=test
-ENV MYSQL_USER=admin
-ENV MYSQL_RANDOM_ROOT_PASSWORD=true
-ENV MYSQL_PASSWORD=abc123
-
 # Copy over our SQL queries
 COPY ./resources/mysql/sample.sql /sample.sql
 

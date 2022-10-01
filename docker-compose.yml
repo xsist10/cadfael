@@ -2,6 +2,12 @@ version: '3.7'
 services:
   database:
     container_name: database
+    environment:
+      # Set an insecure password
+      MYSQL_ROOT_PASSWORD: 'abc123'
+      MYSQL_DATABASE: 'test'
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: 'abc123'
     build:
       context: .
       dockerfile: ./resources/mysql/Dockerfile.yaml
@@ -10,9 +16,15 @@ services:
       - 3306:3306
   app:
     container_name: app
+    environment:
+      MYSQL_DATABASE: 'test'
+      MYSQL_USER: 'root'
+      MYSQL_PASSWORD: 'abc123'
     build:
       context: .
       dockerfile: ./resources/php/Dockerfile.yaml
     restart: always
+    depends_on:
+      - database
     external_links:
       - database
