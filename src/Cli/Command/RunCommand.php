@@ -71,10 +71,18 @@ class RunCommand extends AbstractDatabaseCommand
                 'Changes the output format (json or cli)',
                 'cli'
             )
+            ->addOption(
+                'force-yes',
+                'f',
+                InputOption::VALUE_NONE,
+                'Force yes on all prompts (like warnings around server not being active for long enough for performance checks to have meaning'
+            )
             // the full command description shown when running the command with
             // the "--help" option
             ->setHelp(
                 "You can set the following environment variables:\n" .
+                "* MYSQL_HOST\n" .
+                "* MYSQL_PORT\n" .
                 "* MYSQL_DATABASE\n" .
                 "* MYSQL_USER\n" .
                 "* MYSQL_PASSWORD\n"
@@ -199,13 +207,16 @@ class RunCommand extends AbstractDatabaseCommand
                     ->eol();
                 $this->formatter->write('<comment>Certain checks may be incomplete or misleading.</comment>')->eol();
 
-                $question = new ConfirmationQuestion(
-                    'Run with performance schema checks anyway [Y/N]? ',
-                    false
-                );
+                // If we're not forcing yes, ask if they really want to include these checks
+                if (!$input->getOption('force-yes')) {
+                    $question = new ConfirmationQuestion(
+                        'Run with performance schema checks anyway [Y/N]? ',
+                        false
+                    );
 
-                $helper = $this->getHelper('question');
-                $load_performance_schema = $helper->ask($input, $output, $question);
+                    $helper = $this->getHelper('question');
+                    $load_performance_schema = $helper->ask($input, $output, $question);
+                }
             }
         }
 
