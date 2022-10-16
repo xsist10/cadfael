@@ -32,6 +32,28 @@ abstract class AbstractDatabaseCommand extends Command
             : $_SERVER['MYSQL_USER'] ?? 'root';
     }
 
+    /**
+     * @param InputInterface $input
+     * @return mixed|string
+     */
+    public function getHost(InputInterface $input)
+    {
+        return $input->getOption('host')
+            ? $input->getOption('host')
+            : $_SERVER['MYSQL_HOST'] ?? 'localhost';
+    }
+
+    /**
+     * @param InputInterface $input
+     * @return mixed|string
+     */
+    public function getPort(InputInterface $input)
+    {
+        return $input->getOption('port')
+            ? $input->getOption('port')
+            : $_SERVER['MYSQL_PORT'] ?? 3306;
+    }
+
     protected function configure(): void
     {
         $this
@@ -60,8 +82,8 @@ abstract class AbstractDatabaseCommand extends Command
     {
         $this->formatter->write(sprintf(
             "<info>Host:</info> %s:%s",
-            $input->getOption('host'),
-            $input->getOption('port')
+            $this->getHost($input),
+            $this->getPort($input)
         ))->eol();
         $this->formatter->write('<info>User:</info> ' . $this->getUsername($input))->eol();
         $this->formatter->eol();
@@ -109,7 +131,7 @@ abstract class AbstractDatabaseCommand extends Command
             'dbname' => $schemaName,
             'user' => $username,
             'password' => $password,
-            'host' => $input->getOption('host') . ':' . $input->getOption('port'),
+            'host' => $this->getHost($input) . ':' . $this->getPort($input),
             'driver' => 'pdo_mysql',
         );
         $connection = DriverManager::getConnection($connectionParams);

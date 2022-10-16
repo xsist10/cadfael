@@ -4,6 +4,7 @@ services:
     container_name: database
     environment:
       # Set an insecure password
+      MYSQL_HOST: 'localhost'
       MYSQL_ROOT_PASSWORD: 'abc123'
       MYSQL_DATABASE: 'test'
       MYSQL_USER: 'user'
@@ -17,6 +18,7 @@ services:
   app:
     container_name: app
     environment:
+      MYSQL_HOST: 'database'
       MYSQL_DATABASE: 'test'
       MYSQL_USER: 'root'
       MYSQL_PASSWORD: 'abc123'
