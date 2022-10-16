@@ -62,7 +62,8 @@ class RunCommand extends AbstractDatabaseCommand
                 'performance_schema',
                 'ps',
                 InputOption::VALUE_NONE,
-                'Include performance_schema metric checks. Only useful if the database has been running for a while.'
+                'Include performance_schema metric checks. Only useful if the database has been running for '
+                . 'a while.'
             )
             ->addOption(
                 'output-format',
@@ -75,7 +76,8 @@ class RunCommand extends AbstractDatabaseCommand
                 'force-yes',
                 'f',
                 InputOption::VALUE_NONE,
-                'Force yes on all prompts (like warnings around server not being active for long enough for performance checks to have meaning'
+                'Force yes on all prompts (like warnings around server not being active for long enough for '
+                . 'performance checks to have meaning'
             )
             // the full command description shown when running the command with
             // the "--help" option
