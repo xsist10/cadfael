@@ -295,7 +295,9 @@ class RunCommand extends AbstractDatabaseCommand
         if ($input->getOption('output-format') === 'json') {
             $this->formatter = new Json($output);
         }
-        $this->formatter->write('Cadfael CLI Tool')->eol();
+
+        $title = $this->getApplication()->getLongVersion();
+        $this->formatter->write($title)->eol();
         $this->formatter->eol();
 
         $this->displayDatabaseDetails($input);
