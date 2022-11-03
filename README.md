@@ -3,8 +3,7 @@
 ![Build](https://github.com/xsist10/cadfael/workflows/build/badge.svg?branch=master)
 
 ![Cadfael, a golem in a monk cowl, hunched over a desk examining a the contents of a vial and consulting a book](resources/images/scene.png)
-[Artwork Copyright by Ben Fleuter](https://benfleuter.com)
-
+[Artwork Commissioned and Copyright by Ben Fleuter](https://benfleuter.com)
 
 Cadfael is static analysis tool to provide critiquing for MySQL databases.
 
@@ -60,14 +59,14 @@ For meaningful results you *should* run this against the database that is being 
 
 ### Output
 ```
-Cadfael CLI Tool
+Cadfael CLI Tool 0.2.6
 
 Host: localhost:3306
 User: [username]
 
 What is the database password? 
 
-MySQL Version: 8.0.27-0ubuntu0.21.10.1
+MySQL Version: 8.0.30-0ubuntu0.22.04.1
 Uptime: 3.6 days
 
 Attempting to scan schema test
@@ -77,6 +76,10 @@ Tables Found: 6
 o.....wo.....w.o.o...o..
 
 Checks passed: 67/84
+(.) Ok: 67, (o) Concern: 8, (w) Warning: 9
+
+Showing: Warning and higher
+
 
 > Empty table
 
