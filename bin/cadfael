@@ -15,7 +15,7 @@ use Cadfael\Cli\Command\AboutCommand;
 
 $application = new Application();
 $application->setName('Cadfael CLI');
-$application->setVersion('0.2.5');
+$application->setVersion('0.2.6');
 $application->add(new AboutCommand());
 $application->add(new RunCommand());
 $application->run();
