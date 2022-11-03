@@ -66,9 +66,14 @@ class Report
         return $this->status;
     }
 
+    public static function getStatusLabelFromValue(int $status): string
+    {
+        return self::STATUS_LABEL[$status];
+    }
+
     public function getStatusLabel(): string
     {
-        return self::STATUS_LABEL[$this->status];
+        return self::getStatusLabelFromValue($this->getStatus());
     }
 
     public function getCheck(): Check

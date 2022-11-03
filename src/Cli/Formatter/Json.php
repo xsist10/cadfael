@@ -54,17 +54,7 @@ class Json extends Formatter
         return $this;
     }
 
-    public function renderGroupedReports(array $grouped)
-    {
-        $response = [];
-        foreach ($grouped as $reports) {
-            $response[] = $this->renderReports($reports);
-        }
-
-        $this->output->write(json_encode($response));
-    }
-
-    protected function renderReports(array $reports)
+    public function renderReports(int $severity, array $reports)
     {
         $check = $reports[0]->getCheck();
         $response = [
@@ -85,7 +75,8 @@ class Json extends Formatter
             ];
         }
 
-        return $response;
+        $this->output->write(json_encode($response));
+        return $this;
     }
 
     public function prepareCallback(Orchestrator $orchestrator)

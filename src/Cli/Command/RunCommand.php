@@ -30,6 +30,7 @@ use Cadfael\Engine\Check\Table\UnusedTable;
 use Cadfael\Engine\Factory;
 use Cadfael\Engine\Orchestrator;
 use Cadfael\Engine\Report;
+use Doctrine\DBAL\Driver\Exception;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -45,6 +46,12 @@ class RunCommand extends AbstractDatabaseCommand
     protected static $defaultName = 'run';
 
     protected int $worstReportStatus = Report::STATUS_OK;
+
+    /**
+     * At what level do we return a failed run (for use in bash/CI)
+     * @var int
+     */
+    protected int $failedStatusReport = Report::STATUS_WARNING;
 
     /**
      * @var array<Report>
@@ -73,11 +80,19 @@ class RunCommand extends AbstractDatabaseCommand
                 'cli'
             )
             ->addOption(
+                'severity',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Specify the level of checks to show (1-5). 1 will show all reports, 5 will only show the '
+                . 'most critical. Has no effect if output is not cli.',
+                Report::STATUS_CONCERN
+            )
+            ->addOption(
                 'force-yes',
                 'f',
                 InputOption::VALUE_NONE,
                 'Force yes on all prompts (like warnings around server not being active for long enough for '
-                . 'performance checks to have meaning'
+                . 'performance checks to have meaning.'
             )
             // the full command description shown when running the command with
             // the "--help" option
@@ -103,39 +118,6 @@ class RunCommand extends AbstractDatabaseCommand
         } else {
             return round($uptime_in_seconds / 216000, 1) . ' days';
         }
-    }
-
-    public function renderReports(): void
-    {
-        $report_count = count($this->reports);
-        // Bail out early if we have no reports to report on
-        if (!$report_count) {
-            $this->formatter->write("No reports generated.")->eol();
-            return;
-        }
-
-        $issues = 0;
-        $grouped = [];
-        foreach ($this->reports as $report) {
-            if ($report->getStatus() !== Report::STATUS_OK) {
-                $issues++;
-                $grouped[$report->getCheckLabel()][] = $report;
-            }
-        }
-
-        $this->formatter
-            ->eol()
-            ->write(sprintf(
-                "<info>Checks passed:</info> %d/%s",
-                $report_count - $issues,
-                $report_count
-            ))
-            ->eol()
-            ->eol();
-
-        ksort($grouped);
-
-        $this->formatter->renderGroupedReports($grouped);
     }
 
     /**
@@ -259,9 +241,17 @@ class RunCommand extends AbstractDatabaseCommand
 
             $this->reports = $orchestrator->run();
 
-            $this->formatter->eol();
-            $this->renderReports();
-            $this->formatter->eol();
+            $severity = (int)$input->getOption('severity') ?? Report::STATUS_INFO;
+            // We match the failed status to the severity (unless it's OK, then bump it up to INFO at least)
+            $this->failedStatusReport = $severity > Report::STATUS_OK ? $severity : Report::STATUS_INFO;
+
+            $this->formatter
+                ->eol()
+                ->renderReports(
+                    $severity,
+                    $this->reports
+                )
+                ->eol();
         }
     }
 
@@ -279,10 +269,6 @@ class RunCommand extends AbstractDatabaseCommand
         String $password,
         array $schemas
     ): int {
-        if (!count($schemas)) {
-            return Command::FAILURE;
-        }
-
         try {
             $factory = $this->getFactory($input, $schemas[0], $password);
             $this->runChecksAgainstSchema($input, $schemas, $factory, $output);
@@ -294,12 +280,15 @@ class RunCommand extends AbstractDatabaseCommand
         }
 
         // If we get anything serious, our script should fail
-        if ($this->worstReportStatus >= Report::STATUS_WARNING) {
+        if ($this->worstReportStatus >= $this->failedStatusReport) {
             return Command::FAILURE;
         }
         return Command::SUCCESS;
     }
 
+    /**
+     * @throws \Doctrine\DBAL\DBALException|Exception
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->formatter = new Cli($output);
@@ -310,7 +299,6 @@ class RunCommand extends AbstractDatabaseCommand
         $this->formatter->eol();
 
         $this->displayDatabaseDetails($input);
-        $password = $this->getDatabasePassword($input, $output);
 
         $schemas = [];
         if ($input->getArgument('schema')) {
@@ -319,6 +307,13 @@ class RunCommand extends AbstractDatabaseCommand
         if (isset($_SERVER['MYSQL_DATABASE'])) {
             $schemas = [ $_SERVER['MYSQL_DATABASE'] ];
         }
+
+        if (!count($schemas)) {
+            $this->formatter->write('<error>No schemas specified.</error>')->eol()->eol();
+            return Command::FAILURE;
+        }
+
+        $password = $this->getDatabasePassword($input, $output);
 
         return $this->processSchemas($input, $output, $password, $schemas);
     }

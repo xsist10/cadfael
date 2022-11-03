@@ -24,12 +24,12 @@ class Cli extends Formatter
         5 => '<fg=red>',
     ];
 
-    protected function renderStatus(Report $report): string
+    protected function renderStatus(int $status): string
     {
-        return self::STATUS_COLOUR[$report->getStatus()]. $report->getStatusLabel() . "</>";
+        return self::STATUS_COLOUR[$status]. Report::getStatusLabelFromValue($status) . "</>";
     }
 
-    protected function renderStatusLegend(Report $report): string
+    protected function renderStatusLegend(int $status): string
     {
         $legend = [
             Report::STATUS_OK       => '.',
@@ -38,7 +38,7 @@ class Cli extends Formatter
             Report::STATUS_WARNING  => 'w',
             Report::STATUS_CRITICAL => 'c',
         ];
-        return self::STATUS_COLOUR[$report->getStatus()]. $legend[$report->getStatus()] . "</>";
+        return self::STATUS_COLOUR[$status]. $legend[$status] . "</>";
     }
 
     /**
@@ -87,14 +87,68 @@ class Cli extends Formatter
         return $this;
     }
 
-    public function renderGroupedReports(array $grouped)
+    public function renderReports(int $severity, array $reports)
     {
-        foreach ($grouped as $reports) {
-            $this->renderReports($reports);
+        $report_count = count($reports);
+        // Bail out early if we have no reports to report on
+        if (!$report_count) {
+            $this->write("No reports generated.")->eol();
+            return $this;
         }
+
+        $issues = 0;
+        $grouped = [];
+        $levels = [];
+        foreach ($reports as $report) {
+            if (!isset($levels[$report->getStatus()])) {
+                $levels[$report->getStatus()] = 0;
+            }
+            $levels[$report->getStatus()]++;
+            if ($report->getStatus() != Report::STATUS_OK) {
+                $issues++;
+            }
+            if ($report->getStatus() >= $severity) {
+                $grouped[$report->getCheckLabel()][] = $report;
+            }
+        }
+
+        $this->eol()
+            ->write(sprintf(
+                "<info>Checks passed:</info> %d/%s",
+                $report_count - $issues,
+                $report_count
+            ))
+            ->eol();
+
+        ksort($levels);
+        $summary = [];
+        foreach ($levels as $level => $count) {
+            $summary[] = sprintf(
+                "(%s) %s: %d",
+                $this->renderStatusLegend($level),
+                $this->renderStatus($level),
+                $count
+            );
+        }
+        $this->write(implode(', ', $summary))->eol();
+
+        $this->eol()
+            ->write(sprintf(
+                "<info>Showing:</info> %s and higher",
+                Report::getStatusLabelFromValue($severity)
+            ))
+            ->eol()->eol();
+
+        ksort($grouped);
+
+        foreach ($grouped as $reports) {
+            $this->renderGroupedReports($reports);
+        }
+
+        return $this;
     }
 
-    protected function renderReports(array $reports)
+    protected function renderGroupedReports(array $reports)
     {
         $table = new Table($this->output);
         $table->setHeaders(['Entity', 'Status', 'Message']);
@@ -114,7 +168,7 @@ class Cli extends Formatter
         foreach ($reports as $report) {
             $table->addRow([
                 $report->getEntity(),
-                $this->renderStatus($report),
+                $this->renderStatus($report->getStatus()),
                 implode("\n", $report->getMessages())
             ]);
         }
@@ -130,7 +184,7 @@ class Cli extends Formatter
             if ($formatter->getReportCount() % $formatter::TEST_BLOCK_WIDTH === 0) {
                 $formatter->eol();
             }
-            $formatter->write($formatter->renderStatusLegend($report));
+            $formatter->write($formatter->renderStatusLegend($report->getStatus()));
             $formatter->inceaseReportCount();
         });
     }
