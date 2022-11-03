@@ -3,6 +3,7 @@
 namespace Cadfael\Cli;
 
 use Cadfael\Engine\Orchestrator;
+use Cadfael\Engine\Report;
 use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class Formatter
@@ -40,7 +41,12 @@ abstract class Formatter
      */
     abstract public function error(string $messages): Formatter;
 
-    abstract public function renderGroupedReports(array $grouped);
+    /**
+     * @param int $severity
+     * @param Report[] $reports
+     * @return Formatter
+     */
+    abstract public function renderReports(int $severity, array $reports);
 
     abstract public function prepareCallback(Orchestrator $orchestrator);
 }
