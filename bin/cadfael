@@ -10,12 +10,19 @@ foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php
 }
 
 use Symfony\Component\Console\Application;
+use Composer\InstalledVersions as InstalledVersionsAlias;
 use Cadfael\Cli\Command\RunCommand;
 use Cadfael\Cli\Command\AboutCommand;
 
+$version = InstalledVersionsAlias::getPrettyVersion('cadfael/cadfael');
+// Swap out version for git tag if we're dealing with a phar generated with box
+if ($version === 'dev-master' && (int)'@is_phar@') {
+    $version = '@git_tag@';
+}
+
 $application = new Application();
 $application->setName('Cadfael CLI');
-$application->setVersion('0.2.6');
+$application->setVersion($version);
 $application->add(new AboutCommand());
 $application->add(new RunCommand());
 $application->run();
