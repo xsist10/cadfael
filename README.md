@@ -57,6 +57,24 @@ You can also include the `--performance_schema` flag if you wish to run checks a
 For meaningful results you *should* run this against the database that is being used in production otherwise you'll only be checking against the metrics collected in your development environment.
 **BUT FIRST** always speak to your DBA/Security people first before run random tools from the internet against your production database.
 
+### Environmental Variables
+
+You may want to pass parameters to Cadfael via the environment (especially if you want to integrate it into a build pipeline or want to manage secrets securely).
+
+The following environmental variables can be used instead of parameters to the binary:
+
+* MYSQL_HOST
+* MYSQL_PORT
+* MYSQL_DATABASE
+* MYSQL_USER
+* MYSQL_PASSWORD
+
+You can test this from the command line like this:
+
+```bash
+MYSQL_HOST=127.0.0.1 MYSQL_USER=root MYSQL_PORT=3306 MYSQL_DATABASE=[database_to_scan] cadfael run
+```
+
 ### Output
 ```
 Cadfael CLI Tool 0.2.6
@@ -86,7 +104,11 @@ Showing: Warning and higher
 Description: Empty tables add unnecessary cognitive load similar to dead code.
 Reference: https://github.com/xsist10/cadfael/wiki/Empty-Table
 
-+-----------------------------+---------+-----------------------------------------------------------------+
++-----------------------------+---------+---* MYSQL_HOST
+MYSQL_PORT
+MYSQL_DATABASE
+MYSQL_USER
+MYSQL_PASSWORD--------------------------------------------------------------+
 | Entity                      | Status  | Message                                                         |
 +-----------------------------+---------+-----------------------------------------------------------------+
 | table_empty                 | Warning | Table contains no records.                                      |
