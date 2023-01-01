@@ -19,7 +19,7 @@ class LowCardinality implements Check
     {
         // If the index is unique, then the cardinality is as high as it can be
         // Or if the table is empty, then it won't have any cardinality
-        if ($entity->isUnique() || !$entity->getTable()->information_schema->table_rows) {
+        if ($entity->isUnique() || !$entity->getTable()->getNumRows()) {
             return new Report(
                 $this,
                 $entity,

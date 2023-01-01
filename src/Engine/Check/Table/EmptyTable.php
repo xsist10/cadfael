@@ -18,7 +18,7 @@ class EmptyTable implements Check
 
     public function run($entity): ?Report
     {
-        if (!empty($entity->information_schema->table_rows)) {
+        if ($entity->getNumRows()) {
             return new Report(
                 $this,
                 $entity,

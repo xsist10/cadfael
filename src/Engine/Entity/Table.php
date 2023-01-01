@@ -230,6 +230,13 @@ class Table implements Entity
         return $database->getTablespace($this->innodb_table->space);
     }
 
+    public function getNumRows(): int
+    {
+        return $this->information_schema
+            ? $this->information_schema->table_rows
+            : 0;
+    }
+
     public function isVirtual(): bool
     {
         // If we don't have an information_schema, we'll have to guess
