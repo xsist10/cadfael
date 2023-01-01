@@ -179,4 +179,13 @@ class ColumnTest extends TestCase
         $this->expectException(InvalidColumnType::class);
         $this->stringColumn->getCapacity();
     }
+
+    public function test__getCardinalityRatio()
+    {
+        $this->assertEquals(
+            0,
+            $this->invalidColumn->getCardinalityRatio(),
+            "Invalid column should return a zero cardinality"
+        );
+    }
 }

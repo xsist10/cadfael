@@ -33,7 +33,7 @@ class LowCardinalityExpensiveStorage implements Check
         }
 
         // We can ignore tables under a thousand records. Optimization should focus on larger tables.
-        $num_rows = $entity->getTable()->information_schema->table_rows;
+        $num_rows = $entity->getTable()->getNumRows();
         if ($num_rows < 1_000) {
             return new Report(
                 $this,

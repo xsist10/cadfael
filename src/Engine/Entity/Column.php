@@ -12,7 +12,7 @@ use Cadfael\Engine\Exception\UnknownColumnType;
 class Column implements Entity
 {
     protected string $name;
-    protected Table $table;
+    protected ?Table $table = null;
     public InformationSchema $information_schema;
     public int $cardinality = 0;
 
@@ -43,7 +43,7 @@ class Column implements Entity
         $this->table = $table;
     }
 
-    public function getTable(): Table
+    public function getTable(): ?Table
     {
         return $this->table;
     }
@@ -265,18 +265,14 @@ class Column implements Entity
 
     public function getCardinalityRatio(): float
     {
-        if (isset($this)) {
-            $information_schema = $this->getTable()->information_schema;
-            if (!$information_schema) {
-                return 0;
-            }
-
-            // Identify the cardinality as a ratio of the size of the table
-            // Cardinality in older version of MySQL aren't distinct per column
-            $table_size = $information_schema->table_rows;
-            return $this->getCardinality() ? ($table_size / $this->getCardinality()) : 0;
+        if (!$this->getTable()) {
+            return 0;
         }
 
-        return 0;
+        // Identify the cardinality as a ratio of the size of the table
+        // Cardinality in older version of MySQL aren't distinct per column
+        return $this->getCardinality()
+            ? $this->getTable()->getNumRows() / $this->getCardinality()
+            : 0;
     }
 }

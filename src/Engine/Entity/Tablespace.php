@@ -6,6 +6,13 @@ namespace Cadfael\Engine\Entity;
 
 use Cadfael\Engine\Entity;
 
+/**
+ * Class Tablespace (readonly)
+ *
+ * Stores a representation of information_schema.innodb_tablespaces or information_schema.innodb_sys_tablespaces
+ * @package Cadfael\Engine\Entity
+ * @codeCoverageIgnore
+ */
 class Tablespace implements Entity
 {
     /**

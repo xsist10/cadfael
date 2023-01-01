@@ -25,12 +25,21 @@ class IndexPrefixTest extends BaseTest
 
         // We need:
         // * A unique index
-        $this->uniqueIndex = $builder->name('unique_index')->isUnique(true)->generate();
-        $this->uniqueIndex->getColumns()[0]->setCardinality(1);
+        $this->uniqueIndex = $builder
+            ->name('unique_index')
+            ->isUnique(true)
+            ->generate();
+        $this->uniqueIndex
+            ->getColumns()[0]
+            ->setCardinality(1);
 
         // * An index without string columns
-        $this->nonStringIndex = $builder->name('non_string_index')->generate();
-        $this->nonStringIndex->getColumns()[0]->setCardinality(1);
+        $this->nonStringIndex = $builder
+            ->name('non_string_index')
+            ->generate();
+        $this->nonStringIndex
+            ->getColumns()[0]
+            ->setCardinality(1);
 
         // * An index with string columns that are under 12 characters
         $this->shortStringIndex = $builder
@@ -56,7 +65,7 @@ class IndexPrefixTest extends BaseTest
 
         // * An index with string columns that are over 12 characters and is not prefixed
         $this->longStringIndex = $builder
-            ->name('long_string_zero_cardinality_index')
+            ->name('long_string_high_cardinality_index')
             ->setColumn((new ColumnBuilder())->varchar(255)->generate())
             ->generate();
         $column = $this->longStringIndex->getColumns()[0];

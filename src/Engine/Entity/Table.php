@@ -219,6 +219,13 @@ class Table implements Entity
         $this->innodb_table = $innodb_table;
     }
 
+    public function getTableSpaceType(): ?string
+    {
+        return $this->innodb_table
+            ? $this->innodb_table->space_type
+            : null;
+    }
+
     public function getTableSpace(): ?Tablespace
     {
         if (!$this->innodb_table) {
@@ -228,6 +235,13 @@ class Table implements Entity
         // Our database holds all the tablespaces
         $database = $this->getSchema()->getDatabase();
         return $database->getTablespace($this->innodb_table->space);
+    }
+
+    public function getNumRows(): int
+    {
+        return $this->information_schema
+            ? $this->information_schema->table_rows
+            : 0;
     }
 
     public function isVirtual(): bool

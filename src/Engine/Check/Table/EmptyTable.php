@@ -18,7 +18,7 @@ class EmptyTable implements Check
 
     public function run($entity): ?Report
     {
-        if (!empty($entity->information_schema->table_rows)) {
+        if ($entity->getNumRows()) {
             return new Report(
                 $this,
                 $entity,
@@ -55,7 +55,7 @@ class EmptyTable implements Check
             ];
 
             // Is this table in a weird tablespace?
-            if (is_null($entity->getTablespace())) {
+            if ($entity->getTablespaceType() === "System") {
                 // If so, we can't rely on data free to give us an indication of
                 // the usage of this table.
                 $messages[] = "This table is in a shared tablespace so this doesn't mean much.";
