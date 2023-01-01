@@ -2,6 +2,8 @@
 declare(strict_types=1);
 
 use Cadfael\Engine\Check\Table\EmptyTable;
+use Cadfael\Engine\Entity\Table\InnoDbTable;
+use Cadfael\Engine\Entity\Tablespace;
 use Cadfael\Engine\Report;
 use Cadfael\Tests\Engine\BaseTest;
 use Cadfael\Tests\Engine\Check\ColumnBuilder;
@@ -36,7 +38,7 @@ class EmptyTableTest extends BaseTest
             ->primary()
             ->auto_increment()
             ->generate();
-        $table = $this->createEmptyTable();
+        $table = $this->createEmptyTable(['TABLE_NAME' => 'empty_table']);
         $table->setColumns($column);
 
         $column = $builder->int(10)
@@ -44,27 +46,59 @@ class EmptyTableTest extends BaseTest
             ->primary()
             ->auto_increment()
             ->generate();
-        $table_with_inserts = $this->createEmptyTable();
+        $table_with_inserts = $this->createEmptyTable(['TABLE_NAME' => 'empty_table_with_inserts']);
         $table_with_inserts->setColumns($column);
         $auto_increment = $table_with_inserts->getSchemaAutoIncrementColumn();
         $auto_increment->auto_increment = 10;
 
+        $table_with_data_free = $this->createEmptyTable(['TABLE_NAME' => 'empty_table_with_data_free', 'DATA_FREE' => 110]);
+        $table_with_data_free_in_tablespace = $this->createEmptyTable(['TABLE_NAME' => 'empty_table_with_data_free_in_tablespace', 'DATA_FREE' => 110]);
+        $table_with_data_free_in_tablespace->setInnoDbTable(InnoDbTable::createFromInformationSchema([
+            'TABLE_ID' => 2425,
+            'SPACE' => 0,
+            'NAME' => 'test/test',
+            'FLAG' => 161,
+            'N_COLS' => 5,
+            'ROW_FORMAT' => 'Dynamic',
+            'ZIP_PAGE_SIZE' => 0,
+            'SPACE_TYPE' => 'System',
+            'INSTANT_COLS' => 0
+        ]));
+
         return [
             [
                 $table,
-                Report::STATUS_WARNING
+                Report::STATUS_WARNING,
+                [ 'Table contains no records.' ]
             ],
             [
                 $table_with_inserts,
-                Report::STATUS_CONCERN
+                Report::STATUS_CONCERN,
+                [
+                    "Table is empty but previously had records inserted.",
+                    "It is possible it is used as a some form of queue or has had all records deleted."
+                ]
             ],
             [
-                $this->createEmptyTable([ "DATA_FREE" => 110 ]),
-                Report::STATUS_CONCERN
+                $table_with_data_free,
+                Report::STATUS_CONCERN,
+                [
+                    "Table is empty but has allocated free space.",
+                    "It is possible it is used as a some form of queue or has had all records deleted."
+                ]
             ],
             [
-                $this->createTable(),
-                Report::STATUS_OK
+                $table_with_data_free_in_tablespace,
+                Report::STATUS_CONCERN,
+                [
+                    "Table is empty but has allocated free space.",
+                    "This table is in a shared tablespace so this doesn't mean much."
+                ]
+            ],
+            [
+                $this->createTable(['TABLE_NAME' => 'table_with_rows']),
+                Report::STATUS_OK,
+                []
             ],
         ];
     }
@@ -75,15 +109,31 @@ class EmptyTableTest extends BaseTest
     public function testSupports($table, $result)
     {
         $check = new EmptyTable();
-        $this->assertEquals($check->supports($table), $result, "Ensure that the supports for $table returns $result");
+        $this->assertEquals(
+            $result,
+            $check->supports($table),
+            "Ensure that the supports for $table returns $result"
+        );
     }
 
     /**
      * @dataProvider providerTableDataForRun
      */
-    public function testRun($table, $result)
+    public function testRun($table, $result, $message)
     {
         $check = new EmptyTable();
-        $this->assertEquals($check->run($table)->getStatus(), $result, "Ensure that the run for $table returns status $result");
+        $report = $check->run($table);
+
+        $this->assertEquals(
+            $result,
+            $report->getStatus(),
+            "Ensure that the run for $table returns status $result")
+        ;
+
+        $this->assertEquals(
+            $message,
+            $report->getMessages(),
+            "Ensure that the run for $table returns expected message")
+        ;
     }
 }

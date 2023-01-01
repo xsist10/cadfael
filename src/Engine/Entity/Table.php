@@ -219,6 +219,13 @@ class Table implements Entity
         $this->innodb_table = $innodb_table;
     }
 
+    public function getTableSpaceType(): ?string
+    {
+        return $this->innodb_table
+            ? $this->innodb_table->space_type
+            : null;
+    }
+
     public function getTableSpace(): ?Tablespace
     {
         if (!$this->innodb_table) {
