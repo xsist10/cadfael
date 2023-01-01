@@ -80,3 +80,6 @@ WITH RECURSIVE cte AS
    )
 SELECT i, value
 FROM cte;
+
+# Create a passwordless account
+CREATE USER IF NOT EXISTS 'localhost_passwordless_user'@'localhost';

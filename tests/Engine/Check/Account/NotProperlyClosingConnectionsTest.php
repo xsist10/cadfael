@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Cadfael\Tests\Engine\Check\Account;
 
 use Cadfael\Engine\Check\Account\NotProperlyClosingConnections;
-use Cadfael\Engine\Entity\Account;
 use Cadfael\Engine\Entity\Account\NotClosedProperly;
 use Cadfael\Engine\Report;
 use Cadfael\Tests\Engine\BaseTest;
@@ -15,13 +14,13 @@ class NotProperlyClosingConnectionsTest extends BaseTest
 
     public function setUp(): void
     {
-        $not_closed_properly_account = new Account('not_closed_properly', 'localhost');
+        $not_closed_properly_account = $this->createAccount('not_closed_properly', 'localhost');
         $not_closed_properly_account->setAccountNotClosedProperly(NotClosedProperly::createFromEventSummary([
             'not_closed'      => 1,
             'not_closed_perc' => 5
         ]));
 
-        $closed_properly_account = new Account('closed_properly_account', 'localhost');
+        $closed_properly_account = $this->createAccount('closed_properly_account', 'localhost');
         $closed_properly_account->setAccountNotClosedProperly(NotClosedProperly::createFromEventSummary([
             'not_closed'      => 0,
             'not_closed_perc' => 0

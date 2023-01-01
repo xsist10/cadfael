@@ -53,7 +53,13 @@ class FunctionsOnIndexTest extends BaseTest
     public function test__moo()
     {
         $check = new FunctionsOnIndex();
+        $this->assertTrue($check->supports($this->query));
+
         $report = $check->run($this->query);
-        $this->assertEquals(Report::STATUS_WARNING, $report->getStatus(), "Query should identify modified INDEX column in WHERE statement.");
+        $this->assertEquals(
+            Report::STATUS_WARNING,
+            $report->getStatus(),
+            "Query should identify modified INDEX column in WHERE statement."
+        );
     }
 }

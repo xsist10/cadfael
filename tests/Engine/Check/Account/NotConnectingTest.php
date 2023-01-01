@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Cadfael\Tests\Engine\Check\Account;
 
 use Cadfael\Engine\Check\Account\NotConnecting;
-use Cadfael\Engine\Entity\Account;
 use Cadfael\Engine\Report;
 use Cadfael\Tests\Engine\BaseTest;
 
@@ -14,10 +13,10 @@ class NotConnectingTest extends BaseTest
 
     public function setUp(): void
     {
-        $no_connection_account = new Account('no_connections', 'localhost');
+        $no_connection_account = $this->createAccount('no_connections', 'localhost');
         $no_connection_account->setTotalConnections(0);
 
-        $many_connection_account = new Account('many_connections', 'localhost');
+        $many_connection_account = $this->createAccount('many_connections', 'localhost');
         $many_connection_account->setTotalConnections(100);
 
         $this->accounts = [
