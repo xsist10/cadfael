@@ -4,6 +4,13 @@ declare(strict_types = 1);
 
 namespace Cadfael\Engine\Entity\Table;
 
+/**
+ * Class InnoDbTable (readonly)
+ *
+ * Stores a representation of information_schema.innodb_tables or information_schema.innodb_sys_tables
+ * @package Cadfael\Engine\Entity\Table
+ * @codeCoverageIgnore
+ */
 class InnoDbTable
 {
     public int $table_id;
