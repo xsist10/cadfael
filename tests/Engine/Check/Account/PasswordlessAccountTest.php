@@ -11,56 +11,220 @@ use Cadfael\Tests\Engine\BaseTest;
 
 class PasswordlessAccountTest extends BaseTest
 {
-    private array $accounts;
+    public function providerAccountData() {
 
-    public function setUp(): void
-    {
-        $passwordless_account = $this->createAccount('passwordless_account', 'localhost');
-        $passwordless_account_non_local = $this->createAccount('passwordless_account', '%');
-        $passworded_account = Account::withUser(new User('passworded_account', 'localhost', authentication_string: "randomJibberish"));
+//        // Passwordless Local
+//        $passwordless_55 = $this->createAccount('passwordless_account', 'localhost');
+//        $passwordless_55->setDatabase($database_55);
+//
+//        $passwordless_56 = $this->createAccount('passwordless_account', 'localhost');
+//        $passwordless_56->setDatabase($database_56);
+//
+//        $passwordless_57 = $this->createAccount('passwordless_account', 'localhost');
+//        $passwordless_57->setDatabase($database_57);
+//
+//        $passwordless_81 = $this->createAccount('passwordless_account', 'localhost');
+//        $passwordless_81->setDatabase($database_81);
+//
+//        // Passwordless Remote
+//        $passwordless_remote_55 = $this->createAccount('passwordless_remote_account', '%');
+//        $passwordless_remote_55->setDatabase($database_55);
+//
+//        $passwordless_remote_56 = $this->createAccount('passwordless_remote_account', '%');
+//        $passwordless_remote_56->setDatabase($database_56);
+//
+//        $passwordless_remote_57 = $this->createAccount('passwordless_remote_account', '%');
+//        $passwordless_remote_57->setDatabase($database_57);
+//
+//        $passwordless_remote_81 = $this->createAccount('passwordless_remote_account', '%');
+//        $passwordless_remote_81->setDatabase($database_81);
+//
+//        // Password
+//        $passwordless_remote_55 = $this->createAccount('passwordless_remote_account', '%');
+//        $passwordless_remote_55->setDatabase($database_55);
+//
+//        $passwordless_remote_56 = $this->createAccount('passwordless_remote_account', '%');
+//        $passwordless_remote_56->setDatabase($database_56);
+//
+//        $passwordless_remote_57 = $this->createAccount('passwordless_remote_account', '%');
+//        $passwordless_remote_57->setDatabase($database_57);
+//
+//        $passwordless_remote_81 = $this->createAccount('passwordless_remote_account', '%');
+//        $passwordless_remote_81->setDatabase($database_81);
 
-        $this->accounts = [
-            $passwordless_account,
-            $passwordless_account_non_local,
-            $passworded_account
+        return [
+            // Passwordless account with local access
+            [
+                'localhost',
+                '5.5.3',
+                'not_empty',
+                null,
+                Report::STATUS_OK
+            ],
+            [
+                'localhost',
+                '5.5.3',
+                null,
+                null,
+                Report::STATUS_WARNING
+            ],
+            [
+                'localhost',
+                '5.6.0',
+                'mysql_native_password',
+                null,
+                Report::STATUS_WARNING
+            ],
+            [
+                'localhost',
+                '5.7.2',
+                null,
+                null,
+                Report::STATUS_WARNING
+            ],
+            [
+                'localhost',
+                '5.7.2',
+                'mysql_native_password',
+                null,
+                Report::STATUS_WARNING
+            ],
+            [
+                'localhost',
+                '8.1',
+                null,
+                null,
+                Report::STATUS_WARNING
+            ],
+            [
+                'localhost',
+                '8.1',
+                'mysql_native_password',
+                null,
+                Report::STATUS_WARNING
+            ],
+            // Passwordless account with non-local access
+            [
+                '%',
+                '5.5.3',
+                'not_empty',
+                null,
+                Report::STATUS_OK
+            ],
+            [
+                '%',
+                '5.5.3',
+                null,
+                null,
+                Report::STATUS_CRITICAL
+            ],
+            [
+                '%',
+                '5.6.0',
+                'mysql_native_password',
+                null,
+                Report::STATUS_CRITICAL
+            ],
+            [
+                '%',
+                '5.7.2',
+                null,
+                null,
+                Report::STATUS_CRITICAL
+            ],
+            [
+                '%',
+                '5.7.2',
+                'mysql_native_password',
+                null,
+                Report::STATUS_CRITICAL
+            ],
+            [
+                '%',
+                '8.1',
+                null,
+                null,
+                Report::STATUS_CRITICAL
+            ],
+            [
+                '%',
+                '8.1',
+                'mysql_native_password',
+                null,
+                Report::STATUS_CRITICAL
+            ],
+            // Passworded account
+            [
+                'localhost',
+                '5.5.3',
+                'not_empty',
+                'randomJibberish',
+                Report::STATUS_OK
+            ],
+            [
+                'localhost',
+                '5.5.3',
+                null,
+                'randomJibberish',
+                Report::STATUS_OK
+            ],
+            [
+                'localhost',
+                '5.6.0',
+                'mysql_native_password',
+                'randomJibberish',
+                Report::STATUS_OK
+            ],
+            [
+                'localhost',
+                '5.7.2',
+                null,
+                'randomJibberish',
+                Report::STATUS_OK
+            ],
+            [
+                'localhost',
+                '5.7.2',
+                'mysql_native_password',
+                'randomJibberish',
+                Report::STATUS_OK
+            ],
+            [
+                'localhost',
+                '8.1',
+                null,
+                'randomJibberish',
+                Report::STATUS_OK
+            ],
+            [
+                'localhost',
+                '8.1',
+                'mysql_native_password',
+                'randomJibberish',
+                Report::STATUS_OK
+            ],
         ];
     }
 
-    public function testSupports()
+    /**
+     * @dataProvider providerAccountData
+     */
+    public function testRun($host, $version, $plugin, $password, $status)
     {
         $check = new PasswordlessAccount();
 
-        foreach ($this->accounts as $account) {
-            $this->assertTrue(
-                $check->supports($account),
-                "Ensure that we care about all accounts."
-            );
-        }
-    }
+        $account = Account::withUser(new User("test", $host, plugin: $plugin, authentication_string: $password));
+        $account->setDatabase($this->createDatabase([ 'version' => $version ]));
 
-    public function testRun()
-    {
-        $check = new PasswordlessAccount();
-
-        $account = $this->accounts[0];
-        $this->assertEquals(
-            Report::STATUS_WARNING,
-            $check->run($account)->getStatus(),
-            $account->getName() . "@" . $account->getHost() . " has no password set for a localhost account."
+        $this->assertTrue(
+            $check->supports($account),
+            "Ensure that we care about all accounts."
         );
 
-        $account = $this->accounts[1];
         $this->assertEquals(
-            Report::STATUS_CRITICAL,
+            $status,
             $check->run($account)->getStatus(),
-            $account->getName() . "@" . $account->getHost() . " has no password set for a non-localhost account."
-        );
-
-        $account = $this->accounts[2];
-        $this->assertEquals(
-            Report::STATUS_OK,
-            $check->run($account)->getStatus(),
-            $account->getName() . "@" . $account->getHost() . " has a password set."
+            "test@$host on MySQL $version with plugin:$plugin and authentication_string:$password tests correctly: $status."
         );
     }
 }

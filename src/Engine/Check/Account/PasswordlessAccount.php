@@ -17,7 +17,26 @@ class PasswordlessAccount implements Check
 
     public function run($entity): ?Report
     {
-        if ($entity->getUser()->authentication_string) {
+        $pass = !is_null($entity->getUser()->authentication_string)
+            && $entity->getUser()->authentication_string;
+
+        $version = $entity->getDatabase()->getVersion();
+
+        // If we're running MySQL 5.6.*, we only flag an issue if the plugin field is mysql_native_password
+        $pass |= (
+            version_compare($version, '5.7', '<')
+            && version_compare($version, '5.6', '>=')
+            && $entity->getUser()->plugin !== 'mysql_native_password'
+        );
+
+        // If we're running MySQL 5.5.*, we only flag an issue if the plugin field is NULL or empty
+        $pass |= (
+            version_compare($version, '5.6', '<')
+            && version_compare($version, '5.5', '>=')
+            && $entity->getUser()->plugin
+        );
+
+        if ($pass) {
             return new Report(
                 $this,
                 $entity,

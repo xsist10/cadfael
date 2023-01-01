@@ -53,7 +53,7 @@ class User
         public int $max_updates = 0,
         public int $max_connections = 0,
         public int $max_user_connections = 0,
-        public string $plugin = 'caching_sha2_password',
+        public string|null $plugin = 'caching_sha2_password',
         public string|null $authentication_string = null,
         public bool|null $password_expired = false,
         public int|null $password_last_changed = null,
