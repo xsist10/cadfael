@@ -22,5 +22,9 @@
     "vendor/vimeo",
     "vendor/webmozart"
   ],
-  "output": "cadfael.phar"
+  "output": "cadfael.phar",
+  "git": "git_tag",
+  "replacements": {
+    "is_phar": "1"
+  }
 }
