@@ -91,8 +91,12 @@ abstract class BaseTest extends TestCase
         );
     }
 
-    protected function createAccount(string $user, string $host): Account
+    protected function createAccount(string $user, string $host, Database $database = null): Account
     {
-        return Account::withRaw($user, $host);
+        $account = Account::withRaw($user, $host);
+        if ($database) {
+            $account->setDatabase($database);
+        }
+        return $account;
     }
 }

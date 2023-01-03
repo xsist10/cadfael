@@ -50,7 +50,7 @@ class DatabaseTest extends BaseTest
     public function test__getAccount()
     {
         $this->assertEquals(
-            $this->createAccount('bob', 'localhost'),
+            $this->createAccount('bob', 'localhost', $this->database),
             $this->database->getAccount('bob', 'localhost'),
             "Verify that we get the expected Account."
         );
@@ -59,7 +59,7 @@ class DatabaseTest extends BaseTest
             "Our fuzzy domain should not match for Bob."
         );
         $this->assertEquals(
-            $this->createAccount('alice', '%'),
+            $this->createAccount('alice', '%', $this->database),
             $this->database->getAccount('alice', 'localhost'),
             "Our fuzzy domain should match for Alice."
         );
