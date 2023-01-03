@@ -114,6 +114,9 @@ class Database implements Entity
      */
     public function setAccounts(Account...$accounts): void
     {
+        foreach ($accounts as $account) {
+            $account->setDatabase($this);
+        }
         $this->accounts = $accounts;
     }
 
@@ -125,6 +128,7 @@ class Database implements Entity
      */
     public function addAccount(Account $account): void
     {
+        $account->setDatabase($this);
         $this->accounts[] = $account;
     }
 
