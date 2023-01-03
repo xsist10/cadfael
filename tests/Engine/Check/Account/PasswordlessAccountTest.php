@@ -12,46 +12,6 @@ use Cadfael\Tests\Engine\BaseTest;
 class PasswordlessAccountTest extends BaseTest
 {
     public function providerAccountData() {
-
-//        // Passwordless Local
-//        $passwordless_55 = $this->createAccount('passwordless_account', 'localhost');
-//        $passwordless_55->setDatabase($database_55);
-//
-//        $passwordless_56 = $this->createAccount('passwordless_account', 'localhost');
-//        $passwordless_56->setDatabase($database_56);
-//
-//        $passwordless_57 = $this->createAccount('passwordless_account', 'localhost');
-//        $passwordless_57->setDatabase($database_57);
-//
-//        $passwordless_81 = $this->createAccount('passwordless_account', 'localhost');
-//        $passwordless_81->setDatabase($database_81);
-//
-//        // Passwordless Remote
-//        $passwordless_remote_55 = $this->createAccount('passwordless_remote_account', '%');
-//        $passwordless_remote_55->setDatabase($database_55);
-//
-//        $passwordless_remote_56 = $this->createAccount('passwordless_remote_account', '%');
-//        $passwordless_remote_56->setDatabase($database_56);
-//
-//        $passwordless_remote_57 = $this->createAccount('passwordless_remote_account', '%');
-//        $passwordless_remote_57->setDatabase($database_57);
-//
-//        $passwordless_remote_81 = $this->createAccount('passwordless_remote_account', '%');
-//        $passwordless_remote_81->setDatabase($database_81);
-//
-//        // Password
-//        $passwordless_remote_55 = $this->createAccount('passwordless_remote_account', '%');
-//        $passwordless_remote_55->setDatabase($database_55);
-//
-//        $passwordless_remote_56 = $this->createAccount('passwordless_remote_account', '%');
-//        $passwordless_remote_56->setDatabase($database_56);
-//
-//        $passwordless_remote_57 = $this->createAccount('passwordless_remote_account', '%');
-//        $passwordless_remote_57->setDatabase($database_57);
-//
-//        $passwordless_remote_81 = $this->createAccount('passwordless_remote_account', '%');
-//        $passwordless_remote_81->setDatabase($database_81);
-
         return [
             // Passwordless account with local access
             [
