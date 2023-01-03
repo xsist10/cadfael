@@ -6,23 +6,32 @@ namespace Cadfael\Engine\Entity;
 
 use Cadfael\Engine\Entity;
 use Cadfael\Engine\Entity\Account\NotClosedProperly;
+use Cadfael\Engine\Entity\Account\User;
 
 class Account implements Entity
 {
-    protected string $username;
-    protected string $host;
     protected int $current_connections = 0;
     protected int $total_connections = 0;
-
+    protected User $user;
 
     protected Database $database;
 
     public ?NotClosedProperly $account_not_closed_properly = null;
 
-    public function __construct(string $username, string $host)
+    protected function __construct()
     {
-        $this->username = $username;
-        $this->host = $host;
+    }
+
+    public static function withUser(User $user): Account
+    {
+        $account = new Account();
+        $account->setUser($user);
+        return $account;
+    }
+
+    public static function withRaw(string $username, string $host): Account
+    {
+        return self::withUser(new User($username, $host));
     }
 
     /**
@@ -99,7 +108,7 @@ class Account implements Entity
      */
     public function getHost(): string
     {
-        return $this->host;
+        return $this->user->host;
     }
 
     /**
@@ -110,7 +119,7 @@ class Account implements Entity
      */
     public function getName(): string
     {
-        return $this->username;
+        return $this->user->user;
     }
 
     /**
@@ -127,11 +136,21 @@ class Account implements Entity
      */
     public function __toString(): string
     {
-        return $this->username . '@' . $this->host;
+        return $this->user->user . '@' . $this->user->host;
     }
 
     public function isVirtual(): bool
     {
         return false;
+    }
+
+    public function getUser(): User
+    {
+        return $this->user;
+    }
+
+    public function setUser(User $user): void
+    {
+        $this->user = $user;
     }
 }

@@ -6,6 +6,7 @@ namespace Cadfael\Engine;
 
 use Cadfael\Engine\Entity\Account;
 use Cadfael\Engine\Entity\Account\NotClosedProperly;
+use Cadfael\Engine\Entity\Account\User;
 use Cadfael\Engine\Entity\Database;
 use Cadfael\Engine\Entity\Index\Statistics;
 use Cadfael\Engine\Entity\Query;
@@ -355,7 +356,7 @@ class Factory
             $this->log()->info("Collecting MySQL user accounts.");
             $query = 'SELECT * FROM mysql.user';
             foreach ($connection->fetchAllAssociative($query) as $row) {
-                $accounts[] = new Account($row['User'], $row['Host']);
+                $accounts[] = Account::withUser(User::createFromUser($row));
             }
         }
         return $accounts;
@@ -664,7 +665,7 @@ class Factory
                             $accountNotClosedProperly['host']
                         );
                         if (!$account) {
-                            $account = new Account(
+                            $account = Account::withRaw(
                                 $accountNotClosedProperly['user'],
                                 $accountNotClosedProperly['host']
                             );
@@ -682,7 +683,7 @@ class Factory
                     foreach ($accountConnections as $accountConnection) {
                         $account = $database->getAccount($accountConnection['USER'], $accountConnection['HOST']);
                         if (!$account) {
-                            $account = new Account($accountConnection['USER'], $accountConnection['HOST']);
+                            $account = Account::withRaw($accountConnection['USER'], $accountConnection['HOST']);
                             $database->addAccount($account);
                         }
                         $account->setCurrentConnections((int)$accountConnection['CURRENT_CONNECTIONS']);

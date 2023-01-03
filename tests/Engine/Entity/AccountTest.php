@@ -5,15 +5,15 @@ namespace Cadfael\Tests\Engine\Entity;
 
 use Cadfael\Engine\Entity\Account;
 use Cadfael\Engine\Entity\Database;
-use PHPUnit\Framework\TestCase;
+use Cadfael\Tests\Engine\BaseTest;
 
-class AccountTest extends TestCase
+class AccountTest extends BaseTest
 {
     protected Account $account;
 
     protected function setUp(): void
     {
-        $this->account = new Account("root", "localhost");
+        $this->account = $this->createAccount("root", "localhost");
         $this->account->setDatabase(new Database(null));
     }
 

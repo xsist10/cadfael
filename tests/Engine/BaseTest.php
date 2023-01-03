@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Cadfael\Tests\Engine;
 
+use Cadfael\Engine\Entity\Account;
+use Cadfael\Engine\Entity\Account\User;
 use Cadfael\Engine\Entity\Database;
 use Cadfael\Engine\Entity\Schema;
 use Cadfael\Engine\Entity\Table;
@@ -87,5 +89,10 @@ abstract class BaseTest extends TestCase
                 $override
             )
         );
+    }
+
+    protected function createAccount(string $user, string $host): Account
+    {
+        return Account::withRaw($user, $host);
     }
 }
