@@ -17,12 +17,6 @@ use Cadfael\Engine\Entity\Table;
  */
 class SchemaRedundantIndex
 {
-    public Index $redundant_index;
-    public Index $dominant_index;
-
-    public int $subpart_exists;
-    public string $sql_drop_index;
-
     /**
      * SchemaRedundantIndexes constructor.
      * @param Index $redundant_index
@@ -31,16 +25,12 @@ class SchemaRedundantIndex
      * @param string $sql_drop_index
      */
     public function __construct(
-        Index $redundant_index,
-        Index $dominant_index,
-        int $subpart_exists,
-        string $sql_drop_index
-    ) {
-        $this->redundant_index = $redundant_index;
-        $this->dominant_index = $dominant_index;
-        $this->subpart_exists = $subpart_exists;
-        $this->sql_drop_index = $sql_drop_index;
-    }
+        public Index $redundant_index,
+        public Index $dominant_index,
+        public int $subpart_exists,
+        public string $sql_drop_index
+    )
+    {}
 
     /**
      * @param Table $table
@@ -76,5 +66,12 @@ class SchemaRedundantIndex
             (int)$schema['subpart_exists'],
             $schema['sql_drop_index']
         );
+    }
+
+    public static function getQuery(): string
+    {
+        return <<<EOF
+            SELECT * FROM sys.schema_redundant_indexes WHERE table_schema=:schema
+EOF;
     }
 }

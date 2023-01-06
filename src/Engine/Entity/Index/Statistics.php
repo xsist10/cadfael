@@ -13,20 +13,20 @@ use Cadfael\Engine\Entity\Column;
  */
 class Statistics
 {
-    public Column $column;
-    public int $seq_in_index;
-    public ?string $collation;
-    public ?int $cardinality;
-    public ?int $sub_part;
-    public ?int $packed;
-    public bool $nullable;
-    public string $index_type;
-    public string $comment;
-    public string $index_comment;
-    public ?bool $is_visible;
-    public ?string $expression;
-
-    protected function __construct()
+    protected function __construct(
+        public Column $column,
+        public int $seq_in_index,
+        public ?string $collation,
+        public ?int $cardinality,
+        public ?int $sub_part,
+        public ?int $packed,
+        public bool $nullable,
+        public string $index_type,
+        public string $comment,
+        public string $index_comment,
+        public ?bool $is_visible,
+        public ?string $expression
+    )
     {
     }
 
@@ -37,20 +37,26 @@ class Statistics
      */
     public static function createFromInformationSchema(Column $column, array $payload): Statistics
     {
-        $statistics = new Statistics();
-        $statistics->column = $column;
-        $statistics->seq_in_index = (int)$payload['SEQ_IN_INDEX'];
-        $statistics->collation = $payload['COLLATION'];
-        $statistics->cardinality = (int)$payload['CARDINALITY'];
-        $statistics->sub_part = (int)$payload['SUB_PART'];
-        $statistics->packed = isset($payload['PACKED']) ? (int)$payload['PACKED'] : null;
-        $statistics->nullable = $payload['NULLABLE'] == 'YES';
-        $statistics->index_type = $payload['INDEX_TYPE'];
-        $statistics->comment = $payload['COMMENT'];
-        $statistics->index_comment = $payload['INDEX_COMMENT'];
-        $statistics->is_visible = isset($payload['IS_VISIBLE']) ? (bool)$payload['IS_VISIBLE'] : null;
-        $statistics->expression = $payload['EXPRESSION'] ?? null;
+        return new Statistics(
+            $column,
+            (int)$payload['SEQ_IN_INDEX'],
+            $payload['COLLATION'],
+            (int)$payload['CARDINALITY'],
+            (int)$payload['SUB_PART'],
+            isset($payload['PACKED']) ? (int)$payload['PACKED'] : null,
+            $payload['NULLABLE'] == 'YES',
+            $payload['INDEX_TYPE'],
+            $payload['COMMENT'],
+            $payload['INDEX_COMMENT'],
+            isset($payload['IS_VISIBLE']) ? (bool)$payload['IS_VISIBLE'] : null,
+            $payload['EXPRESSION'] ?? null
+        );
+    }
 
-        return $statistics;
+    public static function getQuery(): string
+    {
+        return <<<EOF
+            SELECT * FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=:schema
+EOF;
     }
 }

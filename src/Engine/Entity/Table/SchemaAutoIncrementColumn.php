@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Cadfael\Engine\Entity\Table;
 
 use Cadfael\Engine\Entity\Table;
+use Cadfael\Engine\Exception\InvalidColumnType;
 use Cadfael\Engine\Exception\MissingInformationSchema;
 
 /**
@@ -16,18 +17,17 @@ use Cadfael\Engine\Exception\MissingInformationSchema;
  */
 class SchemaAutoIncrementColumn
 {
-    public string $column_name;
-    public string $data_type;
-    public string $column_type;
-    public bool $is_signed;
-    public bool $is_unsigned;
-    public float $max_value;
-    public int $auto_increment;
-    public float $auto_increment_ratio;
-
-    protected function __construct()
-    {
-    }
+    protected function __construct(
+        public string $column_name,
+        public string $data_type,
+        public string $column_type,
+        public bool $is_signed,
+        public bool $is_unsigned,
+        public float $max_value,
+        public int $auto_increment,
+        public float $auto_increment_ratio
+    )
+    {}
 
     /**
      * @param array<string> $schema This is a raw record from sys.schema_auto_increment_columns
@@ -35,17 +35,23 @@ class SchemaAutoIncrementColumn
      */
     public static function createFromSys(array $schema): SchemaAutoIncrementColumn
     {
-        $schemaAutoIncrementColumns = new SchemaAutoIncrementColumn();
-        $schemaAutoIncrementColumns->column_name = $schema['column_name'];
-        $schemaAutoIncrementColumns->data_type = $schema['data_type'];
-        $schemaAutoIncrementColumns->column_type = $schema['column_type'];
-        $schemaAutoIncrementColumns->is_signed = $schema['is_signed'] == '1';
-        $schemaAutoIncrementColumns->is_unsigned = $schema['is_unsigned'] == '1';
-        $schemaAutoIncrementColumns->max_value = (float)$schema['max_value'];
-        $schemaAutoIncrementColumns->auto_increment = (int)$schema['auto_increment'];
-        $schemaAutoIncrementColumns->auto_increment_ratio = (float)$schema['auto_increment_ratio'];
+        return new SchemaAutoIncrementColumn(
+            $schema['column_name'],
+            $schema['data_type'],
+            $schema['column_type'],
+            $schema['is_signed'] == '1',
+            $schema['is_unsigned'] == '1',
+            (float)$schema['max_value'],
+            (int)$schema['auto_increment'],
+            (float)$schema['auto_increment_ratio']
+        );
+    }
 
-        return $schemaAutoIncrementColumns;
+    public static function getQuery(): string
+    {
+        return <<<EOF
+            SELECT * FROM sys.schema_auto_increment_columns WHERE table_schema=:schema
+EOF;
     }
 
     /**
@@ -54,6 +60,7 @@ class SchemaAutoIncrementColumn
      * @param Table $table
      * @return ?SchemaAutoIncrementColumn
      * @throws MissingInformationSchema
+     * @throws InvalidColumnType
      */
     public static function createFromTable(Table $table): ?SchemaAutoIncrementColumn
     {
@@ -62,18 +69,18 @@ class SchemaAutoIncrementColumn
         }
         foreach ($table->getColumns() as $column) {
             if ($column->isAutoIncrementing()) {
-                $schemaAutoIncrementColumns = new SchemaAutoIncrementColumn();
-                $schemaAutoIncrementColumns->column_name = $column->getName();
-                $schemaAutoIncrementColumns->data_type = $column->information_schema->data_type;
-                $schemaAutoIncrementColumns->column_type = $column->information_schema->column_type;
-                $schemaAutoIncrementColumns->is_signed = $column->isSigned();
-                $schemaAutoIncrementColumns->is_unsigned = !$column->isSigned();
-                $schemaAutoIncrementColumns->max_value = $column->getCapacity();
-                $schemaAutoIncrementColumns->auto_increment = $table->information_schema->auto_increment;
                 $ratio = ($table->information_schema->auto_increment - 1) / $column->getCapacity();
-                $schemaAutoIncrementColumns->auto_increment_ratio = $ratio;
 
-                return $schemaAutoIncrementColumns;
+                return new SchemaAutoIncrementColumn(
+                    $column->getName(),
+                    $column->information_schema->data_type,
+                    $column->information_schema->column_type,
+                    $column->isSigned(),
+                    !$column->isSigned(),
+                    $column->getCapacity(),
+                    $table->information_schema->auto_increment,
+                    $ratio
+                );
             }
         }
 

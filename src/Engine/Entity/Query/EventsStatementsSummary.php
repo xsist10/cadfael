@@ -109,4 +109,27 @@ class EventsStatementsSummary
 
         return new DateTimeImmutable();
     }
+
+    public static function getQuery(): string
+    {
+        return <<<EOF
+            SELECT *
+            FROM performance_schema.events_statements_summary_by_digest
+            WHERE SCHEMA_NAME = :schema
+              AND QUERY_SAMPLE_TEXT NOT LIKE 'show %'
+              AND QUERY_SAMPLE_TEXT NOT LIKE '% information_schema.%'
+              AND QUERY_SAMPLE_TEXT NOT LIKE '% mysql.%'
+              AND QUERY_SAMPLE_TEXT NOT LIKE '% sys.%'
+              AND QUERY_SAMPLE_TEXT NOT LIKE '% performance_schema.%'
+EOF;
+    }
+
+    public static function getQueryWithoutSampleText(): string
+    {
+        return <<<EOF
+            SELECT *
+            FROM performance_schema.events_statements_summary_by_digest
+            WHERE SCHEMA_NAME = :schema
+EOF;
+    }
 }

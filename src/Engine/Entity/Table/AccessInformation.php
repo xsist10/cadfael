@@ -11,12 +11,28 @@ namespace Cadfael\Engine\Entity\Table;
  */
 class AccessInformation
 {
-    public int $read_count;
-    public int $write_count;
-
-    public function __construct(int $read_count, int $write_count)
+    public function __construct(public int $read_count, public int $write_count)
     {
-        $this->read_count = $read_count;
-        $this->write_count = $write_count;
+    }
+
+    /**
+     * @param array<string> $schema This is a query from performance_schema.table_io_waits_summary_by_table
+     * @return AccessInformation
+     */
+    public static function createFromIOSummary(array $schema): AccessInformation
+    {
+        return new AccessInformation(
+            (int)$schema['COUNT_READ'],
+            (int)$schema['COUNT_WRITE']
+        );
+    }
+
+    public static function getQuery(): string
+    {
+        return <<<EOF
+            SELECT OBJECT_NAME, COUNT_READ, COUNT_WRITE
+            FROM performance_schema.table_io_waits_summary_by_table
+            WHERE OBJECT_SCHEMA=:schema
+EOF;
     }
 }
