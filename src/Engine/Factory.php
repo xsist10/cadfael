@@ -635,7 +635,7 @@ class Factory
                             $accountNotClosedProperly['host']
                         );
                         $account->setAccountNotClosedProperly(
-                            NotClosedProperly::createFromAccounts($accountNotClosedProperly)
+                            NotClosedProperly::createFromPerformanceSchema($accountNotClosedProperly)
                         );
                     }
 

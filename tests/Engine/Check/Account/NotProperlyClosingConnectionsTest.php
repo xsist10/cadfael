@@ -15,13 +15,13 @@ class NotProperlyClosingConnectionsTest extends BaseTest
     public function setUp(): void
     {
         $not_closed_properly_account = $this->createAccount('not_closed_properly', 'localhost');
-        $not_closed_properly_account->setAccountNotClosedProperly(NotClosedProperly::createFromEventSummary([
+        $not_closed_properly_account->setAccountNotClosedProperly(NotClosedProperly::createFromPerformanceSchema([
             'not_closed'      => 1,
             'not_closed_perc' => 5
         ]));
 
         $closed_properly_account = $this->createAccount('closed_properly_account', 'localhost');
-        $closed_properly_account->setAccountNotClosedProperly(NotClosedProperly::createFromEventSummary([
+        $closed_properly_account->setAccountNotClosedProperly(NotClosedProperly::createFromPerformanceSchema([
             'not_closed'      => 0,
             'not_closed_perc' => 0
         ]));

@@ -19,7 +19,7 @@ class NotClosedProperly
      * @param array<string> $schema This is a query from performance_schema.accounts
      * @return NotClosedProperly
      */
-    public static function createFromAccounts(array $schema): NotClosedProperly
+    public static function createFromPerformanceSchema(array $schema): NotClosedProperly
     {
         return new NotClosedProperly(
             (int)$schema['not_closed'],
