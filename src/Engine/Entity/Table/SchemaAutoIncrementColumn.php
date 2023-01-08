@@ -26,8 +26,8 @@ class SchemaAutoIncrementColumn
         public float $max_value,
         public int $auto_increment,
         public float $auto_increment_ratio
-    )
-    {}
+    ) {
+    }
 
     /**
      * @param array<string> $schema This is a raw record from sys.schema_auto_increment_columns

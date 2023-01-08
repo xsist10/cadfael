@@ -136,7 +136,8 @@ class Factory
             $statement->execute();
         } catch (InvalidFieldNameException $exception) {
             // Older versions of MySQL don't have QUERY_SAMPLE_TEXT. Collect everything
-            $this->log()->info("Detected version of MySQL performance_schema.events_statements_summary_by_digest without QUERY_SAMPLE_TEXT column.");
+            $this->log()->info("Detected version of MySQL performance_schema.events_statements_summary_by_digest "
+                . "without QUERY_SAMPLE_TEXT column.");
             $statement = $this->getConnection()->prepare(EventsStatementsSummary::getQueryWithoutSampleText());
             $statement->bindValue("schema", $schema->getName());
             $statement->execute();
@@ -658,7 +659,8 @@ class Factory
 
                     $access_requests = $statement->fetchAllAssociative();
                     foreach ($access_requests as $access_request) {
-                        $table_access_information[$access_request['OBJECT_NAME']] = AccessInformation::createFromIOSummary($access_request);
+                        $table_access_information[$access_request['OBJECT_NAME']]
+                            = AccessInformation::createFromIOSummary($access_request);
                     }
                 }
             }

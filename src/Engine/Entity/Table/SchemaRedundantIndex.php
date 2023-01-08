@@ -29,8 +29,8 @@ class SchemaRedundantIndex
         public Index $dominant_index,
         public int $subpart_exists,
         public string $sql_drop_index
-    )
-    {}
+    ) {
+    }
 
     /**
      * @param Table $table

@@ -26,8 +26,7 @@ class Statistics
         public string $index_comment,
         public ?bool $is_visible,
         public ?string $expression
-    )
-    {
+    ) {
     }
 
     /**

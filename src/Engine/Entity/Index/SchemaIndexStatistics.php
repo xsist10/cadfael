@@ -20,8 +20,8 @@ class SchemaIndexStatistics
         public string $update_latency,
         public int $rows_deleted,
         public string $delete_latency
-    )
-    {}
+    ) {
+    }
 
     /**
      * @param array<string> $payload This is a raw record from sys.schema_index_statistics
