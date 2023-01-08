@@ -27,7 +27,7 @@ class UnusedIndexes implements Check
         }
 
         $messages = [];
-        foreach ($entity->schema_unused_indexes as $unused) {
+        foreach ($entity->getUnusedIndexes() as $unused) {
             $messages[] = sprintf(
                 "Unused index %s.",
                 $unused->index->getName()

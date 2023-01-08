@@ -46,8 +46,7 @@ class FunctionsOnIndexTest extends BaseTest
                 JOIN test.`comments` ON (`comments`.author_id = `u` . `id`)
                 WHERE DATE ( u.`joined` ) = ? AND ( DATE_FORMAT(p.posted, '%Y-%m-%d') > u.joined + INTERVAL 1 DAY)"
         );
-
-        $this->query->linkTablesToQuery($this->schema, $this->database);
+        $this->query->setSchema($this->schema);
     }
 
     public function test__moo()

@@ -58,6 +58,7 @@ class Index implements Entity
     }
 
     /**
+     * @codeCoverageIgnore
      * Is this entity virtual (generated rather than stored on disk)?
      *
      * @return bool
@@ -68,6 +69,9 @@ class Index implements Entity
     }
 
     /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
      * @param SchemaIndexStatistics $schema_index_statistics
      */
     public function setSchemaIndexStatistics(SchemaIndexStatistics $schema_index_statistics): void
@@ -76,6 +80,9 @@ class Index implements Entity
     }
 
     /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
      * @return SchemaIndexStatistics
      */
     public function getSchemaIndexStatistics(): SchemaIndexStatistics
