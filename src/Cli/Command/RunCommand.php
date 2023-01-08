@@ -8,6 +8,7 @@ use Cadfael\Cli\Formatter\Cli;
 use Cadfael\Cli\Formatter\Json;
 use Cadfael\Engine\Check\Account\NotConnecting;
 use Cadfael\Engine\Check\Account\NotProperlyClosingConnections;
+use Cadfael\Engine\Check\Account\OutdatedAuthenticationMethod;
 use Cadfael\Engine\Check\Account\PasswordlessAccount;
 use Cadfael\Engine\Check\Column\CorrectUtf8Encoding;
 use Cadfael\Engine\Check\Column\LowCardinalityExpensiveStorage;
@@ -168,6 +169,7 @@ class RunCommand extends AbstractDatabaseCommand
             new UUIDStorage(),
             new LowCardinalityExpensiveStorage(),
             new PasswordlessAccount(),
+            new OutdatedAuthenticationMethod(),
         );
 
         if ($load_performance_schema) {
