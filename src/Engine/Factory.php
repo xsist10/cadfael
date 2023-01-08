@@ -16,7 +16,7 @@ use Cadfael\Engine\Entity\Table\AccessInformation;
 use Cadfael\Engine\Entity\Table\InnoDbTable;
 use Cadfael\Engine\Entity\Table\SchemaAutoIncrementColumn;
 use Cadfael\Engine\Entity\Table\SchemaRedundantIndex;
-use Cadfael\Engine\Entity\Table\SchemaUnusedIndex;
+use Cadfael\Engine\Entity\Table\UnusedIndex;
 use Cadfael\Engine\Entity\Table;
 use Cadfael\Engine\Entity\Column;
 use Cadfael\Engine\Entity\Index;
@@ -32,6 +32,9 @@ use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
+/**
+ * @codeCoverageIgnore
+ */
 class Factory
 {
     use LoggerAwareTrait;
@@ -523,7 +526,7 @@ class Factory
 
             $autoIncrementColumns = [];
             $schemaRedundantIndexes = [];
-            $schema_unused_indexes = [];
+            $unused_indexes = [];
             $table_access_information = [];
             $table_indexes_objects = [];
             $index_statistics = [];
@@ -640,7 +643,7 @@ class Factory
                     $statement->execute();
                     foreach ($statement->fetchAllAssociative() as $row) {
                         $index = $table_indexes_objects[$row['object_name']][$row['index_name']];
-                        $schema_unused_indexes[$row['object_name']][] = new SchemaUnusedIndex($index);
+                        $unused_indexes[$row['object_name']][] = new UnusedIndex($index);
                     }
 
                     // Collect all accounts who have not been closing connections properly.
@@ -728,8 +731,8 @@ class Factory
                 if (!empty($schemaRedundantIndexes[$table->getName()])) {
                     $table->setSchemaRedundantIndexes(...$schemaRedundantIndexes[$table->getName()]);
                 }
-                if (!empty($schema_unused_indexes[$table->getName()])) {
-                    $table->setUnusedRedundantIndexes(...$schema_unused_indexes[$table->getName()]);
+                if (!empty($unused_indexes[$table->getName()])) {
+                    $table->setUnusedIndexes(...$unused_indexes[$table->getName()]);
                 }
                 if (!empty($table_access_information[$table->getName()])) {
                     $table->setAccessInformation($table_access_information[$table->getName()]);

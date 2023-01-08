@@ -8,6 +8,7 @@ use Cadfael\Engine\Entity\Database;
 use Cadfael\Engine\Entity\Query;
 use Cadfael\Engine\Entity\Schema;
 use Cadfael\Engine\Entity\Table;
+use Cadfael\Engine\Exception\QueryParseException;
 use Cadfael\Tests\Engine\BaseTest;
 use Cadfael\Tests\Engine\Check\ColumnBuilder;
 
@@ -33,27 +34,54 @@ class QueryTest extends BaseTest
         $this->database->setSchemas($this->schema);
     }
 
-    public function createQuery($digest)
+    public function setupQuery($digest)
     {
         $query = new Query($digest);
-        $query->linkTablesToQuery($this->schema, $this->database);
+        $query->setSchema($this->schema);
         return $query;
     }
 
     public function test__fetchColumnsModifiedByFunctions()
     {
-        $query = $this->createQuery("SELECT * FROM users");
-        $this->assertEmpty($query->fetchColumnsModifiedByFunctions());
+        // No columns modified due to lack of WHERE statement
+        $query = $this->setupQuery("SELECT * FROM users");
+        $this->assertEmpty($query->fetchColumnsModifiedByFunctions(), "No WHERE statement means no columns to check");
 
-        $query = $this->createQuery("SELECT * FROM users WHERE id=1");
-        $this->assertEmpty($query->fetchColumnsModifiedByFunctions());
+        $query = $this->setupQuery("SELECT * FROM (users)");
+        $this->assertEmpty($query->fetchColumnsModifiedByFunctions(), "No WHERE statement means no columns to check (with table expression)");
 
-        $query = $this->createQuery("SELECT * FROM test.users WHERE DATE_FORMAT(id)=1");
-        $this->assertEquals([['table' => $this->table, 'column' => $this->column]], $query->fetchColumnsModifiedByFunctions());
+        $query = $this->setupQuery("SELECT * FROM users WHERE id=?");
+        $this->assertEmpty($query->fetchColumnsModifiedByFunctions(), "No modified columns");
 
-        $query = $this->createQuery("SELECT * FROM test.users WHERE DATE_FORMAT(users.id)=1");
-        $this->assertEquals([['table' => $this->table, 'column' => $this->column]], $query->fetchColumnsModifiedByFunctions());
+        $query = $this->setupQuery("SELECT * FROM test.users WHERE DATE_FORMAT(id)=?");
+        $this->assertEquals([['table' => $this->table, 'column' => $this->column]], $query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on first column using relative column name.");
+
+        $query = $this->setupQuery("SELECT * FROM test.users WHERE DATE_FORMAT(CONCATENATE(id, 'moo'))=?");
+        $this->assertEquals([['table' => $this->table, 'column' => $this->column]], $query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification with nexted CONCATENATE on first column using relative column name.");
+
+        $query = $this->setupQuery("SELECT * FROM test.users WHERE id=? OR DATE_FORMAT(id)=?");
+        $this->assertEquals([['table' => $this->table, 'column' => $this->column]], $query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on second column using relative column name.");
+
+        $query = $this->setupQuery("SELECT * FROM test.users WHERE DATE_FORMAT(users.id)=?");
+        $this->assertEquals([['table' => $this->table, 'column' => $this->column]], $query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on first column using absolute column name.");
+
+        $query = $this->setupQuery("SELECT * FROM invalid_table WHERE DATE_FORMAT(id)=?");
+        $this->assertEmpty($query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on first column for invalid table.");
+
+        $query = $this->setupQuery("SELECT * FROM test.users WHERE DATE_FORMAT(?)=?");
+        $this->assertEmpty($query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on literal.");
+
+        $query = $this->setupQuery("SELECT b.id FROM test.users AS b WHERE DATE_FORMAT(SELECT id FROM users WHERE DATE_FORMAT(?)=?)=?");
+        $this->assertEmpty($query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on literal.");
     }
+
+    public function test__fetchColumnsModifiedByFunctionsException()
+    {
+        $this->expectException(QueryParseException::class);
+        $query = $this->setupQuery("SET VARIABLE a=b");
+        $this->assertEmpty($query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on literal.");
+    }
+
 
     public function test__getTableNamesInQuery()
     {
@@ -98,7 +126,7 @@ class QueryTest extends BaseTest
                 ) AS running_total_num_books
             FROM cust_order co
             INNER JOIN order_line ol ON co.order_id = ol.order_id
-            GROUP BY 
+            GROUP BY
               DATE_FORMAT(co.order_date, '%Y-%m'),
               DATE_FORMAT(co.order_date, '%Y-%m-%d')
             ORDER BY co.order_date ASC"

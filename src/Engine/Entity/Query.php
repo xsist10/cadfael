@@ -6,7 +6,9 @@ namespace Cadfael\Engine\Entity;
 
 use Cadfael\Engine\Entity;
 use Cadfael\Engine\Entity\Query\EventsStatementsSummary;
+use Cadfael\Engine\Exception\InvalidSchema;
 use Cadfael\Engine\Exception\InvalidTable;
+use Cadfael\Engine\Exception\QueryParseException;
 use PHPSQLParser\PHPSQLParser;
 
 class Query implements Entity
@@ -28,12 +30,20 @@ class Query implements Entity
         $this->query_parser = new PHPSQLParser($query);
     }
 
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @return string
+     */
     public function getName(): string
     {
         return $this->digest;
     }
 
     /**
+     * @codeCoverageIgnore
+     *
      * Is this entity virtual (generated rather than stored on disk)?
      *
      * @return bool
@@ -44,6 +54,9 @@ class Query implements Entity
     }
 
     /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
      * All entities should be able to return a string identifier.
      *
      * @return string
@@ -67,8 +80,15 @@ class Query implements Entity
     public function setSchema(Schema $schema)
     {
         $this->schema = $schema;
+        $this->linkTablesToQuery();
     }
 
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @return string
+     */
     public function getDigest(): string
     {
         return $this->digest;
@@ -99,14 +119,13 @@ class Query implements Entity
     /**
      * This links table objects that a query affects to the query itself
      *
-     * @param Schema $schema The contextual schema (if none is specified, the table should be from here)
-     * @param Database $database
      * @return void
-     * @throws \Cadfael\Engine\Exception\InvalidSchema
-     * @throws \Cadfael\Engine\Exception\InvalidTable
      */
-    public function linkTablesToQuery(Schema $schema, Database $database)
+    public function linkTablesToQuery(): void
     {
+        $schema = $this->getSchema();
+        $database = $this->getSchema()->getDatabase();
+
         $tables = $this->getTableNamesInQuery();
         foreach ($tables as $table) {
             try {
@@ -115,7 +134,7 @@ class Query implements Entity
                 } else {
                     $this->tables[$table['alias']] = $database->getSchema($table['schema'])->getTable($table['name']);
                 }
-            } catch (InvalidTable $exception) {
+            } catch (InvalidTable|InvalidSchema $exception) {
                 // It's possible we'll be dealing with a temporary table here.
             }
         }
@@ -123,8 +142,9 @@ class Query implements Entity
 
     /**
      * Return all the tables that are used in an expression
+     * @param $fragment
      * @return array
-     * @throws \Exception
+     * @throws QueryParseException
      */
     public function findTablesInExpression($fragment): array
     {
@@ -167,7 +187,7 @@ class Query implements Entity
         }
 
         // It's possible that we've encountered something we didn't prepare for
-        throw new \Exception("Uncertain on how to parse this query.");
+        throw new QueryParseException("Uncertain on how to parse this query.");
     }
 
     /**
@@ -259,7 +279,13 @@ class Query implements Entity
 
     public function fetchColumnsModifiedByFunctions(): array
     {
+        // Query contains no where statement
         if (empty($this->getQueryParser()->parsed['WHERE'])) {
+            return [];
+        }
+
+        // Query contains no tables
+        if (!count($this->getTables())) {
             return [];
         }
 

@@ -4,11 +4,12 @@ declare(strict_types=1);
 namespace Cadfael\Tests\Engine\Entity;
 
 use Cadfael\Engine\Entity\Database;
+use Cadfael\Engine\Entity\Query;
 use Cadfael\Engine\Entity\Schema;
 use Cadfael\Engine\Entity\Table;
-use PHPUnit\Framework\TestCase;
+use Cadfael\Tests\Engine\BaseTest;
 
-class SchemaTest extends TestCase
+class SchemaTest extends BaseTest
 {
     protected Database $database;
     protected Schema $schema;
@@ -71,5 +72,12 @@ class SchemaTest extends TestCase
     public function test__setTables()
     {
         $this->assertEquals($this->schema, $this->table->getSchema(), "Ensure that the setTables() function back-populates the schema into the table instance too.");
+    }
+
+    public function test__addQuery()
+    {
+        $query = new Query("SELECT * FROM test");
+        $this->schema->addQuery($query);
+        $this->assertEquals($this->schema, $query->getSchema(), "Ensure that the addQuery() function back-populates the schema into the query instance too.");
     }
 }

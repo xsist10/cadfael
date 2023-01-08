@@ -10,7 +10,7 @@ use Cadfael\Engine\Entity\Table\InformationSchema;
 use Cadfael\Engine\Entity\Table\InnoDbTable;
 use Cadfael\Engine\Entity\Table\SchemaAutoIncrementColumn;
 use Cadfael\Engine\Entity\Table\SchemaRedundantIndex;
-use Cadfael\Engine\Entity\Table\SchemaUnusedIndex;
+use Cadfael\Engine\Entity\Table\UnusedIndex;
 use Cadfael\Engine\Exception\InvalidColumn;
 
 class Table implements Entity
@@ -41,7 +41,7 @@ class Table implements Entity
      */
     public array $schema_redundant_indexes = [];
     /**
-     * @var array<SchemaUnusedIndex>
+     * @var array<UnusedIndex>
      */
     public array $schema_unused_indexes = [];
 
@@ -190,11 +190,22 @@ class Table implements Entity
      * @codeCoverageIgnore
      * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
      *
-     * @param SchemaUnusedIndex ...$schema_unused_indexes
+     * @param UnusedIndex ...$schema_unused_indexes
      */
-    public function setUnusedRedundantIndexes(SchemaUnusedIndex ...$schema_unused_indexes): void
+    public function setUnusedIndexes(UnusedIndex ...$schema_unused_indexes): void
     {
         $this->schema_unused_indexes = $schema_unused_indexes;
+    }
+
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @return array<UnusedIndex>
+     */
+    public function getUnusedIndexes(): array
+    {
+        return $this->schema_unused_indexes;
     }
 
     /**
@@ -226,7 +237,7 @@ class Table implements Entity
             : null;
     }
 
-    public function getTableSpace(): ?Tablespace
+    public function getTablespace(): ?Tablespace
     {
         if (!$this->innodb_table) {
             return null;

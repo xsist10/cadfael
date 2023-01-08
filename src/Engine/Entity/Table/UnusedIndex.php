@@ -7,18 +7,16 @@ namespace Cadfael\Engine\Entity\Table;
 use Cadfael\Engine\Entity\Index;
 
 /**
- * Class SchemaUnusedIndex
+ * Class UnusedIndex
  * @package Cadfael\Engine\Entity\Table
  * @codeCoverageIgnore
- *
- * DTO of a record from sys.schema_redundant_indexes
  */
-class SchemaUnusedIndex
+class UnusedIndex
 {
     public Index $index;
 
     /**
-     * SchemaRedundantIndexes constructor.
+     * UnusedIndex constructor.
      * @param Index $index
      */
     public function __construct(Index $index)

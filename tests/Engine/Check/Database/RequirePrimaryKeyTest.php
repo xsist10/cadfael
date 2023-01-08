@@ -31,6 +31,7 @@ class RequirePrimaryKeyTest extends BaseTest
         $this->assertTrue($check->supports($this->databases['8.0_OFF']), "Ensure that we care about all databases.");
         $this->assertTrue($check->supports($this->databases['8.0_ON']), "Ensure that we care about all databases.");
         $this->assertFalse($check->supports($this->databases['unknown']), "We can't support unknown versions.");
+        $this->assertFalse($check->supports($this->createTable()), "We only support database entities.");
     }
 
     public function testRun()
