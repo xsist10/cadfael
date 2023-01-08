@@ -25,7 +25,7 @@ class OutdatedAuthenticationMethod implements Check
             && (
                 // See https://dev.mysql.com/doc/refman/5.7/en/account-upgrades.html
                 ($entity->getUser()->plugin === 'mysql_old_password')
-                || (!$entity->getUser()->plugin && strlen($this->getUser()->authentication_string) == 16)
+                || (!$entity->getUser()->plugin && strlen($entity->getUser()->authentication_string) == 16)
             )
         ) {
             return new Report(
@@ -43,7 +43,7 @@ class OutdatedAuthenticationMethod implements Check
             return new Report(
                 $this,
                 $entity,
-                Report::STATUS_WARNING,
+                Report::STATUS_CONCERN,
                 [ "For MySQL 8.0+, accounts that use mysql_native_password should upgrade to caching_sha2_password." ]
             );
         }
