@@ -22,12 +22,15 @@ class Query implements Entity
      */
     protected array $tables = [];
 
-    public function __construct(string $digest)
+    public function __construct(string $digest, Schema $schema)
     {
         $this->digest = $digest;
+        $this->schema = $schema;
+
         // Quick hack because performance schema DIGEST and PHPSQLParser don't agree on some things
         $query = str_replace('` . `', '`.`', $digest);
         $this->query_parser = new PHPSQLParser($query);
+        $this->linkTablesToQuery();
     }
 
     /**
@@ -64,23 +67,6 @@ class Query implements Entity
     public function __toString(): string
     {
         return $this->digest;
-    }
-
-    /**
-     * @return Schema
-     */
-    public function getSchema(): Schema
-    {
-        return $this->schema;
-    }
-
-    /**
-     * @param Schema $schema
-     */
-    public function setSchema(Schema $schema)
-    {
-        $this->schema = $schema;
-        $this->linkTablesToQuery();
     }
 
     /**
@@ -121,18 +107,17 @@ class Query implements Entity
      *
      * @return void
      */
-    public function linkTablesToQuery(): void
+    private function linkTablesToQuery(): void
     {
-        $schema = $this->getSchema();
-        $database = $this->getSchema()->getDatabase();
-
         $tables = $this->getTableNamesInQuery();
         foreach ($tables as $table) {
             try {
                 if (empty($table['schema'])) {
-                    $this->tables[$table['alias']] = $schema->getTable($table['name']);
+                    $this->tables[$table['alias']] = $this->schema
+                        ->getTable($table['name']);
                 } else {
-                    $this->tables[$table['alias']] = $database->getSchema($table['schema'])->getTable($table['name']);
+                    $this->tables[$table['alias']] = $this->schema
+                        ->getDatabase()->getSchema($table['schema'])->getTable($table['name']);
                 }
             } catch (InvalidTable|InvalidSchema $exception) {
                 // It's possible we'll be dealing with a temporary table here.

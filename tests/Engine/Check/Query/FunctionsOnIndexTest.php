@@ -38,15 +38,15 @@ class FunctionsOnIndexTest extends BaseTest
             new Table("comments"),
         );
         $this->database->setSchemas($this->schema);
-        $this->query = new Query(
+        $this->query = $this->createQuery(
             "
                 SELECT u.*
                 FROM `test` . `users` AS u
                 JOIN test.posts AS p ON (p.author_id = `u` . `id`)
                 JOIN test.`comments` ON (`comments`.author_id = `u` . `id`)
-                WHERE DATE ( u.`joined` ) = ? AND ( DATE_FORMAT(p.posted, '%Y-%m-%d') > u.joined + INTERVAL 1 DAY)"
+                WHERE DATE ( u.`joined` ) = ? AND ( DATE_FORMAT(p.posted, '%Y-%m-%d') > u.joined + INTERVAL 1 DAY)",
+                $this->schema
         );
-        $this->query->setSchema($this->schema);
     }
 
     public function test__moo()

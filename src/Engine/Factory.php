@@ -43,19 +43,19 @@ class Factory
     /**
      * @var array<string>
      */
-    private $permissions = [];
+    private array $permissions = [];
     /**
      * @var array<string>
      */
-    private $information_schema_permissions = [];
+    private array $information_schema_permissions = [];
     /**
      * @var array<string>
      */
-    private $schemas = [];
+    private array $schemas = [];
     /**
      * @var array<bool>
      */
-    private $table_lookup = [];
+    private array $table_lookup = [];
 
     // We don't want to support versions of MySQL before 5.5.
     private const MIN_SUPPORTED_VERSION = '5.5.0';
@@ -145,10 +145,9 @@ class Factory
 
         foreach ($statement->fetchAllAssociative() as $querySummaryByDigest) {
             try {
-                $query = new Query($querySummaryByDigest['DIGEST_TEXT']);
+                $query = new Query($querySummaryByDigest['DIGEST_TEXT'], $schema);
                 $summary = EventsStatementsSummary::createFromPerformanceSchema($querySummaryByDigest);
                 $query->setEventsStatementsSummary($summary);
-                $query->linkTablesToQuery($schema, $database);
                 $schema->addQuery($query);
             } catch (Exception $exception) {
                 $this->log()->warning("Skipping ". $querySummaryByDigest['DIGEST'] .". " . $exception->getMessage());
@@ -615,7 +614,7 @@ class Factory
                 } else {
                     // Collect all indexes that haven't been used
                     $this->log()->info("Collecting performance_schema.table_io_waits_summary_by_index_usage.");
-                    $statement = $this->getConnection()->prepare(SchemaUnusedIndex::getQuery());
+                    $statement = $this->getConnection()->prepare(UnusedIndex::getQuery());
                     $statement->bindValue("schema", $schema->getName());
                     $statement->execute();
                     foreach ($statement->fetchAllAssociative() as $row) {
@@ -641,7 +640,9 @@ class Factory
                     }
 
                     $this->log()->info("Collecting performance_schema.accounts.");
-                    $accountConnections = $this->getConnection()->fetchAllAssociative(User::getQuery());
+                    $accountConnections = $this->getConnection()->fetchAllAssociative(
+                        'SELECT * FROM performance_schema.accounts WHERE USER IS NOT NULL AND HOST IS NOT NULL'
+                    );
                     foreach ($accountConnections as $accountConnection) {
                         $account = $database->getAccount($accountConnection['USER'], $accountConnection['HOST']);
                         if (!$account) {

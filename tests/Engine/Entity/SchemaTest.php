@@ -73,11 +73,4 @@ class SchemaTest extends BaseTest
     {
         $this->assertEquals($this->schema, $this->table->getSchema(), "Ensure that the setTables() function back-populates the schema into the table instance too.");
     }
-
-    public function test__addQuery()
-    {
-        $query = new Query("SELECT * FROM test");
-        $this->schema->addQuery($query);
-        $this->assertEquals($this->schema, $query->getSchema(), "Ensure that the addQuery() function back-populates the schema into the query instance too.");
-    }
 }

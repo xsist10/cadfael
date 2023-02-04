@@ -33,11 +33,9 @@ abstract class BaseTest extends TestCase
         return $schema;
     }
 
-    protected function createQuery(string $digest): Query
+    protected function createQuery(string $digest, Schema $schema): Query
     {
-        $query = new Query($digest);
-        $query->setSchema($this->createSchema());
-        return $query;
+        return new Query($digest, $schema);
     }
 
     /**
