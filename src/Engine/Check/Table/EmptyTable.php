@@ -41,7 +41,7 @@ class EmptyTable implements Check
             return new Report(
                 $this,
                 $entity,
-                Report::STATUS_CONCERN,
+                Report::STATUS_INFO,
                 [
                     "Table is empty but previously had records inserted.",
                     "It is possible it is used as a some form of queue or has had all records deleted."
@@ -66,7 +66,7 @@ class EmptyTable implements Check
             return new Report(
                 $this,
                 $entity,
-                Report::STATUS_CONCERN,
+                Report::STATUS_INFO,
                 $messages
             );
         }
@@ -74,7 +74,7 @@ class EmptyTable implements Check
         return new Report(
             $this,
             $entity,
-            Report::STATUS_WARNING,
+            Report::STATUS_INFO,
             [ "Table contains no records." ]
         );
     }

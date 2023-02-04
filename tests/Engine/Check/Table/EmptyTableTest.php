@@ -68,12 +68,12 @@ class EmptyTableTest extends BaseTest
         return [
             [
                 $table,
-                Report::STATUS_WARNING,
+                Report::STATUS_INFO,
                 [ 'Table contains no records.' ]
             ],
             [
                 $table_with_inserts,
-                Report::STATUS_CONCERN,
+                Report::STATUS_INFO,
                 [
                     "Table is empty but previously had records inserted.",
                     "It is possible it is used as a some form of queue or has had all records deleted."
@@ -81,7 +81,7 @@ class EmptyTableTest extends BaseTest
             ],
             [
                 $table_with_data_free,
-                Report::STATUS_CONCERN,
+                Report::STATUS_INFO,
                 [
                     "Table is empty but has allocated free space.",
                     "It is possible it is used as a some form of queue or has had all records deleted."
@@ -89,7 +89,7 @@ class EmptyTableTest extends BaseTest
             ],
             [
                 $table_with_data_free_in_tablespace,
-                Report::STATUS_CONCERN,
+                Report::STATUS_INFO,
                 [
                     "Table is empty but has allocated free space.",
                     "This table is in a shared tablespace so this doesn't mean much."
