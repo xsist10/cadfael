@@ -90,7 +90,6 @@ class Schema implements Entity
      */
     public function addQuery(Query $query): void
     {
-        $query->setSchema($this);
         $this->queries[] = $query;
     }
 
