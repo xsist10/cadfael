@@ -83,3 +83,14 @@ FROM cte;
 
 # Create a passwordless account
 CREATE USER IF NOT EXISTS 'localhost_passwordless_user'@'localhost';
+
+# Create some test query data
+SELECT a.*, b.*
+FROM table_with_high_cardinality_string_column AS a
+JOIN table_with_high_cardinality_string_column AS b ON (a.id = b.id)
+WHERE a.name = 'value1';
+
+SELECT a.*, b.id AS bid
+FROM table_with_high_cardinality_string_column AS a
+JOIN (SELECT id FROM table_with_high_cardinality_string_column) AS b ON (a.id = b.id)
+WHERE a.name = 'value1';
