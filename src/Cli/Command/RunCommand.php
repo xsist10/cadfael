@@ -68,7 +68,7 @@ class RunCommand extends AbstractDatabaseCommand
             ->setDescription('Run a collection of checks against a database.')
             ->addOption(
                 'performance_schema',
-                'ps',
+                null,
                 InputOption::VALUE_NONE,
                 'Include performance_schema metric checks. Only useful if the database has been running for '
                 . 'a while.'
