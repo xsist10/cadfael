@@ -104,11 +104,7 @@ Showing: Warning and higher
 Description: Empty tables add unnecessary cognitive load similar to dead code.
 Reference: https://github.com/xsist10/cadfael/wiki/Empty-Table
 
-+-----------------------------+---------+---* MYSQL_HOST
-MYSQL_PORT
-MYSQL_DATABASE
-MYSQL_USER
-MYSQL_PASSWORD--------------------------------------------------------------+
++-----------------------------+---------+-----------------------------------------------------------------+
 | Entity                      | Status  | Message                                                         |
 +-----------------------------+---------+-----------------------------------------------------------------+
 | table_empty                 | Warning | Table contains no records.                                      |
