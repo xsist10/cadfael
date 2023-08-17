@@ -7,8 +7,10 @@ namespace Cadfael\Tests\Engine;
 use Cadfael\Engine\Entity\Account;
 use Cadfael\Engine\Entity\Account\User;
 use Cadfael\Engine\Entity\Database;
+use Cadfael\Engine\Entity\Query;
 use Cadfael\Engine\Entity\Schema;
 use Cadfael\Engine\Entity\Table;
+use Cadfael\Engine\Entity\Tablespace;
 use PHPUnit\Framework\TestCase;
 
 abstract class BaseTest extends TestCase
@@ -20,6 +22,7 @@ abstract class BaseTest extends TestCase
         ];
         $database = new Database(null);
         $database->setVariables(array_merge($base_variables, $variables));
+        $database->setTablespaces($this->createTablespace());
         return $database;
     }
 
@@ -28,6 +31,11 @@ abstract class BaseTest extends TestCase
         $schema = new Schema('test');
         $schema->setDatabase($this->createDatabase($variables));
         return $schema;
+    }
+
+    protected function createQuery(string $digest, Schema $schema): Query
+    {
+        return new Query($digest, $schema);
     }
 
     /**
@@ -98,5 +106,26 @@ abstract class BaseTest extends TestCase
             $account->setDatabase($database);
         }
         return $account;
+    }
+
+    protected function createTablespace(string $spaceType = 'General')
+    {
+        return Tablespace::createFromInformationSchema([
+            'SPACE' => '1',
+            'NAME' => 'mysql',
+            'FLAG' => '18432',
+            'ROW_FORMAT' => 'Any',
+            'PAGE_SIZE' => '16384',
+            'ZIP_PAGE_SIZE' => '0',
+            'SPACE_TYPE' => $spaceType,
+            'FS_BLOCK_SIZE' => '4096',
+            'FILE_SIZE' => '54525952',
+            'ALLOCATED_SIZE' => '54530048',
+            'AUTOEXTEND_SIZE' => '0',
+            'SERVER_VERSION' => '8.0.19',
+            'SPACE_VERSION' => '1',
+            'ENCRYPTION' => 'N',
+            'STATE' => 'normal'
+        ]);
     }
 }

@@ -7,9 +7,10 @@
  */
 
 use Cadfael\Engine\Entity\Table;
-use PHPUnit\Framework\TestCase;
+use Cadfael\Engine\Entity\Table\InnoDbTable;
+use Cadfael\Tests\Engine\BaseTest;
 
-class TableTest extends TestCase
+class TableTest extends BaseTest
 {
     protected $table;
 
@@ -38,6 +39,9 @@ class TableTest extends TestCase
             "CREATE_OPTIONS"    => "max_rows=43690",
             "TABLE_COMMENT"     => "",
         ]);
+
+        $schema = $this->createSchema();
+        $schema->setTables($this->table);
     }
 
     public function test__getName()
@@ -59,4 +63,45 @@ class TableTest extends TestCase
         $this->assertTrue($table->isVirtual());
     }
 
+    public function test__getTablespace()
+    {
+        // No tablespace assigned
+        $this->assertNull($this->table->getTablespace(), "No tablespace is assigned");
+
+        // Valid tablespace assigned
+        $this->table->setInnoDbTable(InnoDbTable::createFromInformationSchema([
+            'TABLE_ID' => '1086',
+            'NAME' => 'cfp/users_groups',
+            'FLAG' => '129',
+            'N_COLS' => '6',
+            'SPACE' => '1',
+            'ROW_FORMAT' => 'Compact',
+            'ZIP_PAGE_SIZE' => '0',
+            'SPACE_TYPE' => 'System',
+            'INSTANT_COLS' => '0',
+            'TOTAL_ROW_VERSIONS' => '0',
+        ]));
+
+        $this->assertSame(
+            $this->table->getSchema()->getDatabase()->getTablespace(1),
+            $this->table->getTablespace(),
+            "A valid tablespace is returned"
+        );
+
+        // Invalid tablespace assigned
+        $this->table->setInnoDbTable(InnoDbTable::createFromInformationSchema([
+            'TABLE_ID' => '1086',
+            'NAME' => 'cfp/users_groups',
+            'FLAG' => '129',
+            'N_COLS' => '6',
+            'SPACE' => '2',
+            'ROW_FORMAT' => 'Compact',
+            'ZIP_PAGE_SIZE' => '0',
+            'SPACE_TYPE' => 'System',
+            'INSTANT_COLS' => '0',
+            'TOTAL_ROW_VERSIONS' => '0',
+        ]));
+
+        $this->assertNull($this->table->getTablespace(), "An invalid tablespace has been assigned");
+    }
 }

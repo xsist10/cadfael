@@ -84,6 +84,9 @@ FROM cte;
 # Create a passwordless account
 CREATE USER IF NOT EXISTS 'localhost_passwordless_user'@'localhost';
 
+# Create a locked account
+CREATE USER IF NOT EXISTS 'locked_account'@'localhost' IDENTIFIED BY RANDOM PASSWORD ACCOUNT LOCK;
+
 # Create some test query data
 SELECT a.*, b.*
 FROM table_with_high_cardinality_string_column AS a

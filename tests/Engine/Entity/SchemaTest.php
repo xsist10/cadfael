@@ -4,11 +4,12 @@ declare(strict_types=1);
 namespace Cadfael\Tests\Engine\Entity;
 
 use Cadfael\Engine\Entity\Database;
+use Cadfael\Engine\Entity\Query;
 use Cadfael\Engine\Entity\Schema;
 use Cadfael\Engine\Entity\Table;
-use PHPUnit\Framework\TestCase;
+use Cadfael\Tests\Engine\BaseTest;
 
-class SchemaTest extends TestCase
+class SchemaTest extends BaseTest
 {
     protected Database $database;
     protected Schema $schema;

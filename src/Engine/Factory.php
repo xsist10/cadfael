@@ -16,7 +16,7 @@ use Cadfael\Engine\Entity\Table\AccessInformation;
 use Cadfael\Engine\Entity\Table\InnoDbTable;
 use Cadfael\Engine\Entity\Table\SchemaAutoIncrementColumn;
 use Cadfael\Engine\Entity\Table\SchemaRedundantIndex;
-use Cadfael\Engine\Entity\Table\SchemaUnusedIndex;
+use Cadfael\Engine\Entity\Table\UnusedIndex;
 use Cadfael\Engine\Entity\Table;
 use Cadfael\Engine\Entity\Column;
 use Cadfael\Engine\Entity\Index;
@@ -32,6 +32,9 @@ use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
+/**
+ * @codeCoverageIgnore
+ */
 class Factory
 {
     use LoggerAwareTrait;
@@ -40,19 +43,19 @@ class Factory
     /**
      * @var array<string>
      */
-    private $permissions = [];
+    private array $permissions = [];
     /**
      * @var array<string>
      */
-    private $information_schema_permissions = [];
+    private array $information_schema_permissions = [];
     /**
      * @var array<string>
      */
-    private $schemas = [];
+    private array $schemas = [];
     /**
      * @var array<bool>
      */
-    private $table_lookup = [];
+    private array $table_lookup = [];
 
     // We don't want to support versions of MySQL before 5.5.
     private const MIN_SUPPORTED_VERSION = '5.5.0';
@@ -128,35 +131,23 @@ class Factory
         try {
             // Collect all query digests that have been run so far.
             $this->log()->info("Collecting all query digests for schema `" . $schema->getName() . "`.");
-            $statement = $this->getConnection()->prepare("
-                SELECT *
-                FROM performance_schema.events_statements_summary_by_digest
-                WHERE SCHEMA_NAME = :schema
-                  AND QUERY_SAMPLE_TEXT NOT LIKE 'show %'
-                  AND QUERY_SAMPLE_TEXT NOT LIKE '% information_schema.%'
-                  AND QUERY_SAMPLE_TEXT NOT LIKE '% mysql.%'
-                  AND QUERY_SAMPLE_TEXT NOT LIKE '% sys.%'
-                  AND QUERY_SAMPLE_TEXT NOT LIKE '% performance_schema.%'
-            ");
+            $statement = $this->getConnection()->prepare(EventsStatementsSummary::getQuery());
             $statement->bindValue("schema", $schema->getName());
             $statement->execute();
         } catch (InvalidFieldNameException $exception) {
             // Older versions of MySQL don't have QUERY_SAMPLE_TEXT. Collect everything
-            $statement = $this->getConnection()->prepare("
-                SELECT *
-                FROM performance_schema.events_statements_summary_by_digest
-                WHERE SCHEMA_NAME = :schema
-            ");
+            $this->log()->info("Detected version of MySQL performance_schema.events_statements_summary_by_digest "
+                . "without QUERY_SAMPLE_TEXT column.");
+            $statement = $this->getConnection()->prepare(EventsStatementsSummary::getQueryWithoutSampleText());
             $statement->bindValue("schema", $schema->getName());
             $statement->execute();
         }
 
         foreach ($statement->fetchAllAssociative() as $querySummaryByDigest) {
             try {
-                $query = new Query($querySummaryByDigest['DIGEST_TEXT']);
+                $query = new Query($querySummaryByDigest['DIGEST_TEXT'], $schema);
                 $summary = EventsStatementsSummary::createFromPerformanceSchema($querySummaryByDigest);
                 $query->setEventsStatementsSummary($summary);
-                $query->linkTablesToQuery($schema, $database);
                 $schema->addQuery($query);
             } catch (Exception $exception) {
                 $this->log()->warning("Skipping ". $querySummaryByDigest['DIGEST'] .". " . $exception->getMessage());
@@ -505,8 +496,7 @@ class Factory
 
             // Collect and generate all the indexes
             $this->log()->info("Collecting information_schema.STATISTICS.");
-            $query = 'SELECT * FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=:schema';
-            $statement = $this->connection->prepare($query);
+            $statement = $this->connection->prepare(Statistics::getQuery());
             $statement->bindValue("schema", $schema_name);
             $statement->execute();
 
@@ -523,7 +513,7 @@ class Factory
 
             $autoIncrementColumns = [];
             $schemaRedundantIndexes = [];
-            $schema_unused_indexes = [];
+            $unused_indexes = [];
             $table_access_information = [];
             $table_indexes_objects = [];
             $index_statistics = [];
@@ -531,8 +521,7 @@ class Factory
                 if ($this->hasPermission('sys', 'schema_auto_increment_columns')) {
                     // Collect and generate all sys.* information
                     $this->log()->info("Collecting sys.schema_auto_increment_columns.");
-                    $query = 'SELECT * FROM sys.schema_auto_increment_columns WHERE table_schema=:schema';
-                    $statement = $this->connection->prepare($query);
+                    $statement = $this->connection->prepare(SchemaAutoIncrementColumn::getQuery());
                     $statement->bindValue("schema", $schema_name);
                     $statement->execute();
 
@@ -546,8 +535,7 @@ class Factory
 
                 if ($this->hasPermission('sys', 'schema_index_statistics')) {
                     $this->log()->info("Collecting sys.schema_index_statistics.");
-                    $query = 'SELECT * FROM sys.schema_index_statistics WHERE table_schema=:schema';
-                    $statement = $this->connection->prepare($query);
+                    $statement = $this->connection->prepare(SchemaIndexStatistics::getQuery());
                     $statement->bindValue("schema", $schema_name);
                     $statement->execute();
 
@@ -602,8 +590,7 @@ class Factory
 
             if ($this->hasSchema('sys') && $this->hasPermission('sys', 'schema_redundant_indexes')) {
                 $this->log()->info("Collecting sys.schema_redundant_indexes.");
-                $query = 'SELECT * FROM sys.schema_redundant_indexes WHERE table_schema=:schema';
-                $statement = $this->connection->prepare($query);
+                $statement = $this->connection->prepare(SchemaRedundantIndex::getQuery());
                 $statement->bindValue("schema", $schema_name);
                 $statement->execute();
 
@@ -627,59 +614,35 @@ class Factory
                 } else {
                     // Collect all indexes that haven't been used
                     $this->log()->info("Collecting performance_schema.table_io_waits_summary_by_index_usage.");
-                    $statement = $this->getConnection()->prepare("
-                        SELECT object_schema, object_name, index_name
-                        FROM performance_schema.table_io_waits_summary_by_index_usage
-                        WHERE index_name IS NOT NULL
-                            AND index_name != 'PRIMARY'
-                            AND count_star = 0
-                            AND object_schema = :schema
-                        ORDER BY object_schema, object_name;
-                    ");
+                    $statement = $this->getConnection()->prepare(UnusedIndex::getQuery());
                     $statement->bindValue("schema", $schema->getName());
                     $statement->execute();
                     foreach ($statement->fetchAllAssociative() as $row) {
                         $index = $table_indexes_objects[$row['object_name']][$row['index_name']];
-                        $schema_unused_indexes[$row['object_name']][] = new SchemaUnusedIndex($index);
+                        $unused_indexes[$row['object_name']][] = new UnusedIndex($index);
                     }
 
                     // Collect all accounts who have not been closing connections properly.
                     $message = "Collecting performance_schema.events_statements_summary_by_account_by_event_name.";
                     $this->log()->info($message);
-                    $accountsNotClosedProperly = $this->getConnection()->fetchAllAssociative("
-                        SELECT
-                          ess.user,
-                          ess.host,
-                          (a.total_connections - a.current_connections) - ess.count_star as not_closed,
-                          ((a.total_connections - a.current_connections) - ess.count_star) * 100 /
-                          (a.total_connections - a.current_connections) as not_closed_perc
-                        FROM performance_schema.events_statements_summary_by_account_by_event_name ess
-                        JOIN performance_schema.accounts a on (ess.user = a.user and ess.host = a.host)
-                        WHERE ess.event_name = 'statement/com/quit'
-                            AND (a.total_connections - a.current_connections) > ess.count_star
-                    ");
+                    $accountsNotClosedProperly = $this->getConnection()
+                        ->fetchAllAssociative(NotClosedProperly::getQuery());
 
                     foreach ($accountsNotClosedProperly as $accountNotClosedProperly) {
-                        $account = $database->getAccount(
+                        $account = $this->attemptToFindAccount(
+                            $database,
                             $accountNotClosedProperly['user'],
                             $accountNotClosedProperly['host']
                         );
-                        if (!$account) {
-                            $account = Account::withRaw(
-                                $accountNotClosedProperly['user'],
-                                $accountNotClosedProperly['host']
-                            );
-                            $database->addAccount($account);
-                        }
                         $account->setAccountNotClosedProperly(
-                            NotClosedProperly::createFromEventSummary($accountNotClosedProperly)
+                            NotClosedProperly::createFromPerformanceSchema($accountNotClosedProperly)
                         );
                     }
 
                     $this->log()->info("Collecting performance_schema.accounts.");
-                    $accountConnections = $this->getConnection()->fetchAllAssociative("
-                        SELECT * FROM performance_schema.accounts WHERE USER IS NOT NULL AND HOST IS NOT NULL
-                    ");
+                    $accountConnections = $this->getConnection()->fetchAllAssociative(
+                        'SELECT * FROM performance_schema.accounts WHERE USER IS NOT NULL AND HOST IS NOT NULL'
+                    );
                     foreach ($accountConnections as $accountConnection) {
                         $account = $database->getAccount($accountConnection['USER'], $accountConnection['HOST']);
                         if (!$account) {
@@ -691,21 +654,14 @@ class Factory
                     }
 
                     $this->log()->info("Collecting performance_schema.table_io_waits_summary_by_table.");
-                    $query = "
-                        SELECT OBJECT_NAME, COUNT_READ, COUNT_WRITE
-                        FROM performance_schema.table_io_waits_summary_by_table
-                        WHERE OBJECT_SCHEMA=:schema
-                    ";
-                    $statement = $this->connection->prepare($query);
+                    $statement = $this->connection->prepare(AccessInformation::getQuery());
                     $statement->bindValue("schema", $schema->getName());
                     $statement->execute();
 
                     $access_requests = $statement->fetchAllAssociative();
                     foreach ($access_requests as $access_request) {
-                        $table_access_information[$access_request['OBJECT_NAME']] = new AccessInformation(
-                            (int)$access_request['COUNT_READ'],
-                            (int)$access_request['COUNT_WRITE']
-                        );
+                        $table_access_information[$access_request['OBJECT_NAME']]
+                            = AccessInformation::createFromIOSummary($access_request);
                     }
                 }
             }
@@ -728,8 +684,8 @@ class Factory
                 if (!empty($schemaRedundantIndexes[$table->getName()])) {
                     $table->setSchemaRedundantIndexes(...$schemaRedundantIndexes[$table->getName()]);
                 }
-                if (!empty($schema_unused_indexes[$table->getName()])) {
-                    $table->setUnusedRedundantIndexes(...$schema_unused_indexes[$table->getName()]);
+                if (!empty($unused_indexes[$table->getName()])) {
+                    $table->setUnusedIndexes(...$unused_indexes[$table->getName()]);
                 }
                 if (!empty($table_access_information[$table->getName()])) {
                     $table->setAccessInformation($table_access_information[$table->getName()]);
@@ -750,5 +706,21 @@ class Factory
         }
 
         return $database;
+    }
+
+    /**
+     * @param Database $database
+     * @param string $user
+     * @param string $host
+     * @return Account
+     */
+    public function attemptToFindAccount(Database $database, string $user, string $host): Account
+    {
+        $account = $database->getAccount($user, $host);
+        if (!$account) {
+            $account = Account::withRaw($user, $host);
+            $database->addAccount($account);
+        }
+        return $account;
     }
 }

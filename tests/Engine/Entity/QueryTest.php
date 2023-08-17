@@ -8,6 +8,7 @@ use Cadfael\Engine\Entity\Database;
 use Cadfael\Engine\Entity\Query;
 use Cadfael\Engine\Entity\Schema;
 use Cadfael\Engine\Entity\Table;
+use Cadfael\Engine\Exception\QueryParseException;
 use Cadfael\Tests\Engine\BaseTest;
 use Cadfael\Tests\Engine\Check\ColumnBuilder;
 
@@ -33,31 +34,51 @@ class QueryTest extends BaseTest
         $this->database->setSchemas($this->schema);
     }
 
-    public function createQuery($digest)
-    {
-        $query = new Query($digest);
-        $query->linkTablesToQuery($this->schema, $this->database);
-        return $query;
-    }
-
     public function test__fetchColumnsModifiedByFunctions()
     {
-        $query = $this->createQuery("SELECT * FROM users");
-        $this->assertEmpty($query->fetchColumnsModifiedByFunctions());
+        // No columns modified due to lack of WHERE statement
+        $query = $this->createQuery("SELECT * FROM users", $this->schema);
+        $this->assertEmpty($query->fetchColumnsModifiedByFunctions(), "No WHERE statement means no columns to check");
 
-        $query = $this->createQuery("SELECT * FROM users WHERE id=1");
-        $this->assertEmpty($query->fetchColumnsModifiedByFunctions());
+        $query = $this->createQuery("SELECT * FROM (users)", $this->schema);
+        $this->assertEmpty($query->fetchColumnsModifiedByFunctions(), "No WHERE statement means no columns to check (with table expression)");
 
-        $query = $this->createQuery("SELECT * FROM test.users WHERE DATE_FORMAT(id)=1");
-        $this->assertEquals([['table' => $this->table, 'column' => $this->column]], $query->fetchColumnsModifiedByFunctions());
+        $query = $this->createQuery("SELECT * FROM users WHERE id=?", $this->schema);
+        $this->assertEmpty($query->fetchColumnsModifiedByFunctions(), "No modified columns");
 
-        $query = $this->createQuery("SELECT * FROM test.users WHERE DATE_FORMAT(users.id)=1");
-        $this->assertEquals([['table' => $this->table, 'column' => $this->column]], $query->fetchColumnsModifiedByFunctions());
+        $query = $this->createQuery("SELECT * FROM test.users WHERE DATE_FORMAT(id)=?", $this->schema);
+        $this->assertEquals([['table' => $this->table, 'column' => $this->column]], $query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on first column using relative column name.");
+
+        $query = $this->createQuery("SELECT * FROM test.users WHERE DATE_FORMAT(CONCATENATE(id, 'moo'))=?", $this->schema);
+        $this->assertEquals([['table' => $this->table, 'column' => $this->column]], $query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification with nexted CONCATENATE on first column using relative column name.");
+
+        $query = $this->createQuery("SELECT * FROM test.users WHERE id=? OR DATE_FORMAT(id)=?", $this->schema);
+        $this->assertEquals([['table' => $this->table, 'column' => $this->column]], $query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on second column using relative column name.");
+
+        $query = $this->createQuery("SELECT * FROM test.users WHERE DATE_FORMAT(users.id)=?", $this->schema);
+        $this->assertEquals([['table' => $this->table, 'column' => $this->column]], $query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on first column using absolute column name.");
+
+        $query = $this->createQuery("SELECT * FROM invalid_table WHERE DATE_FORMAT(id)=?", $this->schema);
+        $this->assertEmpty($query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on first column for invalid table.");
+
+        $query = $this->createQuery("SELECT * FROM test.users WHERE DATE_FORMAT(?)=?", $this->schema);
+        $this->assertEmpty($query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on literal.");
+
+        $query = $this->createQuery("SELECT b.id FROM test.users AS b WHERE DATE_FORMAT(SELECT id FROM users WHERE DATE_FORMAT(?)=?)=?", $this->schema);
+        $this->assertEmpty($query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on literal.");
     }
+
+    public function test__fetchColumnsModifiedByFunctionsException()
+    {
+        $this->expectException(QueryParseException::class);
+        $query = $this->createQuery("SET VARIABLE a=b", $this->schema);
+        $this->assertEmpty($query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on literal.");
+    }
+
 
     public function test__getTableNamesInQuery()
     {
-        $query = new Query(
+        $query = $this->createQuery(
             "SELECT
             order_month,
             order_day,
@@ -80,12 +101,13 @@ class QueryTest extends BaseTest
               INNER JOIN order_line ol ON co.order_id = ol.order_id
             ) sub
             GROUP BY order_month, order_day
-            ORDER BY order_day ASC;"
+            ORDER BY order_day ASC;",
+            $this->schema
         );
         $tables = $query->getTableNamesInQuery();
         $this->assertCount(2, $tables, "Found correct number of tables");
 
-        $query = new Query(
+        $query = $this->createQuery(
             "SELECT
                 DATE_FORMAT(co.order_date, '%Y-%m') AS order_month,
                 DATE_FORMAT(co.order_date, '%Y-%m-%d') AS order_day,
@@ -98,15 +120,16 @@ class QueryTest extends BaseTest
                 ) AS running_total_num_books
             FROM cust_order co
             INNER JOIN order_line ol ON co.order_id = ol.order_id
-            GROUP BY 
+            GROUP BY
               DATE_FORMAT(co.order_date, '%Y-%m'),
               DATE_FORMAT(co.order_date, '%Y-%m-%d')
-            ORDER BY co.order_date ASC"
+            ORDER BY co.order_date ASC",
+            $this->schema
         );
         $tables = $query->getTableNamesInQuery();
         $this->assertCount(2, $tables, "Found correct number of tables");
 
-        $query = new Query(
+        $query = $this->createQuery(
             "SELECT
             c.calendar_date,
             c.calendar_year,
@@ -132,13 +155,14 @@ class QueryTest extends BaseTest
               INNER JOIN order_line ol ON co.order_id = ol.order_id
             ) sub ON c.calendar_date = sub.order_day
             GROUP BY c.calendar_date, c.calendar_year, c.calendar_month, c.calendar_dayname
-            ORDER BY c.calendar_date ASC"
+            ORDER BY c.calendar_date ASC",
+            $this->schema
         );
         $tables = $query->getTableNamesInQuery();
         $this->assertCount(3, $tables, "Found correct number of tables");
 
 
-        $query = new Query(
+        $query = $this->createQuery(
             "SELECT MIN(place_id) AS place_id,
                    name,
                    administration,
@@ -199,7 +223,8 @@ class QueryTest extends BaseTest
             ) t2
             WHERE place_id is not null
             GROUP BY country, administration, admin_abbr, name
-            ORDER BY relevance DESC;"
+            ORDER BY relevance DESC;",
+            $this->schema
         );
         $tables = $query->getTableNamesInQuery();
         $this->assertCount(5, $tables, "Found correct number of tables");
