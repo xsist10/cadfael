@@ -654,7 +654,10 @@ class Factory
                     foreach ($accountConnections as $accountConnection) {
                         $account = $database->getAccount($accountConnection['USER'], $accountConnection['HOST']);
                         if (!$account) {
-                            $account = Account::withUser(new User($accountConnection['USER'], $accountConnection['HOST']));
+                            $account = Account::withUser(new User(
+                                $accountConnection['USER'],
+                                $accountConnection['HOST']
+                            ));
                             $database->addAccount($account);
                         }
                         $account->setCurrentConnections((int)$accountConnection['CURRENT_CONNECTIONS']);
