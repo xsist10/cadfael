@@ -2,8 +2,6 @@
 declare(strict_types=1);
 
 use Cadfael\Engine\Check\Table\SaneInnoDbPrimaryKey;
-use Cadfael\Engine\Entity\Column;
-use Cadfael\Engine\Entity\Index;
 use Cadfael\Engine\Report;
 
 use Cadfael\Tests\Engine\BaseTest;

@@ -4,7 +4,6 @@ namespace Cadfael\Tests\Engine\Check\Index;
 
 use Cadfael\Engine\Check\Index\IndexPrefix;
 use Cadfael\Engine\Entity\Index;
-use Cadfael\Engine\Entity\Table;
 use Cadfael\Engine\Report;
 use Cadfael\Tests\Engine\BaseTest;
 use Cadfael\Tests\Engine\Check\ColumnBuilder;
