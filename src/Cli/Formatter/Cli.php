@@ -167,7 +167,7 @@ class Cli extends Formatter
         $this->eol();
         foreach ($reports as $report) {
             $table->addRow([
-                $report->getEntity(),
+                strlen($report->getEntity()) > 80 ? wordwrap($report->getEntity(), 80) : $report->getEntity(),
                 $this->renderStatus($report->getStatus()),
                 implode("\n", $report->getMessages())
             ]);
