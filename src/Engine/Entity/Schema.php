@@ -86,6 +86,9 @@ class Schema implements Entity
     }
 
     /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
      * @param Query $query
      */
     public function addQuery(Query $query): void
