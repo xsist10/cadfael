@@ -17,6 +17,8 @@ use Cadfael\Engine\Report;
 class UnsupportedVersion implements Check
 {
     const SUPPORT_EOL_TIMESTAMP = [
+        // There is no official EoL, but we're projecting 8 years based on previous support
+        "8.1.0" => 1939759200, // June 2031
         "8.0.0" => 1774998001, // April 2026
         "5.7.0" => 1696118401, // Oct 2023
         "5.6.0" => 1612137601, // Feb 2021
