@@ -12,7 +12,8 @@ use Cadfael\Tests\Engine\BaseTest;
 
 class UnusedTableTest extends BaseTest
 {
-    public function providerTableDataForSupports() {
+    public function providerTableDataForSupports(): array
+    {
         return [
             [
                 $this->createTable(),
@@ -25,7 +26,8 @@ class UnusedTableTest extends BaseTest
         ];
     }
 
-    public function providerTableDataForRun() {
+    public function providerTableDataForRun(): array
+    {
         $table_with_read_and_write = $this->createTable();
         $table_with_read_and_write->setAccessInformation(AccessInformation::createFromIOSummary([
             'COUNT_READ' => 10,
@@ -46,6 +48,12 @@ class UnusedTableTest extends BaseTest
 
         $table_with_no_access = $this->createTable();
         $table_with_no_access->setAccessInformation(AccessInformation::createFromIOSummary([
+            'COUNT_READ' => 0,
+            'COUNT_WRITE' => 0,
+        ]));
+
+        $empty_table_with_no_access = $this->createEmptyTable();
+        $empty_table_with_no_access->setAccessInformation(AccessInformation::createFromIOSummary([
             'COUNT_READ' => 0,
             'COUNT_WRITE' => 0,
         ]));
@@ -71,6 +79,12 @@ class UnusedTableTest extends BaseTest
                 $table_with_no_access,
                 Report::STATUS_CONCERN,
                 [ "Table has not been written to or read from since the last server restart." ]
+            ],
+            [
+                // Table with no access but it's also empty
+                $empty_table_with_no_access,
+                null,
+                []
             ],
             [
                 // Table with no access information at all

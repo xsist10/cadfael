@@ -18,7 +18,9 @@ class UnusedTable implements Check
 
     public function run($entity): ?Report
     {
-        if (is_null($entity->access_information)) {
+        // If we don't have access information or the table is empty, we can ignore it.
+        // If a table is empty SELECT statements are not counted.
+        if (is_null($entity->access_information) || !$entity->getNumRows()) {
             return null;
         }
 
