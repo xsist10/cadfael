@@ -12,7 +12,8 @@ class OutdatedAuthenticationMethod implements Check
 {
     public function supports($entity): bool
     {
-        return $entity instanceof Account;
+        return $entity instanceof Account
+            && $entity->getUser()->isFleshed();
     }
 
     public function run($entity): ?Report
@@ -21,7 +22,7 @@ class OutdatedAuthenticationMethod implements Check
 
         // If we're running MySQL 5.6.* to <= 8.0.0, we flag if the authentication method is mysql_old_password
         if (version_compare($version, '8.0.0', '<')
-            && version_compare($version, '5.6', '>=')
+            && version_compare($version, '5.0', '>=')
             && (
                 // See https://dev.mysql.com/doc/refman/5.7/en/account-upgrades.html
                 ($entity->getUser()->plugin === 'mysql_old_password')
@@ -40,11 +41,15 @@ class OutdatedAuthenticationMethod implements Check
         if (version_compare($version, '8.0', '>=')
             && $entity->getUser()->plugin === 'mysql_native_password'
         ) {
+            $messages = [ "For MySQL 8.0+, accounts that use mysql_native_password should upgrade to caching_sha2_password." ];
+            if (version_compare($version, '8.1.0', '>=')) {
+                $messages[] = "For MySQL 8.1+, mysql_native_password is deprecated and subject to removal in future versions.";
+            }
             return new Report(
                 $this,
                 $entity,
                 Report::STATUS_CONCERN,
-                [ "For MySQL 8.0+, accounts that use mysql_native_password should upgrade to caching_sha2_password." ]
+                $messages
             );
         }
 

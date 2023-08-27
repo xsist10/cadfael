@@ -8,9 +8,10 @@ use Cadfael\Engine\Check;
 use Cadfael\Engine\Entity\Account;
 use Cadfael\Engine\Report;
 
-class LockedAccount implements Check
+class AccountsWithSuperPermission implements Check
 {
-    protected const LOCKED_RESERVED_ACCOUNTS = ['mysql.sys', 'mysql.session', 'mysql.infoschema'];
+    protected const RESERVED_ACCOUNTS_WITH_SUPER = ['root', 'mysql.session'];
+
     public function supports($entity): bool
     {
         return $entity instanceof Account
@@ -19,20 +20,21 @@ class LockedAccount implements Check
 
     public function run($entity): ?Report
     {
+        // We can exclude some very specific reserved accounts who should normally have this permission
         $username = $entity->getUser()->user;
-        if ($entity->getUser()->isLocal() && in_array($username, self::LOCKED_RESERVED_ACCOUNTS)) {
+        if ($entity->getUser()->isLocal() && in_array($username, self::RESERVED_ACCOUNTS_WITH_SUPER)) {
             return new Report(
                 $this,
                 $entity,
                 Report::STATUS_OK,
-                [ "Some local reserved accounts are expected to be locked." ]
+                [ "Some local reserved accounts are expected to have super permission." ]
             );
         }
 
         return new Report(
             $this,
             $entity,
-            $entity->getUser()->account_locked ? Report::STATUS_INFO : Report::STATUS_OK
+            $entity->getUser()->super_priv ? Report::STATUS_CONCERN : Report::STATUS_OK
         );
     }
 
@@ -41,7 +43,7 @@ class LockedAccount implements Check
      */
     public function getReferenceUri(): string
     {
-        return 'https://github.com/xsist10/cadfael/wiki/Locked-Account';
+        return 'https://github.com/xsist10/cadfael/wiki/Account-with-Super-Permission';
     }
 
     /**
@@ -49,7 +51,7 @@ class LockedAccount implements Check
      */
     public function getName(): string
     {
-        return 'Locked Account';
+        return 'Account with Super Permission';
     }
 
     /**
@@ -57,6 +59,6 @@ class LockedAccount implements Check
      */
     public function getDescription(): string
     {
-        return "Accounts that are locked and may need a cleanup.";
+        return "Accounts that have super permission assigned and probably don't need it.";
     }
 }

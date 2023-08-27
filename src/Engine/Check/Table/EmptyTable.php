@@ -33,8 +33,7 @@ class EmptyTable implements Check
         $auto_increment_issued = 0;
         if ($auto_increment_column !== null) {
             $auto_increment_issued = $auto_increment_column->auto_increment
-                ? $auto_increment_column->auto_increment - 1
-                : 0;
+                ? $auto_increment_column->auto_increment - 1 : 0;
         }
 
         if ($auto_increment_issued) {

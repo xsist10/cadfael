@@ -26,13 +26,14 @@ class Inefficient implements Check
         $examined_ratio = $summary->sum_rows_examined / ($summary->sum_rows_sent > 0 ? $summary->sum_rows_sent : 1);
         if ($examined_ratio >= 100) {
             $messages[] = sprintf(
-                "%0.2f rows examined for every 1 returned. Better indexes with higher cardinality would improve this.",
+                "%0.2f rows examined for every 1 returned.",
                 $examined_ratio
             );
+            $messages[] = "Better indexes with higher cardinality would improve this.";
             $status = Report::STATUS_CONCERN;
         }
 
-        $full_scan_ratio = $summary->sum_select_scan / $summary->count_star;
+        $full_scan_ratio = min($summary->sum_select_scan / $summary->count_star, 1.0);
         if ($full_scan_ratio >= 0.2) {
             $messages[] = sprintf("%0.2f%% of queries perform full scans.", $full_scan_ratio * 100);
             $status = Report::STATUS_WARNING;

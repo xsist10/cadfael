@@ -39,7 +39,7 @@ class OutdatedAuthenticationMethodTest extends BaseTest
                 Report::STATUS_WARNING
             ],
 
-            // MySQL >= 8.0
+            // MySQL >= 8.0 and < 8.1
             [
                 '8.0.1',
                 'caching_sha2_password',
@@ -48,6 +48,20 @@ class OutdatedAuthenticationMethodTest extends BaseTest
             ],
             [
                 '8.0.1',
+                'mysql_native_password',
+                'some_password',
+                Report::STATUS_CONCERN
+            ],
+
+            // MySQL >= 8.1
+            [
+                '8.1.0',
+                'caching_sha2_password',
+                'some_password',
+                Report::STATUS_OK
+            ],
+            [
+                '8.1.0',
                 'mysql_native_password',
                 'some_password',
                 Report::STATUS_CONCERN
@@ -62,7 +76,7 @@ class OutdatedAuthenticationMethodTest extends BaseTest
     {
         $check = new OutdatedAuthenticationMethod();
 
-        $account = Account::withUser(new User("test", 'localhost', plugin: $plugin, authentication_string: $password));
+        $account = Account::withUser(new User("test", 'localhost', plugin: $plugin, authentication_string: $password, is_fleshed: true));
         $account->setDatabase($this->createDatabase([ 'version' => $version ]));
 
         $this->assertTrue(

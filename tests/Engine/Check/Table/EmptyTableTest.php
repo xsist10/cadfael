@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 use Cadfael\Engine\Check\Table\EmptyTable;
 use Cadfael\Engine\Entity\Table\InnoDbTable;
-use Cadfael\Engine\Entity\Tablespace;
 use Cadfael\Engine\Report;
 use Cadfael\Tests\Engine\BaseTest;
 use Cadfael\Tests\Engine\Check\ColumnBuilder;

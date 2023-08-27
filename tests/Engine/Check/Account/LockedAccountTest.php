@@ -15,7 +15,7 @@ class LockedAccountTest extends BaseTest
     {
         $check = new LockedAccount();
 
-        $account = Account::withUser(new User("test", "localhost", account_locked: false));
+        $account = Account::withUser(new User("test", "localhost", account_locked: false, is_fleshed: true));
 
         $this->assertTrue(
             $check->supports($account),
@@ -28,7 +28,7 @@ class LockedAccountTest extends BaseTest
             "Unlocked account is fine."
         );
 
-        $account = Account::withUser(new User("test", "localhost", account_locked: true));
+        $account = Account::withUser(new User("test", "localhost", account_locked: true, is_fleshed: true));
 
         $this->assertTrue(
             $check->supports($account),
@@ -39,6 +39,19 @@ class LockedAccountTest extends BaseTest
             Report::STATUS_INFO,
             $check->run($account)->getStatus(),
             "Locked account is informed on."
+        );
+
+        $account = Account::withUser(new User("mysql.infoschema", "localhost", account_locked: true, is_fleshed: true));
+
+        $this->assertTrue(
+            $check->supports($account),
+            "Ensure that we care about all accounts."
+        );
+
+        $this->assertEquals(
+            Report::STATUS_OK,
+            $check->run($account)->getStatus(),
+            "Locked reserved account is fine."
         );
     }
 }

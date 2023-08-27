@@ -349,6 +349,8 @@ class Factory
             foreach ($connection->fetchAllAssociative($query) as $row) {
                 $accounts[] = Account::withUser(User::createFromUser($row));
             }
+        } else {
+            $this->log()->warning("Missing GRANT to access mysql.user. Skipping.");
         }
         return $accounts;
     }
@@ -366,7 +368,7 @@ class Factory
             $this->log()->info("Collecting all table names in database.");
             $query = 'SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA IN '
                    . '("information_schema", "sys", "mysql", "performance_schema", :schema)';
-            $statement = $this->connection->prepare($query);
+            $statement = $connection->prepare($query);
             $statement->bindValue(":schema", $schema);
             $statement->execute();
 
@@ -392,12 +394,18 @@ class Factory
         foreach (['innodb_tablespaces', 'innodb_sys_tablespaces'] as $table) {
             $table_exists = $this->doesTableExist($connection, 'information_schema', $table);
             $table_accessible = $this->hasPermission('information_schema', $table);
-            if ($table_exists && $table_accessible) {
-                $this->log()->info("Collecting MySQL tablespaces from information_schema.$table.");
-                $query = "SELECT * FROM information_schema.$table";
-                foreach ($connection->fetchAllAssociative($query) as $row) {
-                    $tablespaces[] = Tablespace::createFromInformationSchema($row);
+            if ($table_exists) {
+                if ($table_accessible) {
+                    $this->log()->info("Collecting MySQL tablespaces from information_schema.$table.");
+                    $query = "SELECT * FROM information_schema.$table";
+                    foreach ($connection->fetchAllAssociative($query) as $row) {
+                        $tablespaces[] = Tablespace::createFromInformationSchema($row);
+                    }
+                } else {
+                    $this->log()->warning("Missing GRANT to access information_schema.$table. Skipping.");
                 }
+            } else {
+                $this->log()->warning("Cannot find information_schema.$table. Skipping.");
             }
         }
         return $tablespaces;
@@ -646,7 +654,7 @@ class Factory
                     foreach ($accountConnections as $accountConnection) {
                         $account = $database->getAccount($accountConnection['USER'], $accountConnection['HOST']);
                         if (!$account) {
-                            $account = Account::withRaw($accountConnection['USER'], $accountConnection['HOST']);
+                            $account = Account::withUser(new User($accountConnection['USER'], $accountConnection['HOST']));
                             $database->addAccount($account);
                         }
                         $account->setCurrentConnections((int)$accountConnection['CURRENT_CONNECTIONS']);
@@ -718,7 +726,9 @@ class Factory
     {
         $account = $database->getAccount($user, $host);
         if (!$account) {
-            $account = Account::withRaw($user, $host);
+            // If one isn't found we'll create a non-fleshed entry. This prevents us from using it for checks that
+            // required additional information.
+            $account = Account::withUser(new User($user, $host));
             $database->addAccount($account);
         }
         return $account;

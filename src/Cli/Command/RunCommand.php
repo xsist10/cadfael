@@ -6,6 +6,7 @@ namespace Cadfael\Cli\Command;
 
 use Cadfael\Cli\Formatter\Cli;
 use Cadfael\Cli\Formatter\Json;
+use Cadfael\Engine\Check\Account\AccountsWithSuperPermission;
 use Cadfael\Engine\Check\Account\LockedAccount;
 use Cadfael\Engine\Check\Account\NotConnecting;
 use Cadfael\Engine\Check\Account\NotProperlyClosingConnections;
@@ -60,6 +61,38 @@ class RunCommand extends AbstractDatabaseCommand
      * @var array<Report>
      */
     public array $reports = [];
+
+    /**
+     * @param Factory $factory
+     * @return void
+     * @throws \Doctrine\DBAL\Exception
+     */
+    public function checkForCheckDependentPermissions(Factory $factory): void
+    {
+        // Check some basic permissions, so we can give feedback on potential lack of coverage.
+        $tablesToCheckForPermission = [
+            ['information_schema', 'innodb_sys_tables'],
+            ['information_schema', 'innodb_tables'],
+            ['mysql', 'innodb_index_stats'],
+            ['mysql', 'user'],
+            ['sys', 'schema_redundant_indexes'],
+        ];
+        $this->formatter->eol()->write("<info>Checking for basic permission requirements on the user provided.</info>")->eol();
+        $failedSomePermissionChecks = false;
+        foreach ($tablesToCheckForPermission as $tableToCheckForPermission) {
+            if (!$factory->hasPermission($tableToCheckForPermission[0], $tableToCheckForPermission[1])) {
+                $failedSomePermissionChecks = true;
+                $this->formatter->write(sprintf(
+                    '<comment>* This user does not have access to read %s.%s. </comment>',
+                    $tableToCheckForPermission[0],
+                    $tableToCheckForPermission[1]
+                ))->eol();
+            }
+        }
+        if ($failedSomePermissionChecks) {
+            $this->formatter->write('<comment>* Due to missing permissions, some checks will not run.</comment>')->eol();
+        }
+    }
 
     protected function configure(): void
     {
@@ -140,8 +173,15 @@ class RunCommand extends AbstractDatabaseCommand
         Factory $factory,
         OutputInterface $output
     ): void {
+        // Some checks can only run with specific permissions. This lets the user know upfront which permissions are
+        // missing to make it easier for them to understand why some checks might not be running.
+        $this->checkForCheckDependentPermissions($factory);
+
+        $this->formatter->eol();
         $load_performance_schema = $input->getOption('performance_schema');
         $database = $factory->buildDatabase($factory->getConnection(), $schemaNames, $load_performance_schema);
+
+        // Provide basic database information
         $uptime = (int)$database->getStatus()['Uptime'];
         $this->formatter->write('<info>MySQL Version:</info> ' . $database->getVersion())->eol();
         $this->formatter->write('<info>Uptime:</info> ' . $this->returnUptimeInBestUnits($uptime))->eol();
@@ -172,6 +212,7 @@ class RunCommand extends AbstractDatabaseCommand
             new PasswordlessAccount(),
             new OutdatedAuthenticationMethod(),
             new LockedAccount(),
+            new AccountsWithSuperPermission(),
         );
 
         if ($load_performance_schema) {

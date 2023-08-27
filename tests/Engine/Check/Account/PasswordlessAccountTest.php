@@ -173,7 +173,7 @@ class PasswordlessAccountTest extends BaseTest
     {
         $check = new PasswordlessAccount();
 
-        $account = Account::withUser(new User("test", $host, plugin: $plugin, authentication_string: $password));
+        $account = Account::withUser(new User("test", $host, plugin: $plugin, authentication_string: $password, is_fleshed: true));
         $account->setDatabase($this->createDatabase([ 'version' => $version ]));
 
         $this->assertTrue(

@@ -19,11 +19,7 @@ class UnusedTable implements Check
     public function run($entity): ?Report
     {
         if (is_null($entity->access_information)) {
-            return new Report(
-                $this,
-                $entity,
-                Report::STATUS_OK
-            );
+            return null;
         }
 
         if ($entity->access_information->read_count || $entity->access_information->write_count) {
@@ -42,7 +38,7 @@ class UnusedTable implements Check
         return new Report(
             $this,
             $entity,
-            Report::STATUS_WARNING,
+            Report::STATUS_CONCERN,
             ["Table has not been written to or read from since the last server restart."]
         );
     }
@@ -68,6 +64,6 @@ class UnusedTable implements Check
      */
     public function getDescription(): string
     {
-        return "An table that, since the server last restarted, hasn't been queried.";
+        return "A table that, since the server last restarted, hasn't been queried.";
     }
 }

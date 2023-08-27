@@ -29,11 +29,6 @@ class Account implements Entity
         return $account;
     }
 
-    public static function withRaw(string $username, string $host): Account
-    {
-        return self::withUser(new User($username, $host));
-    }
-
     /**
      * @codeCoverageIgnore
      * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.

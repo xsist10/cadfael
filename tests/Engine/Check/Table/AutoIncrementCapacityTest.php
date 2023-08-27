@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 use Cadfael\Engine\Check\Table\AutoIncrementCapacity;
 use Cadfael\Engine\Entity\Table\SchemaAutoIncrementColumn;
-use Cadfael\Engine\Exception\MissingSysData;
 use Cadfael\Engine\Report;
 
 use Cadfael\Tests\Engine\BaseTest;
