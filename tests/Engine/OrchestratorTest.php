@@ -75,4 +75,17 @@ class OrchestratorTest extends TestCase
             "Ensure that running this will give us the single expected report."
         );
     }
+
+    /**
+     * Ensure that our callback is properly triggered (the callback will throw an exception intentionally to test that
+     * it is being executed.
+     */
+    public function testCallback()
+    {
+        $this->expectException(\Exception::class);
+        $this->orchestrator->addCallbacks(function($report) {
+            throw new \Exception();
+        });
+        $this->orchestrator->run();
+    }
 }
