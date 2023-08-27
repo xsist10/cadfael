@@ -77,7 +77,10 @@ class RunCommand extends AbstractDatabaseCommand
             ['mysql', 'user'],
             ['sys', 'schema_redundant_indexes'],
         ];
-        $this->formatter->eol()->write("<info>Checking for basic permission requirements on the user provided.</info>")->eol();
+        $this->formatter
+            ->eol()
+            ->write("<info>Checking for basic permission requirements on the user provided.</info>")
+            ->eol();
         $failedSomePermissionChecks = false;
         foreach ($tablesToCheckForPermission as $tableToCheckForPermission) {
             if (!$factory->hasPermission($tableToCheckForPermission[0], $tableToCheckForPermission[1])) {
@@ -90,7 +93,9 @@ class RunCommand extends AbstractDatabaseCommand
             }
         }
         if ($failedSomePermissionChecks) {
-            $this->formatter->write('<comment>* Due to missing permissions, some checks will not run.</comment>')->eol();
+            $this->formatter
+                ->write('<comment>* Due to missing permissions, some checks will not run.</comment>')
+                ->eol();
         }
     }
 

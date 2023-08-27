@@ -142,15 +142,18 @@ class User
      * stubbed by another source
      * @return bool
      */
-    public function isFleshed(): bool {
+    public function isFleshed(): bool
+    {
         return $this->is_fleshed;
     }
 
-    public function isLocal(): bool {
+    public function isLocal(): bool
+    {
         return $this->host === 'localhost';
     }
 
-    public function isReservedAccount(): bool {
+    public function isReservedAccount(): bool
+    {
         return $this->isLocal() && in_array($this->user, self::RESERVED_ACCOUNTS);
     }
 }

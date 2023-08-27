@@ -41,9 +41,11 @@ class OutdatedAuthenticationMethod implements Check
         if (version_compare($version, '8.0', '>=')
             && $entity->getUser()->plugin === 'mysql_native_password'
         ) {
-            $messages = [ "For MySQL 8.0+, accounts that use mysql_native_password should upgrade to caching_sha2_password." ];
+            $messages = [
+                "For MySQL 8.0+, accounts that use mysql_native_password should upgrade to caching_sha2_password."
+            ];
             if (version_compare($version, '8.1.0', '>=')) {
-                $messages[] = "For MySQL 8.1+, mysql_native_password is deprecated and subject to removal in future versions.";
+                $messages[] = "mysql_native_password is deprecated and subject to removal in future versions.";
             }
             return new Report(
                 $this,
