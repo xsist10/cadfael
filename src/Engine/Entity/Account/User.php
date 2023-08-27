@@ -13,6 +13,12 @@ namespace Cadfael\Engine\Entity\Account;
  */
 class User
 {
+    /**
+     * List of usernames for reserved accounts
+     * Reference: https://dev.mysql.com/doc/refman/8.0/en/reserved-accounts.html
+     */
+    protected const RESERVED_ACCOUNTS = ['root', 'mysql.session', 'mysql.sys', 'mysql.infoschema'];
+
     public function __construct(
         public string $user,
         public string $host,
@@ -64,7 +70,8 @@ class User
         public int|null $password_reuse_history = null,
         public int|null $password_reuse_time = null,
         public bool|null $password_require_current = null,
-        public array|null $user_attributes = null
+        public array|null $user_attributes = null,
+        protected bool $is_fleshed = false,
     ) {
     }
 
@@ -125,7 +132,25 @@ class User
             (int)$payload['Password_reuse_history'],
             (int)$payload['Password_reuse_time'],
             $payload['Password_require_current'] === 'Y',
-            json_decode($payload['User_attributes'] ?? '{}', true)
+            json_decode($payload['User_attributes'] ?? '{}', true),
+            true
         );
+    }
+
+    /**
+     * This determines if a specific user account has actually been loaded from mysql.user table or if it has been
+     * stubbed by another source
+     * @return bool
+     */
+    public function isFleshed(): bool {
+        return $this->is_fleshed;
+    }
+
+    public function isLocal(): bool {
+        return $this->host === 'localhost';
+    }
+
+    public function isReservedAccount(): bool {
+        return $this->isLocal() && in_array($this->user, self::RESERVED_ACCOUNTS);
     }
 }

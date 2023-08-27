@@ -6,6 +6,7 @@ namespace Cadfael\Cli\Command;
 
 use Cadfael\Cli\Formatter\Cli;
 use Cadfael\Cli\Formatter\Json;
+use Cadfael\Engine\Check\Account\AccountsWithSuperPermission;
 use Cadfael\Engine\Check\Account\LockedAccount;
 use Cadfael\Engine\Check\Account\NotConnecting;
 use Cadfael\Engine\Check\Account\NotProperlyClosingConnections;
@@ -172,6 +173,7 @@ class RunCommand extends AbstractDatabaseCommand
             new PasswordlessAccount(),
             new OutdatedAuthenticationMethod(),
             new LockedAccount(),
+            new AccountsWithSuperPermission(),
         );
 
         if ($load_performance_schema) {
