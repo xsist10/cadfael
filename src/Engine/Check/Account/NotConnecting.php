@@ -17,6 +17,15 @@ class NotConnecting implements Check
 
     public function run($entity): ?Report
     {
+        if ($entity->getUser()->isReservedAccount()) {
+            return new Report(
+                $this,
+                $entity,
+                Report::STATUS_OK,
+                [ "Reserved accounts are exempt from this check." ]
+            );
+        }
+
         if ($entity->getTotalConnections()) {
             return new Report(
                 $this,

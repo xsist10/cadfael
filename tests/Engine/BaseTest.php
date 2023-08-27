@@ -101,7 +101,7 @@ abstract class BaseTest extends TestCase
 
     protected function createAccount(string $user, string $host, Database $database = null): Account
     {
-        $account = Account::withRaw($user, $host);
+        $account = Account::withUser(new User($user, $host, is_fleshed: true));
         if ($database) {
             $account->setDatabase($database);
         }

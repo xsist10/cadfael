@@ -646,7 +646,7 @@ class Factory
                     foreach ($accountConnections as $accountConnection) {
                         $account = $database->getAccount($accountConnection['USER'], $accountConnection['HOST']);
                         if (!$account) {
-                            $account = Account::withRaw($accountConnection['USER'], $accountConnection['HOST']);
+                            $account = Account::withUser(new User($accountConnection['USER'], $accountConnection['HOST']));
                             $database->addAccount($account);
                         }
                         $account->setCurrentConnections((int)$accountConnection['CURRENT_CONNECTIONS']);
@@ -718,7 +718,9 @@ class Factory
     {
         $account = $database->getAccount($user, $host);
         if (!$account) {
-            $account = Account::withRaw($user, $host);
+            // If one isn't found we'll create a non-fleshed entry. This prevents us from using it for checks that
+            // required additional information.
+            $account = Account::withUser(new User($user, $host));
             $database->addAccount($account);
         }
         return $account;

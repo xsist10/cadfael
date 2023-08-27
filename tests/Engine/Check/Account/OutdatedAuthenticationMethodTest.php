@@ -62,7 +62,7 @@ class OutdatedAuthenticationMethodTest extends BaseTest
     {
         $check = new OutdatedAuthenticationMethod();
 
-        $account = Account::withUser(new User("test", 'localhost', plugin: $plugin, authentication_string: $password));
+        $account = Account::withUser(new User("test", 'localhost', plugin: $plugin, authentication_string: $password, is_fleshed: true));
         $account->setDatabase($this->createDatabase([ 'version' => $version ]));
 
         $this->assertTrue(

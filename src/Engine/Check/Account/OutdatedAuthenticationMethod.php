@@ -12,7 +12,8 @@ class OutdatedAuthenticationMethod implements Check
 {
     public function supports($entity): bool
     {
-        return $entity instanceof Account;
+        return $entity instanceof Account
+            && $entity->getUser()->isFleshed();
     }
 
     public function run($entity): ?Report

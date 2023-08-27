@@ -13,6 +13,9 @@ class NotConnectingTest extends BaseTest
 
     public function setUp(): void
     {
+        $no_connection_reserved_account = $this->createAccount('root', 'localhost');
+        $no_connection_reserved_account->setTotalConnections(0);
+
         $no_connection_account = $this->createAccount('no_connections', 'localhost');
         $no_connection_account->setTotalConnections(0);
 
@@ -20,6 +23,7 @@ class NotConnectingTest extends BaseTest
         $many_connection_account->setTotalConnections(100);
 
         $this->accounts = [
+            $no_connection_reserved_account,
             $no_connection_account,
             $many_connection_account
         ];
@@ -43,12 +47,19 @@ class NotConnectingTest extends BaseTest
 
         $account = $this->accounts[0];
         $this->assertEquals(
+            Report::STATUS_OK,
+            $check->run($account)->getStatus(),
+            $account->getName() . "@" . $account->getHost() . " has not connected this session but it's a reserved account."
+        );
+
+        $account = $this->accounts[1];
+        $this->assertEquals(
             Report::STATUS_CONCERN,
             $check->run($account)->getStatus(),
             $account->getName() . "@" . $account->getHost() . " has not connected this session."
         );
 
-        $account = $this->accounts[1];
+        $account = $this->accounts[2];
         $this->assertEquals(
             Report::STATUS_OK,
             $check->run($account)->getStatus(),

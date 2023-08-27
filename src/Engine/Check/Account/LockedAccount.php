@@ -10,13 +10,25 @@ use Cadfael\Engine\Report;
 
 class LockedAccount implements Check
 {
+    protected const LOCKED_RESERVED_ACCOUNTS = ['mysql.sys', 'mysql.session', 'mysql.infoschema'];
     public function supports($entity): bool
     {
-        return $entity instanceof Account;
+        return $entity instanceof Account
+            && $entity->getUser()->isFleshed();
     }
 
     public function run($entity): ?Report
     {
+        $username = $entity->getUser()->user;
+        if ($entity->getUser()->isLocal() && in_array($username, self::LOCKED_RESERVED_ACCOUNTS)) {
+            return new Report(
+                $this,
+                $entity,
+                Report::STATUS_OK,
+                [ "Some local reserved accounts are expected to be locked." ]
+            );
+        }
+
         return new Report(
             $this,
             $entity,
