@@ -112,6 +112,12 @@ class Table implements Entity
         return $this->name;
     }
 
+    public function addIndex(Index $index): void
+    {
+        $index->setTable($this);
+        $this->indexes[] = $index;
+    }
+
     /**
      * @param Index ...$indexes
      */
@@ -164,8 +170,22 @@ class Table implements Entity
     }
 
     /**
+     * @return Column|null
+     */
+    public function getAutoIncrementColumn(): ?Column
+    {
+        $auto_increment_columns = array_filter($this->columns, function (Column $column) {
+            return $column->isAutoIncrementing();
+        });
+        if (count($auto_increment_columns) == 1) {
+            return $auto_increment_columns[0];
+        }
+        return null;
+    }
+
+    /**
      * @return SchemaAutoIncrementColumn|null
-     * @throws \Cadfael\Engine\Exception\MissingInformationSchema
+     * @throws \Cadfael\Engine\Exception\MissingInformationSchemaRecord
      */
     public function getSchemaAutoIncrementColumn(): ?SchemaAutoIncrementColumn
     {
