@@ -4,6 +4,6 @@ declare(strict_types=1);
 
 namespace Cadfael\Engine\Exception;
 
-class MissingInformationSchema extends \Exception
+class MissingInformationSchemaRecord extends \Exception
 {
 }

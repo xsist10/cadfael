@@ -23,21 +23,20 @@ use Cadfael\Engine\Entity\Index;
 use Cadfael\Engine\Entity\Tablespace;
 use Cadfael\Engine\Entity\Index\SchemaIndexStatistics;
 use Cadfael\Engine\Exception\MissingPermissions;
-use Cadfael\Engine\Exception\MissingInformationSchema;
+use Cadfael\Engine\Exception\MissingInformationSchemaRecord;
 use Cadfael\Engine\Exception\NonSupportedVersion;
+use Cadfael\NullLoggerDefault;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\InvalidFieldNameException;
 use Exception;
 use Psr\Log\LoggerAwareTrait;
-use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 
 /**
  * @codeCoverageIgnore
  */
 class Factory
 {
-    use LoggerAwareTrait;
+    use LoggerAwareTrait, NullLoggerDefault;
 
     private Connection $connection;
     /**
@@ -80,14 +79,6 @@ class Factory
     public function __construct(Connection $connection)
     {
         $this->connection = $connection;
-    }
-
-    public function log(): LoggerInterface
-    {
-        if (!$this->logger) {
-            return new NullLogger();
-        }
-        return $this->logger;
     }
 
     /**
@@ -450,7 +441,7 @@ class Factory
      * @param array $schema_names
      * @return Database
      * @throws \Doctrine\DBAL\Exception
-     * @throws MissingInformationSchema
+     * @throws MissingInformationSchemaRecord
      * @throws MissingPermissions
      * @throws \Doctrine\DBAL\Driver\Exception
      */

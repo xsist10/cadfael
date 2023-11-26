@@ -61,13 +61,6 @@ class InformationSchema
         'year',
     ];
 
-    public const PREFIX_ALLOWED_DATA_TYPES = [
-        'char',
-        'varchar',
-        'binary',
-        'varbinary'
-    ];
-
     public int $ordinal_position;
     public ?string $default;
     public bool $is_nullable = false;
@@ -94,7 +87,7 @@ class InformationSchema
      * @param array<string> $schema This is a raw record from information_schema.COLUMN
      * @return InformationSchema
      */
-    public static function createFromInformationSchema(array $schema)
+    public static function createFromInformationSchema(array $schema): InformationSchema
     {
         $informationSchema = new InformationSchema();
         $informationSchema->ordinal_position = (int)$schema['ORDINAL_POSITION'];
@@ -117,6 +110,29 @@ class InformationSchema
         $informationSchema->privileges = $schema['PRIVILEGES'];
         $informationSchema->column_comment = $schema['COLUMN_COMMENT'];
         $informationSchema->generation_expression = $schema['GENERATION_EXPRESSION'] ?? null;
+        return $informationSchema;
+    }
+
+    public static function createFromStatement($statement): InformationSchema
+    {
+        $informationSchema = new InformationSchema();
+        $informationSchema->ordinal_position = (int)$statement['ordinal_position'];
+        $informationSchema->default = $statement['default'];
+        $informationSchema->is_nullable  = $statement['is_nullable'];
+        $informationSchema->column_type = $statement['column_type'];
+        $informationSchema->data_type = $statement['data_type'];
+        $informationSchema->column_key = $statement['column_key'];
+        $informationSchema->character_maximum_length  = (int)$statement['character_maximum_length'];
+        $informationSchema->character_octet_length  = (int)$statement['character_octet_length'];
+        $informationSchema->numeric_precision = (int)$statement['numeric_precision'];
+        $informationSchema->numeric_scale = (int)$statement['numeric_scale'];
+        $informationSchema->datetime_precision = (int)$statement['datetime_precision'];
+        // TODO:
+//        $informationSchema->character_set_name = $statement['CHARACTER_SET_NAME'];
+//        $informationSchema->collation_name = $statement['COLLATION_NAME'];
+        $informationSchema->extra  = $statement['extra'];
+        $informationSchema->column_comment = $statement['comment'];
+//        $informationSchema->generation_expression = $statement['GENERATION_EXPRESSION'] ?? null;
         return $informationSchema;
     }
 }

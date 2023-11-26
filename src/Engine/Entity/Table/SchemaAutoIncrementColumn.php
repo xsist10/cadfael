@@ -6,7 +6,7 @@ namespace Cadfael\Engine\Entity\Table;
 
 use Cadfael\Engine\Entity\Table;
 use Cadfael\Engine\Exception\InvalidColumnType;
-use Cadfael\Engine\Exception\MissingInformationSchema;
+use Cadfael\Engine\Exception\MissingInformationSchemaRecord;
 
 /**
  * Class SchemaAutoIncrementColumn
@@ -59,13 +59,13 @@ EOF;
      *
      * @param Table $table
      * @return ?SchemaAutoIncrementColumn
-     * @throws MissingInformationSchema
+     * @throws MissingInformationSchemaRecord
      * @throws InvalidColumnType
      */
     public static function createFromTable(Table $table): ?SchemaAutoIncrementColumn
     {
         if (is_null($table->information_schema)) {
-            throw new MissingInformationSchema();
+            throw new MissingInformationSchemaRecord();
         }
         foreach ($table->getColumns() as $column) {
             if ($column->isAutoIncrementing()) {

@@ -42,7 +42,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Cadfael\Engine\Exception\MissingPermissions;
 use Doctrine\DBAL\DBALException;
-use Cadfael\Engine\Exception\MissingInformationSchema;
+use Cadfael\Engine\Exception\MissingInformationSchemaRecord;
 
 class RunCommand extends AbstractDatabaseCommand
 {
@@ -168,7 +168,7 @@ class RunCommand extends AbstractDatabaseCommand
      * @param OutputInterface $output
      * @throws MissingPermissions
      * @throws DBALException
-     * @throws MissingInformationSchema
+     * @throws MissingInformationSchemaRecord
      * @throws \Doctrine\DBAL\Driver\Exception
      * @throws \Exception
      */
@@ -327,7 +327,7 @@ class RunCommand extends AbstractDatabaseCommand
             $factory->getConnection()->close();
         } catch (DBALException | MissingPermissions $e) {
             $this->formatter->error($e->getMessage())->eol();
-        } catch (MissingInformationSchema $e) {
+        } catch (MissingInformationSchemaRecord $e) {
             $this->formatter->error('Unable to retrieve information for ' . $schemas[0])->eol();
         }
 

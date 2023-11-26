@@ -45,6 +45,29 @@ class Schema implements Entity
     }
 
     /**
+     * @param Table $table
+     */
+    public function addTable(Table $table): void
+    {
+        if (!$this->hasTable($table->getName())) {
+            $table->setSchema($this);
+            $this->tables[] = $table;
+        }
+    }
+
+    /**
+     * @param string $table_name
+     */
+    public function removeTableByName(string $table_name): void
+    {
+        if ($this->hasTable($table_name)) {
+            $this->tables = array_filter($this->tables, function ($table) use ($table_name) {
+                return $table->getName() !== $table_name;
+            });
+        }
+    }
+
+    /**
      * @codeCoverageIgnore
      * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
      *
@@ -53,6 +76,24 @@ class Schema implements Entity
     public function getTables(): array
     {
         return $this->tables;
+    }
+
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @param $name
+     * @return bool
+     */
+    public function hasTable($name): bool
+    {
+        foreach ($this->getTables() as $table) {
+            if ($table->getName() === $name) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
