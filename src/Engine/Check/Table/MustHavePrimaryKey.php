@@ -18,14 +18,19 @@ class MustHavePrimaryKey implements Check
 
     public function run($entity): ?Report
     {
-        $messages = [ "Table SHOULD have a PRIMARY KEY" ];
+        if (count($entity->getPrimaryKeys()) > 0) {
+            return new Report(
+                $this,
+                $entity,
+                Report::STATUS_OK
+            );
+        }
+
         return new Report(
             $this,
             $entity,
-            count($entity->getPrimaryKeys()) > 0
-                ? Report::STATUS_OK
-                : Report::STATUS_CRITICAL,
-            $messages
+            Report::STATUS_CRITICAL,
+            [ "Table SHOULD have a PRIMARY KEY" ]
         );
     }
 
