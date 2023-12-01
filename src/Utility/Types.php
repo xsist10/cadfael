@@ -57,7 +57,10 @@ class Types
 
     public static function isInteger($data_type): bool
     {
-        return in_array(strtolower($data_type), ['tinyint', 'smallint', 'mediumint', 'int', 'bigint' ]);
+        return in_array(
+            strtolower($data_type),
+            [ 'tinyint', 'smallint', 'mediumint', 'int', 'integer', 'bigint', 'boolean' ]
+        );
     }
 
     public static function isNumeric($data_type): bool

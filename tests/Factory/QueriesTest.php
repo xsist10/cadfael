@@ -7,6 +7,7 @@ namespace Cadfael\Tests\Factory;
 
 use Cadfael\Engine\Check\Table\MustHavePrimaryKey;
 use Cadfael\Engine\Exception\InvalidColumn;
+use Cadfael\Engine\Exception\QueryParseException;
 use Cadfael\Engine\Factory\Queries;
 use Cadfael\Engine\Exception\UnknownCharacterSet;
 use Cadfael\Engine\Report;
@@ -356,6 +357,73 @@ class QueriesTest extends TestCase
             CREATE TABLE `example` (
                 a VARCHAR(255)
             ) CHARACTER SET invalid_character_set COLLATE latin1_bin;
+        ");
+
+        $queries->processIntoSchemas();
+    }
+
+    public function testSetOperationIgnore()
+    {
+        $queries = new Queries("8.1.0", "
+            SET @total_tax = (SELECT SUM(tax) FROM taxable_transactions);
+        ");
+
+        $this->attachLogger($queries);
+        $schemas = $queries->processIntoSchemas();
+        $this->assertCount(0, $schemas, "No schemas should be generated for this.");
+    }
+
+    public function testCreateProcedureIgnore()
+    {
+        $queries = new Queries("8.1.0", "
+            DROP TRIGGER trigger_name;
+        ");
+
+        $this->attachLogger($queries);
+        $schemas = $queries->processIntoSchemas();
+        $this->assertCount(0, $schemas, "No schemas should be generated for this.");
+    }
+
+    public function testRandom2()
+    {
+        $queries = new Queries("8.1.0", "
+            DROP TRIGGER trigger_name;
+        ");
+
+        $this->attachLogger($queries);
+        $schemas = $queries->processIntoSchemas();
+        $this->assertCount(0, $schemas, "No schemas should be generated for this.");
+    }
+
+    public function testMultiplePrimaryKeyColumns()
+    {
+        $queries = new Queries("8.1.0", "
+            CREATE TABLE example1 (
+              a INT NOT NULL,
+              b BIGINT NOT NULL,
+              PRIMARY KEY (a, b)
+            );
+        ");
+
+        $schemas = $queries->processIntoSchemas();
+        $table = $schemas[0]->getTables()[0];
+
+        $this->assertCount(2, $table->getColumns());
+        $this->assertCount(0, $table->getIndexes());
+        $this->assertCount(2, $table->getPrimaryKeys());
+    }
+
+    // TODO: Work on a solution for alters
+    public function testCreateTableWithAlter()
+    {
+        $this->expectException(QueryParseException::class);
+
+        $queries = new Queries("8.1.0", "
+            CREATE TABLE example1 (
+              a INT NOT NULL
+            );
+
+            ALTER TABLE example1 ADD COLUMN b INT NOT NULL;
         ");
 
         $queries->processIntoSchemas();
