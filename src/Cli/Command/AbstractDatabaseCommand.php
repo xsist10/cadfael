@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Cadfael\Cli\Command;
 
+use Cadfael\Cli\Formattable;
 use Cadfael\Cli\Formatter;
 use Cadfael\Engine\Factory;
 use Monolog\Logger;
@@ -19,7 +20,7 @@ use Symfony\Component\Console\Question\Question;
 
 abstract class AbstractDatabaseCommand extends Command
 {
-    protected Formatter $formatter;
+    use Formattable;
 
     /**
      * @param InputInterface $input

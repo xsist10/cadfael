@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Cadfael\Cli\Command;
 
-use Cadfael\Cli\Formatter\Cli;
-use Cadfael\Cli\Formatter\Json;
 use Cadfael\Engine\Check\Account\AccountsWithSuperPermission;
 use Cadfael\Engine\Check\Account\LockedAccount;
 use Cadfael\Engine\Check\Account\NotConnecting;
@@ -113,6 +111,7 @@ class RunCommand extends AbstractDatabaseCommand
                 'Include performance_schema metric checks. Only useful if the database has been running for '
                 . 'a while.'
             )
+            ->setupFormatArguments()
             ->addOption(
                 'output-format',
                 'o',
@@ -343,10 +342,7 @@ class RunCommand extends AbstractDatabaseCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->formatter = new Cli($output);
-        if ($input->getOption('output-format') === 'json') {
-            $this->formatter = new Json($output);
-        }
+        $this->setupFormatter($output, $input);
 
         $title = $this->getApplication()->getLongVersion();
         $this->formatter->write($title)->eol();
