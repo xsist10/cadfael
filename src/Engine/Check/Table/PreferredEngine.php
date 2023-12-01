@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Cadfael\Engine\Check\Table;
 
 use Cadfael\Engine\Check;
+use Cadfael\Engine\Exception\MySQL\UnknownVersion;
 use Cadfael\Engine\Report;
 use Cadfael\Engine\Entity\Table;
 
