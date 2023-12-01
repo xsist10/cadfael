@@ -127,11 +127,10 @@ class InformationSchema
         $informationSchema->numeric_precision = (int)$statement['numeric_precision'];
         $informationSchema->numeric_scale = (int)$statement['numeric_scale'];
         $informationSchema->datetime_precision = (int)$statement['datetime_precision'];
-        // TODO:
-//        $informationSchema->character_set_name = $statement['CHARACTER_SET_NAME'];
-//        $informationSchema->collation_name = $statement['COLLATION_NAME'];
         $informationSchema->extra  = $statement['extra'];
         $informationSchema->column_comment = $statement['comment'];
+        $informationSchema->character_set_name = $statement['character_set_name'];
+        $informationSchema->collation_name = $statement['collation_name'];
 //        $informationSchema->generation_expression = $statement['GENERATION_EXPRESSION'] ?? null;
         return $informationSchema;
     }
