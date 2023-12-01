@@ -38,7 +38,7 @@ class Database implements Entity
 
     private Connection $connection;
 
-    public function __construct(?Connection $connection)
+    public function __construct(?Connection $connection = null)
     {
         if ($connection) {
             $this->setConnection($connection);

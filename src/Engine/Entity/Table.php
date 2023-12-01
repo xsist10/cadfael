@@ -93,7 +93,7 @@ class Table implements Entity
             }
         }
 
-        throw new InvalidColumn("Invalid column specified: $name");
+        throw new InvalidColumn("Invalid column ($name) specified for table " . $this);
     }
 
     /**

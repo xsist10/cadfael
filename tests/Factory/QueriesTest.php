@@ -5,8 +5,11 @@ declare(strict_types=1);
 
 namespace Cadfael\Tests\Factory;
 
+use Cadfael\Engine\Check\Table\MustHavePrimaryKey;
 use Cadfael\Engine\Exception\InvalidColumn;
 use Cadfael\Engine\Factory\Queries;
+use Cadfael\Engine\Exception\UnknownCharacterSet;
+use Cadfael\Engine\Report;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
@@ -23,7 +26,7 @@ class QueriesTest extends TestCase
 
     public function testCreateTableWithoutSchemaHasDefault()
     {
-        $queries = new Queries("
+        $queries = new Queries("8.1.0", "
             CREATE TABLE `example1` (
                 id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
             );
@@ -36,7 +39,7 @@ class QueriesTest extends TestCase
 
     public function testCreateTableWithSchemaHasCorrectName()
     {
-        $queries = new Queries("
+        $queries = new Queries("8.1.0", "
             USE example_db;
             CREATE TABLE `example1` (
                 id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
@@ -50,7 +53,7 @@ class QueriesTest extends TestCase
 
     public function testCreateDropSchema()
     {
-        $queries = new Queries("
+        $queries = new Queries("8.1.0", "
             CREATE DATABASE example_db;
             DROP DATABASE example_db;
         ");
@@ -61,7 +64,7 @@ class QueriesTest extends TestCase
 
     public function testCreateDropSchemaWithUse()
     {
-        $queries = new Queries("
+        $queries = new Queries("8.1.0", "
             CREATE DATABASE example_db;
             USE example_db;
             DROP DATABASE example_db;
@@ -73,7 +76,7 @@ class QueriesTest extends TestCase
 
     public function testCreateDropSchemaWithTable()
     {
-        $queries = new Queries("
+        $queries = new Queries("8.1.0", "
             CREATE DATABASE example_db;
             USE example_db;
             CREATE TABLE `example1` (
@@ -88,7 +91,7 @@ class QueriesTest extends TestCase
 
     public function testCreateDropTableWithExplicitSchema()
     {
-        $queries = new Queries("
+        $queries = new Queries("8.1.0", "
             CREATE TABLE `example_db`.`example1` (
                 id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
             );
@@ -102,7 +105,7 @@ class QueriesTest extends TestCase
 
     public function testCreateDropTableWithDefaultSchema()
     {
-        $queries = new Queries("
+        $queries = new Queries("8.1.0", "
             CREATE TABLE `example1` (
                 id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
             );
@@ -115,7 +118,7 @@ class QueriesTest extends TestCase
 
     public function testCreateDropSchemaWithUseAndCreateTable()
     {
-        $queries = new Queries("
+        $queries = new Queries("8.1.0", "
             CREATE DATABASE example_db;
             USE example_db;
             DROP DATABASE example_db;
@@ -132,7 +135,7 @@ class QueriesTest extends TestCase
 
     public function testCreateTableWithExplicitSchemaName()
     {
-        $queries = new Queries("
+        $queries = new Queries("8.1.0", "
             CREATE TABLE `example_db`.`example1` (
                 id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
             );
@@ -143,12 +146,15 @@ class QueriesTest extends TestCase
         $this->assertEquals('example_db', $schemas[0]->getName(), "Ensure our schema has the correct name.");
     }
 
-    public function testPrimaryKeyDefinitionInline()
+    public function testPrimaryKeyDefinitionSeparateStatementBackticks()
     {
-        $queries = new Queries("
-            CREATE TABLE `example1` (
-                id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
-            );
+        $queries = new Queries("8.1.0", "
+            DROP TABLE IF EXISTS `table_empty_in_tablespace`;
+            CREATE TABLE `table_empty_in_tablespace` (
+                `id` int NOT NULL AUTO_INCREMENT,
+                `name` VARCHAR(255) NOT NULL,
+                PRIMARY KEY (`id`)
+            ) /*!50100 TABLESPACE `innodb_system` */ ENGINE=InnoDB;
         ");
 
         $this->attachLogger($queries);
@@ -156,16 +162,16 @@ class QueriesTest extends TestCase
         $schemas = $queries->processIntoSchemas();
         $table = $schemas[0]->getTables()[0];
 
-        $this->assertCount(1, $table->getColumns(), 'Ensure the correct number of columns were created.');
+        $this->assertCount(2, $table->getColumns(), 'Ensure the correct number of columns were created.');
         $this->assertEquals('id', $table->getAutoIncrementColumn()->getName(), 'Ensure the ID column is correctly identified as the auto increment column.');
         $this->assertCount(1, $table->getPrimaryKeys(), 'Ensure we have one primary key for the table.');
     }
 
-    public function testPrimaryKeyDefinitionSeparateStatement()
+    public function testPrimaryKeyDefinitionInline()
     {
-        $queries = new Queries("
-            CREATE TABLE `example2` (
-                id INT(10) UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT
+        $queries = new Queries("8.1.0", "
+            CREATE TABLE `example1` (
+                id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
             );
         ");
 
@@ -177,9 +183,34 @@ class QueriesTest extends TestCase
         $this->assertCount(1, $table->getPrimaryKeys(), 'Ensure we have one primary key for the table.');
     }
 
+    /**
+     * For some reason a table description with indexes causes the SQL parser to behave differently
+     */
+    public function testPrimaryKeyDefinitionSeparateStatement()
+    {
+        $queries = new Queries("8.1.0", "
+            CREATE TABLE `table_with_large_text_index` (
+                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                name VARCHAR(255) NOT NULL,
+                INDEX idx_name (name),
+                PRIMARY KEY (id)
+            ) ENGINE=InnoDB;
+        ");
+
+        $schemas = $queries->processIntoSchemas();
+        $table = $schemas[0]->getTables()[0];
+
+        $this->assertEquals('id', $table->getAutoIncrementColumn()->getName(), 'Ensure the ID column is correctly identified as the auto increment column.');
+        $this->assertCount(1, $table->getPrimaryKeys(), 'Ensure we have one primary key for the table.');
+
+        $check = new MustHavePrimaryKey();
+        $report = $check->run($table);
+        $this->assertEquals(Report::STATUS_OK, $report->getStatus(), "Ensure our primary key check passes.");
+    }
+
     public function testIndexDefinitionStatement()
     {
-        $queries = new Queries("
+        $queries = new Queries("8.1.0", "
             CREATE TABLE `example2` (
                 id INT(10) UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
                 name VARCHAR(64) NOT NULL,
@@ -199,7 +230,7 @@ class QueriesTest extends TestCase
 
     public function testIndexDefinitionStatementWithParts()
     {
-        $queries = new Queries("
+        $queries = new Queries("8.1.0", "
             CREATE TABLE `example2` (
                 id INT(10) UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
                 name VARCHAR(64) NOT NULL,
@@ -223,22 +254,116 @@ class QueriesTest extends TestCase
     {
         $this->expectException(InvalidColumn::class);
 
-        $queries = new Queries("
+        $queries = new Queries("8.1.0", "
             CREATE TABLE `example2` (
                 id INT(10) UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
                 INDEX idx_non_existent_column (non_existent_column)
             );
         ");
 
-        $schemas = $queries->processIntoSchemas();
+        $queries->processIntoSchemas();
     }
 
-    /**
-     * @throws InvalidColumn
-     */
+    public function testPrimaryKeyDefinitionStatementWithInvalidColumn()
+    {
+        $this->expectException(InvalidColumn::class);
+
+        $queries = new Queries("8.1.0", "
+            CREATE TABLE `example2` (
+                id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+                PRIMARY KEY (non_existent_column)
+            );
+        ");
+
+        $queries->processIntoSchemas();
+    }
+
+    public function testCharacterSetNameCollationImplicit()
+    {
+        $queries = new Queries("8.1.0", "
+            CREATE TABLE `example` (
+                a VARCHAR(255) CHARACTER SET utf8mb4,
+                b VARCHAR(255) CHARACTER SET latin1,
+                c VARCHAR(255)
+            );
+        ");
+
+        $this->attachLogger($queries);
+        $schemas = $queries->processIntoSchemas();
+        $table = $schemas[0]->getTables()[0];
+        $columns = $table->getColumns();
+        $this->assertEquals("utf8mb4", $columns[0]->information_schema->character_set_name);
+        $this->assertEquals("utf8mb4_0900_ai_ci", $columns[0]->information_schema->collation_name);
+        $this->assertEquals("latin1", $columns[1]->information_schema->character_set_name);
+        $this->assertEquals("latin1_swedish_ci", $columns[1]->information_schema->collation_name);
+        $this->assertEquals("latin1", $columns[2]->information_schema->character_set_name);
+        $this->assertEquals("latin1_swedish_ci", $columns[2]->information_schema->collation_name);
+    }
+
+    public function testCharacterSetNameExplicit()
+    {
+        $queries = new Queries("8.1.0", "
+            CREATE TABLE `example` (
+                a VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+                b VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci,
+                c VARCHAR(255)
+            ) CHARACTER SET latin1 COLLATE latin1_bin;
+        ");
+
+        $this->attachLogger($queries);
+        $schemas = $queries->processIntoSchemas();
+        $table = $schemas[0]->getTables()[0];
+        $columns = $table->getColumns();
+        $this->assertEquals("utf8mb4", $columns[0]->information_schema->character_set_name);
+        $this->assertEquals("utf8mb4_unicode_ci", $columns[0]->information_schema->collation_name);
+        $this->assertEquals("latin1", $columns[1]->information_schema->character_set_name);
+        $this->assertEquals("latin1_swedish_ci", $columns[1]->information_schema->collation_name);
+        $this->assertEquals("latin1", $columns[2]->information_schema->character_set_name);
+        $this->assertEquals("latin1_bin", $columns[2]->information_schema->collation_name);
+    }
+
+    public function testInvalidCharacterSetInColumn()
+    {
+        $this->expectException(UnknownCharacterSet::class);
+
+        $queries = new Queries("8.1.0", "
+            CREATE TABLE `example` (
+                a VARCHAR(255) CHARACTER SET invalid_character_set
+            );
+        ");
+
+        $queries->processIntoSchemas();
+    }
+
+    public function testInvalidCharacterSetInTable()
+    {
+        $this->expectException(UnknownCharacterSet::class);
+
+        $queries = new Queries("8.1.0", "
+            CREATE TABLE `example` (
+                a VARCHAR(255)
+            ) CHARACTER SET invalid_character_set;
+        ");
+
+        $queries->processIntoSchemas();
+    }
+
+    public function testInvalidCharacterSetWithCollationInTable()
+    {
+        $this->expectException(UnknownCharacterSet::class);
+
+        $queries = new Queries("8.1.0", "
+            CREATE TABLE `example` (
+                a VARCHAR(255)
+            ) CHARACTER SET invalid_character_set COLLATE latin1_bin;
+        ");
+
+        $queries->processIntoSchemas();
+    }
+
     public function testLargeSequence()
     {
-        $queries = new Queries("
+        $queries = new Queries("8.1.0", "
             -- Create a schema to be dropped
             CREATE DATABASE IF NOT EXISTS to_be_dropped;
             USE to_be_dropped;
