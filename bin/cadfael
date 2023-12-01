@@ -12,6 +12,7 @@ foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php
 use Symfony\Component\Console\Application;
 use Composer\InstalledVersions as InstalledVersionsAlias;
 use Cadfael\Cli\Command\RunCommand;
+use Cadfael\Cli\Command\RunStatementCommand;
 use Cadfael\Cli\Command\AboutCommand;
 
 $version = InstalledVersionsAlias::getPrettyVersion('cadfael/cadfael');
@@ -25,4 +26,5 @@ $application->setName('Cadfael CLI');
 $application->setVersion($version);
 $application->add(new AboutCommand());
 $application->add(new RunCommand());
+$application->add(new RunStatementCommand());
 $application->run();
