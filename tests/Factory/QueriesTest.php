@@ -5,6 +5,7 @@ declare(strict_types=1);
 
 namespace Cadfael\Tests\Factory;
 
+use Cadfael\Engine\Check\Column\SaneAutoIncrement;
 use Cadfael\Engine\Check\Table\MustHavePrimaryKey;
 use Cadfael\Engine\Exception\InvalidColumn;
 use Cadfael\Engine\Exception\QueryParseException;
@@ -158,7 +159,6 @@ class QueriesTest extends TestCase
             ) /*!50100 TABLESPACE `innodb_system` */ ENGINE=InnoDB;
         ");
 
-        $this->attachLogger($queries);
 
         $schemas = $queries->processIntoSchemas();
         $table = $schemas[0]->getTables()[0];
@@ -191,7 +191,7 @@ class QueriesTest extends TestCase
     {
         $queries = new Queries("8.1.0", "
             CREATE TABLE `table_with_large_text_index` (
-                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                id INT NOT NULL AUTO_INCREMENT,
                 name VARCHAR(255) NOT NULL,
                 INDEX idx_name (name),
                 PRIMARY KEY (id)
@@ -207,6 +207,11 @@ class QueriesTest extends TestCase
         $check = new MustHavePrimaryKey();
         $report = $check->run($table);
         $this->assertEquals(Report::STATUS_OK, $report->getStatus(), "Ensure our primary key check passes.");
+
+        $check = new SaneAutoIncrement();
+        $primary_column = $table->getPrimaryKeys()[0];
+        $report = $check->run($primary_column);
+        $this->assertEquals(Report::STATUS_WARNING, $report->getStatus(), "Ensure our sane primary key check fails.");
     }
 
     public function testIndexDefinitionStatement()
@@ -239,7 +244,6 @@ class QueriesTest extends TestCase
             );
         ");
 
-        $this->attachLogger($queries);
 
         $schemas = $queries->processIntoSchemas();
         $table = $schemas[0]->getTables()[0];
@@ -289,7 +293,6 @@ class QueriesTest extends TestCase
             );
         ");
 
-        $this->attachLogger($queries);
         $schemas = $queries->processIntoSchemas();
         $table = $schemas[0]->getTables()[0];
         $columns = $table->getColumns();
@@ -307,11 +310,11 @@ class QueriesTest extends TestCase
             CREATE TABLE `example` (
                 a VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
                 b VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci,
-                c VARCHAR(255)
+                c VARCHAR(255),
+                d INT
             ) CHARACTER SET latin1 COLLATE latin1_bin;
         ");
 
-        $this->attachLogger($queries);
         $schemas = $queries->processIntoSchemas();
         $table = $schemas[0]->getTables()[0];
         $columns = $table->getColumns();
@@ -321,6 +324,32 @@ class QueriesTest extends TestCase
         $this->assertEquals("latin1_swedish_ci", $columns[1]->information_schema->collation_name);
         $this->assertEquals("latin1", $columns[2]->information_schema->character_set_name);
         $this->assertEquals("latin1_bin", $columns[2]->information_schema->collation_name);
+        $this->assertNull($columns[3]->information_schema->character_set_name);
+        $this->assertNull($columns[3]->information_schema->collation_name);
+    }
+
+    public function testCharacterSetWithCollationInTable()
+    {
+        $queries = new Queries("8.1.0", "
+            CREATE TABLE IF NOT EXISTS example (
+                a VARCHAR(255) CHARSET ascii,
+                b VARCHAR(255) CHARSET ascii COLLATE ascii_bin,
+                c TEXT CHARACTER SET ascii,
+                d VARCHAR(32) CHARACTER SET ascii
+            );
+        ");
+
+        $schemas = $queries->processIntoSchemas();
+        $table = $schemas[0]->getTables()[0];
+        $columns = $table->getColumns();
+        $this->assertEquals("ascii", $columns[0]->information_schema->character_set_name);
+        $this->assertEquals("ascii_general_ci", $columns[0]->information_schema->collation_name);
+        $this->assertEquals("ascii", $columns[1]->information_schema->character_set_name);
+        $this->assertEquals("ascii_bin", $columns[1]->information_schema->collation_name);
+        $this->assertEquals("ascii", $columns[2]->information_schema->character_set_name);
+        $this->assertEquals("ascii_general_ci", $columns[2]->information_schema->collation_name);
+        $this->assertEquals("ascii", $columns[3]->information_schema->character_set_name);
+        $this->assertEquals("ascii_general_ci", $columns[3]->information_schema->collation_name);
     }
 
     public function testInvalidCharacterSetInColumn()
@@ -368,7 +397,6 @@ class QueriesTest extends TestCase
             SET @total_tax = (SELECT SUM(tax) FROM taxable_transactions);
         ");
 
-        $this->attachLogger($queries);
         $schemas = $queries->processIntoSchemas();
         $this->assertCount(0, $schemas, "No schemas should be generated for this.");
     }
@@ -379,20 +407,25 @@ class QueriesTest extends TestCase
             DROP TRIGGER trigger_name;
         ");
 
-        $this->attachLogger($queries);
         $schemas = $queries->processIntoSchemas();
         $this->assertCount(0, $schemas, "No schemas should be generated for this.");
     }
 
-    public function testRandom2()
+    public function testAlterAddColumn()
     {
+        $this->markTestSkipped("Skipped until ALTER is better supported");
+
         $queries = new Queries("8.1.0", "
-            DROP TRIGGER trigger_name;
+            CREATE TABLE example1 (a INT);
+            ALTER TABLE example1 ADD COLUMN b VARCHAR(32);
         ");
 
         $this->attachLogger($queries);
         $schemas = $queries->processIntoSchemas();
-        $this->assertCount(0, $schemas, "No schemas should be generated for this.");
+        $this->assertCount(1, $schemas, "One default schemas should be generated for this.");
+        $table = $schemas[0]->getTables()[0];
+        $columns = $table->getColumns();
+        $this->assertCount(2, $columns, "Two tables should be generated.");
     }
 
     public function testMultiplePrimaryKeyColumns()
@@ -463,7 +496,6 @@ class QueriesTest extends TestCase
             ) ENGINE=InnoDB;
         ");
 
-        $this->attachLogger($queries);
 
         $schemas = $queries->processIntoSchemas();
         $schema = $schemas[0];

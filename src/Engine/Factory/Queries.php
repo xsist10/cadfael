@@ -126,6 +126,7 @@ class Queries extends Fragment
             if (!$parse) {
                 continue;
             }
+
             $this->structures['database'][$this->currentSchema] ??= $this->createSchema($this->currentSchema);
 
             // We need to figure out what each statement actually does and how it affects
@@ -197,13 +198,13 @@ class Queries extends Fragment
                     $this->log()->info("Ignoring CREATE PROCEDURE operation.");
                 }
             } elseif (isset($parse['ALTER'])) {
-                // Damn alter is not parsed properly.
+                // Damn ALTER is not parsed properly.
                 throw new QueryParseException("Cannot properly parse alter statement yet.");
             } elseif (isset($parse['SET'])) {
                 $this->log()->info("Ignoring SET operation.");
             } elseif (isset($parse['TRIGGER'])) {
                 $this->log()->info("Ignoring TRIGGER operation.");
-            } elseif (isset($parse['INSERT'])) {
+            } elseif (isset($parse['INSERT']) || isset($parse['SELECT']) || isset($parse['UPDATE'])) {
                 $this->log()->info("Ignoring SELECT/INSERT/UPDATE operations.");
             } else {
                 throw new QueryParseException("Uncertain on how to handle this statement: " . print_r($parse, true));

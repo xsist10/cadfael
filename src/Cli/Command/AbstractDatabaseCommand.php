@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Cadfael\Cli\Command;
 
 use Cadfael\Cli\Formattable;
-use Cadfael\Cli\Formatter;
 use Cadfael\Engine\Factory;
+use Doctrine\DBAL\DBALException;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use Doctrine\DBAL\Connection;
@@ -24,9 +24,9 @@ abstract class AbstractDatabaseCommand extends Command
 
     /**
      * @param InputInterface $input
-     * @return mixed|string
+     * @return string
      */
-    public function getUsername(InputInterface $input)
+    public function getUsername(InputInterface $input): string
     {
         return $input->getOption('username')
             ? $input->getOption('username')
@@ -35,9 +35,9 @@ abstract class AbstractDatabaseCommand extends Command
 
     /**
      * @param InputInterface $input
-     * @return mixed|string
+     * @return string
      */
-    public function getHost(InputInterface $input)
+    public function getHost(InputInterface $input): string
     {
         return $input->getOption('host')
             ? $input->getOption('host')
@@ -46,13 +46,13 @@ abstract class AbstractDatabaseCommand extends Command
 
     /**
      * @param InputInterface $input
-     * @return mixed|string
+     * @return int
      */
-    public function getPort(InputInterface $input)
+    public function getPort(InputInterface $input): int
     {
         return $input->getOption('port')
-            ? $input->getOption('port')
-            : $_SERVER['MYSQL_PORT'] ?? 3306;
+            ? (int)$input->getOption('port')
+            : (int)$_SERVER['MYSQL_PORT'] ?? 3306;
     }
 
     protected function configure(): void
@@ -97,7 +97,7 @@ abstract class AbstractDatabaseCommand extends Command
             $file = $input->getOption('secret');
             if (file_exists($file)) {
                 $password = trim(file_get_contents($file));
-                return $password ?? '';
+                return !empty($password) ? $password : '';
             }
         }
 
@@ -120,11 +120,15 @@ abstract class AbstractDatabaseCommand extends Command
      * @param string $schemaName
      * @param string $password
      * @return Factory
-     * @throws \Doctrine\DBAL\DBALException
+     * @throws DBALException
      */
-    protected function getFactory(InputInterface $input, string $schemaName, string $password): Factory
-    {
-        // Try use a specified username, otherwise default to the environment variables, finally fall back to root
+    protected function getFactory(
+        InputInterface $input,
+        string $schemaName,
+        #[\SensitiveParameter]
+        string $password
+    ): Factory {
+        // Try to use a specified username, otherwise default to the environment variables, finally fall back to root
         $username = $this->getUsername($input);
 
         $connectionParams = array(

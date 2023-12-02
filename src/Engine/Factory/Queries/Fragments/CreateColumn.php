@@ -9,6 +9,7 @@ use Cadfael\Engine\Entity\Column;
 use Cadfael\Engine\Entity\Column\InformationSchema;
 use Cadfael\Engine\Entity\Table;
 use Cadfael\Engine\Exception\UnknownCharacterSet;
+use Cadfael\Engine\Exception\UnknownColumnType;
 use Cadfael\Engine\Factory\Queries\Fragment;
 use Cadfael\Utility\Types;
 
@@ -16,6 +17,7 @@ class CreateColumn extends Fragment
 {
     /**
      * @throws UnknownCharacterSet
+     * @throws UnknownColumnType
      */
     public function process(
         array $fragment,
@@ -33,25 +35,6 @@ class CreateColumn extends Fragment
         $data_type = $this->getSingleExpressionType($type['sub_tree'], 'data-type');
         $comment = $this->getSingleExpressionType($type['sub_tree'], 'comment');
 
-        // Extract character set and collation information
-        $character_set = $this->getCharacterSetFromColumn($type);
-        if ($character_set && !$this->validateCharacterSet($character_set)) {
-            throw new UnknownCharacterSet("Invalid $character_set specified for column $column_name.");
-        }
-        $collation = $this->getCharacterSetCollation($type['sub_tree']);
-        if (!$collation) {
-            if ($character_set) {
-                // Default of the character set
-                $collation = $this->getDefaultCollationForCharacterSet($character_set);
-            } else {
-                // Default of the table
-                $collation = $default_collation;
-            }
-        }
-        if (!$character_set) {
-            $character_set = $default_character_set;
-        }
-
         $extras = [];
         // TODO: Add support for privileges
         // TODO: Add support for generation_expression
@@ -59,15 +42,15 @@ class CreateColumn extends Fragment
             'ordinal_position' => $ordinal,
             'is_nullable' => $type['nullable'],
             'column_type' => $data_type['base_expr']
-                . (isset($data_type['length']) ? '(' . $data_type['length'] . ')' : '')
-                . (isset($data_type['unsigned']) ? ' unsigned' : ''),
+                . (!empty($data_type['length']) ? '(' . $data_type['length'] . ')' : '')
+                . (!empty($data_type['unsigned']) ? ' unsigned' : ''),
             'data_type' => strtolower($data_type['base_expr']),
             'numeric_precision' => null,
             'numeric_scale' => null,
             'character_maximum_length' => null,
             'character_octet_length' => null,
-            'character_set_name' => $character_set,
-            'collation_name' => $collation,
+            'character_set_name' => null,
+            'collation_name' => null,
             'datetime_precision' => null,
             'default' => null,
             'column_key' => '',
@@ -81,6 +64,33 @@ class CreateColumn extends Fragment
         } elseif ($type['unique']) {
             $definition['column_key'] = 'UNI';
         }
+
+        if (Types::isString($data_type['base_expr'])) {
+            // Extract character set and collation information
+            $character_set = $this->getCharacterSetFromColumn($type);
+            if ($character_set && !$this->validateCharacterSet($character_set)) {
+                throw new UnknownCharacterSet("Invalid $character_set specified for column $column_name.");
+            }
+            $collation = $this->getCharacterSetCollation($type['sub_tree']);
+            if (!$collation) {
+                if ($character_set) {
+                    // Default of the character set
+                    $collation = $this->getDefaultCollationForCharacterSet($character_set);
+                } else {
+                    // Default of the table
+                    $collation = $default_collation;
+                }
+            }
+            // If no character set specified, fall back to default
+            if (!$character_set) {
+                $character_set = $default_character_set;
+            }
+
+            $definition['character_set_name'] = $character_set;
+            $definition['collation_name'] = $collation;
+        }
+
+
         if (isset($data_type['length'])) {
             if (Types::isNumeric($data_type['base_expr'])) {
                 $definition['numeric_precision'] = (int)$data_type['length'];
@@ -91,8 +101,7 @@ class CreateColumn extends Fragment
             } elseif (Types::isTime($data_type['base_expr'])) {
                 $definition['datetime_precision'] = (int)$data_type['length'];
             } else {
-                print "Unknown length to type specific field\n";
-                print_r($data_type);
+                throw new UnknownColumnType("Unknown length to type specific field: " . print_r($data_type, true));
             }
         }
         if (isset($type['default'])) {
@@ -117,6 +126,12 @@ class CreateColumn extends Fragment
 
     private function getCharacterSetFromColumn(array $column_type): ?string
     {
+        $character_set = $this->getSingleExpressionType($column_type['sub_tree'], 'character-set');
+        if (!empty($character_set)) {
+            return $character_set['base_expr'];
+        }
+
+        // TODO: Remove once the patch for Greenlion is upstreamed.
         $character_set = $this->getSingleExpressionTypeAndValue($column_type['sub_tree'], 'reserved', 'SET');
         if (empty($character_set)) {
             return null;
