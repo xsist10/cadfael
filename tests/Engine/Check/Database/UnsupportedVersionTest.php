@@ -45,7 +45,7 @@ class UnsupportedVersionTest extends BaseTest
             '5.1' => Report::STATUS_CRITICAL,
             '5.5' => Report::STATUS_CRITICAL,
             '5.6' => Report::STATUS_CRITICAL,
-            '5.7' => Report::STATUS_WARNING,
+            '5.7' => Report::STATUS_CRITICAL,
             '8.0' => Report::STATUS_OK,
             '8.1' => Report::STATUS_OK,
         ];
