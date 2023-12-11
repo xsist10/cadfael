@@ -317,6 +317,7 @@ class RunCommand extends AbstractDatabaseCommand
     protected function processSchemas(
         InputInterface $input,
         OutputInterface $output,
+        #[\SensitiveParameter]
         String $password,
         array $schemas
     ): int {

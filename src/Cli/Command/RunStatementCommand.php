@@ -83,7 +83,7 @@ class RunStatementCommand extends Command
     /**
      * @param InputInterface $input
      * @param array<Schema> $schemas
-     * @throws InvalidColumn
+     * @throws \Exception
      */
     protected function runChecksAgainstSchema(
         InputInterface $input,
@@ -91,17 +91,8 @@ class RunStatementCommand extends Command
     ): void {
 
         $this->formatter->eol();
-//        $queries = new Queries("
-//            CREATE TABLE `example2` (
-//                id INT(10) UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
-//                name VARCHAR(64) NOT NULL,
-//                INDEX idx_name (name(20))
-//            );
-//        ");
-//        $schemas = $queries->processIntoSchemas();
 
         $orchestrator = new Orchestrator();
-
         // Add callbacks to handle the rendering
         $this->formatter->prepareCallback($orchestrator);
 
@@ -187,9 +178,12 @@ class RunStatementCommand extends Command
         }
 
         $queries = new Queries("8.1.0", $content);
-        $log = new Logger('debugger');
-        $log->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+        $log = new Logger('name');
+        if ($input->getOption('verbose')) {
+            $log->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+        }
         $queries->setLogger($log);
+
         try {
             $schemas = $queries->processIntoSchemas();
         } catch (InvalidColumn $exception) {

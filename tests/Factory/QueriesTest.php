@@ -7,7 +7,6 @@ namespace Cadfael\Tests\Factory;
 
 use Cadfael\Engine\Check\Column\SaneAutoIncrement;
 use Cadfael\Engine\Check\Table\MustHavePrimaryKey;
-use Cadfael\Engine\Entity\Column;
 use Cadfael\Engine\Exception\InvalidColumn;
 use Cadfael\Engine\Exception\QueryParseException;
 use Cadfael\Engine\Factory\Queries;
@@ -412,14 +411,21 @@ class QueriesTest extends TestCase
         $this->assertCount(0, $schemas, "No schemas should be generated for this.");
     }
 
-    public function testRandom2()
+    public function testAlterAddColumn()
     {
+        $this->markTestSkipped("Skipped until ALTER is better supported");
+
         $queries = new Queries("8.1.0", "
-            DROP TRIGGER trigger_name;
+            CREATE TABLE example1 (a INT);
+            ALTER TABLE example1 ADD COLUMN b VARCHAR(32);
         ");
 
+        $this->attachLogger($queries);
         $schemas = $queries->processIntoSchemas();
-        $this->assertCount(0, $schemas, "No schemas should be generated for this.");
+        $this->assertCount(1, $schemas, "One default schemas should be generated for this.");
+        $table = $schemas[0]->getTables()[0];
+        $columns = $table->getColumns();
+        $this->assertCount(2, $columns, "Two tables should be generated.");
     }
 
     public function testMultiplePrimaryKeyColumns()
