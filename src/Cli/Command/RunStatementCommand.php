@@ -117,8 +117,8 @@ class RunStatementCommand extends Command
             $tables = $schema->getTables();
             $this->formatter->eol();
             $this->formatter
-                ->write("Attempting to scan schema <info>" . $schema->getName() . "</info>")
-                ->eol();
+                ->write("<comment>!!! This is an experimental feature !!!</comment>")->eol()
+                ->write("Attempting to scan schema <info>" . $schema->getName() . "</info>")->eol();
             $this->formatter->write('<info>Tables Found:</info> ' . count($tables))->eol();
 
             if (!count($tables)) {

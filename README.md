@@ -91,7 +91,7 @@ MYSQL_HOST=127.0.0.1 MYSQL_USER=root MYSQL_PORT=3306 MYSQL_DATABASE=[database_to
 
 ### Output
 ```
-Cadfael CLI Tool 0.2.6
+Cadfael CLI Tool 0.3.3
 
 Host: localhost:3306
 User: [username]
