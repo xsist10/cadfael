@@ -4,3 +4,4 @@ composer.phar
 build/
 cadfael.phar
 .phpunit.result.cache
+composer.lock

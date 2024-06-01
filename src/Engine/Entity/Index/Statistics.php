@@ -52,6 +52,24 @@ class Statistics
         );
     }
 
+    public static function createFromStatement(Column $column): Statistics
+    {
+        return new Statistics(
+            $column,
+            1,
+            'A',
+            0,
+            null,
+            null,
+            $column->isNullable(),
+            'BTREE',
+            '',
+            '',
+            true,
+            ''
+        );
+    }
+
     public static function getQuery(): string
     {
         return <<<EOF

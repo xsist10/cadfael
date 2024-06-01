@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Cadfael\Cli\Command;
 
-use Cadfael\Cli\Formatter\Cli;
-use Cadfael\Cli\Formatter\Json;
 use Cadfael\Engine\Check\Account\AccountsWithSuperPermission;
 use Cadfael\Engine\Check\Account\LockedAccount;
 use Cadfael\Engine\Check\Account\NotConnecting;
@@ -42,7 +40,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Cadfael\Engine\Exception\MissingPermissions;
 use Doctrine\DBAL\DBALException;
-use Cadfael\Engine\Exception\MissingInformationSchema;
+use Cadfael\Engine\Exception\MissingInformationSchemaRecord;
 
 class RunCommand extends AbstractDatabaseCommand
 {
@@ -113,6 +111,7 @@ class RunCommand extends AbstractDatabaseCommand
                 'Include performance_schema metric checks. Only useful if the database has been running for '
                 . 'a while.'
             )
+            ->setupFormatArguments()
             ->addOption(
                 'output-format',
                 'o',
@@ -168,7 +167,7 @@ class RunCommand extends AbstractDatabaseCommand
      * @param OutputInterface $output
      * @throws MissingPermissions
      * @throws DBALException
-     * @throws MissingInformationSchema
+     * @throws MissingInformationSchemaRecord
      * @throws \Doctrine\DBAL\Driver\Exception
      * @throws \Exception
      */
@@ -318,6 +317,7 @@ class RunCommand extends AbstractDatabaseCommand
     protected function processSchemas(
         InputInterface $input,
         OutputInterface $output,
+        #[\SensitiveParameter]
         String $password,
         array $schemas
     ): int {
@@ -327,7 +327,7 @@ class RunCommand extends AbstractDatabaseCommand
             $factory->getConnection()->close();
         } catch (DBALException | MissingPermissions $e) {
             $this->formatter->error($e->getMessage())->eol();
-        } catch (MissingInformationSchema $e) {
+        } catch (MissingInformationSchemaRecord $e) {
             $this->formatter->error('Unable to retrieve information for ' . $schemas[0])->eol();
         }
 
@@ -343,10 +343,7 @@ class RunCommand extends AbstractDatabaseCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->formatter = new Cli($output);
-        if ($input->getOption('output-format') === 'json') {
-            $this->formatter = new Json($output);
-        }
+        $this->setupFormatter($output, $input);
 
         $title = $this->getApplication()->getLongVersion();
         $this->formatter->write($title)->eol();

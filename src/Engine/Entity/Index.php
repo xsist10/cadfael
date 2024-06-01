@@ -113,6 +113,13 @@ class Index implements Entity
         return $this->size_in_bytes;
     }
 
+    public function addStatistics(Statistics $statistics): void
+    {
+        // Set the sequence automatically to the next in line
+        $statistics->seq_in_index = count($this->statistics) + 1;
+        $this->statistics[] = $statistics;
+    }
+
     public function setStatistics(Statistics ...$statistics): void
     {
         $this->statistics = $statistics;

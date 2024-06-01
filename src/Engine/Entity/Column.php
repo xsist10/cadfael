@@ -8,6 +8,7 @@ use Cadfael\Engine\Entity;
 use Cadfael\Engine\Entity\Column\InformationSchema;
 use Cadfael\Engine\Exception\InvalidColumnType;
 use Cadfael\Engine\Exception\UnknownColumnType;
+use Cadfael\Utility\Types;
 
 class Column implements Entity
 {
@@ -65,6 +66,11 @@ class Column implements Entity
         return !empty($this->information_schema->generation_expression);
     }
 
+    public function isNullable(): bool
+    {
+        return $this->information_schema->is_nullable;
+    }
+
     public function isSigned(): bool
     {
         return $this->isNumeric()
@@ -78,29 +84,27 @@ class Column implements Entity
 
     public function isInteger(): bool
     {
-        return in_array($this->information_schema->data_type, ['tinyint', 'smallint', 'mediumint', 'int', 'bigint' ]);
+        return Types::isInteger($this->information_schema->data_type);
     }
 
     public function isNumeric(): bool
     {
-        return $this->isInteger()
-            || in_array($this->information_schema->data_type, [ 'bit', 'decimal', 'double', 'float' ]);
+        return Types::isNumeric($this->information_schema->data_type);
     }
 
     public function isString(): bool
     {
-        $string_types = [ 'char', 'longtext', 'mediumtext', 'text', 'tinytext', 'varchar' ];
-        return in_array($this->information_schema->data_type, $string_types);
+        return Types::isString($this->information_schema->data_type);
     }
 
     public function isBinary(): bool
     {
-        return in_array($this->information_schema->data_type, ['binary', 'varbinary']);
+        return Types::isBinary($this->information_schema->data_type);
     }
 
     public function isPrefixAllowed(): bool
     {
-        return in_array($this->information_schema->data_type, InformationSchema::PREFIX_ALLOWED_DATA_TYPES);
+        return Types::isPrefixAllowed($this->information_schema->data_type);
     }
 
     public function getStorageByteSize(): float
