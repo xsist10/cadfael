@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b53423ed076c916d99abde5da79e8c8b",
+    "content-hash": "1efb14b57256dbd6d805c0f9b7a81493",
     "packages": [
         {
             "name": "doctrine/cache",
@@ -349,16 +349,16 @@
         },
         {
             "name": "greenlion/php-sql-parser",
-            "version": "v4.6.0",
+            "version": "dev-master",
             "source": {
                 "type": "git",
                 "url": "https://github.com/greenlion/PHP-SQL-Parser.git",
-                "reference": "f0e4645eb1612f0a295e3d35bda4c7740ae8c366"
+                "reference": "dec667f2d603d9461e0f193d5fa4d640674a8b0c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/greenlion/PHP-SQL-Parser/zipball/f0e4645eb1612f0a295e3d35bda4c7740ae8c366",
-                "reference": "f0e4645eb1612f0a295e3d35bda4c7740ae8c366",
+                "url": "https://api.github.com/repos/greenlion/PHP-SQL-Parser/zipball/dec667f2d603d9461e0f193d5fa4d640674a8b0c",
+                "reference": "dec667f2d603d9461e0f193d5fa4d640674a8b0c",
                 "shasum": ""
             },
             "require": {
@@ -367,8 +367,9 @@
             "require-dev": {
                 "analog/analog": "^1.0.6",
                 "phpunit/phpunit": "^9.5.13",
-                "squizlabs/php_codesniffer": "^1.5.1"
+                "squizlabs/php_codesniffer": "^2.8.1"
             },
+            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-0": {
@@ -405,7 +406,7 @@
                 "issues": "https://github.com/greenlion/PHP-SQL-Parser/issues",
                 "source": "https://github.com/greenlion/PHP-SQL-Parser"
             },
-            "time": "2023-03-09T20:54:23+00:00"
+            "time": "2023-12-18T00:03:32+00:00"
         },
         {
             "name": "kodus/sql-split",
@@ -6256,7 +6257,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {
+        "greenlion/php-sql-parser": 20
+    },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {

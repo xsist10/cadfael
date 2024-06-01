@@ -15,7 +15,7 @@
         "doctrine/dbal": "^2.10",
         "symfony/console": "^5.0",
         "monolog/monolog": "^2.1",
-        "greenlion/php-sql-parser": "^4.5",
+        "greenlion/php-sql-parser": "dev-master",
         "ext-json": "*",
         "kodus/sql-split": "^2.0",
         "league/flysystem": "^3.0"
