@@ -46,13 +46,27 @@ The path to the executable will be in `./vendor/bin/`.
 
 ## Usage
 
+You can run Cadfael directly against your database or you can run it against a file containing your MySQL table and schema creation statements.
+
+For high quality results, we recommended running it against your database as there is significantly more information available for analysis (see the Advanced Usage section).
+
 ```bash
-cadfael run --host 127.0.0.1 --username root --port 3306 [database_to_scan]
+# Run cadfael against a specific MySQL schema in your database
+cadfael run --host 127.0.0.1 --username root --port 3306 [schema_name]
 ```
+
+However, sometimes you won't have access to run it against your database (either due to your environment or security considerations). You may find this option works better for CI/CD pipeline use.
+
+```bash
+# Run cadfael against the creation definitions in this file
+cadfael run-statment resources/mysql/sample.sql
+```
+
+Please note that this is an *EXPERIMENTAL FEATURE* as this method uses a 3rd party library with some limitations so not all analysis features are supported at this moment.
 
 ### Advanced Usage
 
-You can also include the `--performance_schema` flag if you wish to run checks against the [performance_schema](https://dev.mysql.com/doc/refman/8.0/en/performance-schema.html) schema which collect analytics about your server since the last time it was restarted. This is particularly useful if you want to see how your database is being used and detect issues related to queries, access of tables and heavy or badly optimized queries.
+If you are running Cadfael against your database, you can also include the `--performance_schema` flag if you wish to run checks against the [performance_schema](https://dev.mysql.com/doc/refman/8.0/en/performance-schema.html) schema which collect analytics about your server since the last time it was restarted. This is particularly useful if you want to see how your database is being used and detect issues related to queries, access of tables and heavy or badly optimized queries.
 
 For meaningful results you *should* run this against the database that is being used in production otherwise you'll only be checking against the metrics collected in your development environment.
 **BUT FIRST** always speak to your DBA/Security people first before run random tools from the internet against your production database.
