@@ -69,7 +69,7 @@ Please note that this is an *EXPERIMENTAL FEATURE* as this method uses a 3rd par
 If you are running Cadfael against your database, you can also include the `--performance_schema` flag if you wish to run checks against the [performance_schema](https://dev.mysql.com/doc/refman/8.0/en/performance-schema.html) schema which collect analytics about your server since the last time it was restarted. This is particularly useful if you want to see how your database is being used and detect issues related to queries, access of tables and heavy or badly optimized queries.
 
 For meaningful results you *should* run this against the database that is being used in production otherwise you'll only be checking against the metrics collected in your development environment.
-**BUT FIRST** always speak to your DBA/Security people first before run random tools from the internet against your production database.
+**BUT FIRST** always speak to your DBA/Security people before run random tools from the internet against your production database.
 
 ### Environmental Variables
 
