@@ -296,6 +296,7 @@ class QueriesTest extends TestCase
         $schemas = $queries->processIntoSchemas();
         $table = $schemas[0]->getTables()[0];
         $columns = $table->getColumns();
+        $this->assertNull($table->getAutoIncrementColumn(), 'Ensure there is no defined auto incrementing column.');
         $this->assertEquals("utf8mb4", $columns[0]->information_schema->character_set_name);
         $this->assertEquals("utf8mb4_0900_ai_ci", $columns[0]->information_schema->collation_name);
         $this->assertEquals("latin1", $columns[1]->information_schema->character_set_name);
@@ -420,7 +421,6 @@ class QueriesTest extends TestCase
             ALTER TABLE example1 ADD COLUMN b VARCHAR(32);
         ");
 
-        $this->attachLogger($queries);
         $schemas = $queries->processIntoSchemas();
         $this->assertCount(1, $schemas, "One default schemas should be generated for this.");
         $table = $schemas[0]->getTables()[0];
@@ -446,7 +446,41 @@ class QueriesTest extends TestCase
         $this->assertCount(2, $table->getPrimaryKeys());
     }
 
-    // TODO: Work on a solution for alters
+    public function testMultipleTableDeclarations()
+    {
+        $queries = new Queries("8.1.0", "
+            CREATE TABLE example1 (
+              a INT NOT NULL,
+              b BIGINT NOT NULL,
+              PRIMARY KEY (a, b)
+            );
+
+            -- This should be ignored
+            CREATE TABLE example1 (
+              a INT NOT NULL
+            );
+        ");
+
+        $schemas = $queries->processIntoSchemas();
+        $table = $schemas[0]->getTables()[0];
+
+        $this->assertCount(2, $table->getColumns());
+        $this->assertCount(0, $table->getIndexes());
+        $this->assertCount(2, $table->getPrimaryKeys());
+    }
+
+
+    public function testUnexpectedQueries()
+    {
+        $this->expectException(QueryParseException::class);
+
+        $queries = new Queries("8.1.0", "
+            SHOW CREATE TABLE random_table;
+        ");
+
+        $queries->processIntoSchemas();
+    }
+
     public function testCreateTableWithAlter()
     {
         $this->expectException(QueryParseException::class);
@@ -489,13 +523,26 @@ class QueriesTest extends TestCase
             DROP DATABASE to_be_dropped;
             USE test;
             
+            INSERT INTO `table_with_large_test_index` (name) VALUES ('Testy McTest');
+
+            CREATE PROCEDURE count (IN param CHAR(3), OUT val INT)
+            BEGIN
+                SELECT 1;
+            END;
+
+            CREATE FUNCTION count (IN param CHAR(3), OUT val INT)
+            BEGIN
+                SELECT 1;
+            END;
+
+            DESCRIBE table_with_large_text_index;
+
             DROP TABLE IF EXISTS `table_empty`;
             CREATE TABLE `table_empty` (
                 id INT UNSIGNED NOT NULL AUTO_INCREMENT,
                 PRIMARY KEY (id)
             ) ENGINE=InnoDB;
         ");
-
 
         $schemas = $queries->processIntoSchemas();
         $schema = $schemas[0];

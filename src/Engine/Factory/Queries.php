@@ -88,11 +88,14 @@ class Queries extends Fragment
 
     private function extractSchemaName(array $sub_tree): string
     {
-        // Find the no quotes parts, so we can get the database names
+        // In rare situations, this is not set. Fall back to the current schema
         if (!isset($sub_tree['no_quotes'])) {
+            // @codeCoverageIgnoreStart
             return $this->currentSchema;
+            // @codeCoverageIgnoreEnd
         }
 
+        // Find the no quotes parts, so we can get the database names
         $parts = $sub_tree['no_quotes']['parts'];
         // Throw away the table name
         array_pop($parts);
@@ -173,10 +176,11 @@ class Queries extends Fragment
                 } elseif (isset($parse['TABLE'])) {
                     $create_table = new CreateTable();
                     if ($this->logger) {
+                        // @codeCoverageIgnoreStart
                         $create_table->setLogger($this->logger);
+                        // @codeCoverageIgnoreEnd
                     }
                     $table = $create_table->process($parse);
-
                     $schema_name = $this->extractSchemaName($parse['TABLE']);
 
                     // If the schema doesn't exist, lets create it since it might exist on the target machine
@@ -196,6 +200,8 @@ class Queries extends Fragment
                     $this->structures['database'][$schema_name]->addTable($table);
                 } elseif (isset($parse['PROCEDURE'])) {
                     $this->log()->info("Ignoring CREATE PROCEDURE operation.");
+                } elseif (isset($parse['FUNCTION'])) {
+                    $this->log()->info("Ignoring CREATE FUNCTION operation.");
                 }
             } elseif (isset($parse['ALTER'])) {
                 // Damn ALTER is not parsed properly.
@@ -204,6 +210,8 @@ class Queries extends Fragment
                 $this->log()->info("Ignoring SET operation.");
             } elseif (isset($parse['TRIGGER'])) {
                 $this->log()->info("Ignoring TRIGGER operation.");
+            } elseif (isset($parse['DESCRIBE'])) {
+                $this->log()->info("Ignoring DESCRIBE operation.");
             } elseif (isset($parse['INSERT']) || isset($parse['SELECT']) || isset($parse['UPDATE'])) {
                 $this->log()->info("Ignoring SELECT/INSERT/UPDATE operations.");
             } else {
