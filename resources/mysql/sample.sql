@@ -1,3 +1,6 @@
+SET GLOBAL innodb_file_per_table=OFF;
+SET GLOBAL sql_require_primary_key=OFF;
+
 CREATE DATABASE IF NOT EXISTS test;
 USE test;
 
