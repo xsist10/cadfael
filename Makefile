@@ -7,7 +7,7 @@ phpcs:
 	./vendor/bin/phpcs -sw --standard=PSR2 src
 
 phpunit:
-	./vendor/bin/phpunit
+	XDEBUG_MODE=coverage ./vendor/bin/phpunit
 
 box:
 	box compile
