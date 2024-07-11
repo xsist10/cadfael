@@ -8,6 +8,8 @@ use Cadfael\Engine\Check;
 use Cadfael\Engine\Entity\Database;
 use Cadfael\Engine\Exception\MySQL\UnknownVersion;
 use Cadfael\Engine\Report;
+use DateInterval;
+use DateTimeImmutable;
 
 /**
  * Class UnsupportedVersion
@@ -16,21 +18,31 @@ use Cadfael\Engine\Report;
  */
 class UnsupportedVersion implements Check
 {
-    const SUPPORT_EOL_TIMESTAMP = [
+    const SUPPORT_EOL_DATE = [
         // There is no official EoL, but we're projecting 8 years based on previous support
-        "8.1.0" => 1939759200, // June 2031
-        "8.0.0" => 1774998001, // April 2026
-        "5.7.0" => 1696118401, // Oct 2023
-        "5.6.0" => 1612137601, // Feb 2021
-        "5.5.0" => 1543622401, // Dec 2018
-        "5.1.0" => 1385856001, // Dec 2013
+        "8.1.0" => "2031-06-01", // June 2031
+        "8.0.0" => "2026-04-01", // April 2026
+        "5.7.0" => "2023-10-01", // Oct 2023
+        "5.6.0" => "2021-02-01", // Feb 2021
+        "5.5.0" => "2018-12-01", // Dec 2018
+        "5.1.0" => "2013-12-01", // Dec 2013
     ];
+    protected DateTimeImmutable $current_date;
 
-    protected function getVersionEOL(string $active_version): int
+    public function __construct(DateTimeImmutable $current_date = new DateTimeImmutable())
     {
-        foreach (self::SUPPORT_EOL_TIMESTAMP as $version => $eol) {
+        $this->current_date = $current_date;
+    }
+
+    /**
+     * @throws UnknownVersion
+     * @throws \Exception
+     */
+    protected function getVersionEOL(string $active_version): DateTimeImmutable
+    {
+        foreach (self::SUPPORT_EOL_DATE as $version => $eol) {
             if (version_compare($active_version, $version) >= 0) {
-                return $eol;
+                return new DateTimeImmutable($eol);
             }
         }
 
@@ -58,10 +70,8 @@ class UnsupportedVersion implements Check
             );
         }
 
-        $eol_date = date("M Y", $eol);
-
         // If we have passed End of Life (EOL), we should raise a critical report.
-        if ($eol < time()) {
+        if ($eol < $this->current_date) {
             return new Report(
                 $this,
                 $entity,
@@ -74,9 +84,12 @@ class UnsupportedVersion implements Check
             );
         }
 
+        // Pretty label
+        $eol_date = $eol->format("M Y");
+
         // If we are within 6 months of End of Life, we should raise a warning report.
-        $half_a_year_in_seconds = (3600 * 24 * (356 / 2));
-        if ($eol < time() + $half_a_year_in_seconds) {
+        $six_months_from_now = $this->current_date->add(DateInterval::createFromDateString("6 months"));
+        if ($eol < $six_months_from_now) {
             return new Report(
                 $this,
                 $entity,
