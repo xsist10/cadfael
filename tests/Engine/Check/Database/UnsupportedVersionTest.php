@@ -38,7 +38,7 @@ class UnsupportedVersionTest extends BaseTest
 
     public function testRun()
     {
-        $check = new UnsupportedVersion();
+        $check = new UnsupportedVersion(new \DateTimeImmutable("2026-01-01"));
 
         $expected_results = [
             '1.1' => Report::STATUS_CONCERN,
@@ -46,14 +46,15 @@ class UnsupportedVersionTest extends BaseTest
             '5.5' => Report::STATUS_CRITICAL,
             '5.6' => Report::STATUS_CRITICAL,
             '5.7' => Report::STATUS_CRITICAL,
-            '8.0' => Report::STATUS_OK,
+            '8.0' => Report::STATUS_WARNING,
             '8.1' => Report::STATUS_OK,
         ];
 
         foreach ($expected_results as $version => $status) {
+            $report = $check->run($this->databases[$version]);
             $this->assertEquals(
                 $status,
-                $check->run($this->databases[$version])->getStatus(),
+                $report->getStatus(),
                 "Ensure we return " . Report::STATUS_LABEL[$status] . " ($status) for version $version."
             );
         }
