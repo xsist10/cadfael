@@ -46,7 +46,9 @@ class CreateTable extends Fragment
         foreach ($column_defs as $column_def) {
             $create_column = new CreateColumn();
             if ($this->logger) {
+                // @codeCoverageIgnoreStart
                 $create_column->setLogger($this->logger);
+                // @codeCoverageIgnoreEnd
             }
             $columns[] = $create_column->process($column_def, $ordinal, $default_character_set, $default_collation);
             $ordinal++;
@@ -128,29 +130,6 @@ class CreateTable extends Fragment
         } else {
             return $this->getDefaultCollationForCharacterSet($character_set);
         }
-    }
-
-    /**
-     * Returns a tuple for table and column
-     *
-     * @param Table $table
-     * @param array $sub_tree
-     * @return array
-     */
-    private function extractTableColumnName(Table $table, array $sub_tree): array
-    {
-        if (!isset($sub_tree['no_quotes'])) {
-            return [null, $sub_tree['base_expr']];
-        }
-        // Find the no quotes parts, so we can get the database/table names
-        $parts = $sub_tree['no_quotes']['parts'];
-
-        $column_name = array_pop($parts);
-        $table_name = count($parts)
-            ? array_pop($parts)
-            : $table->getName();
-
-        return [ $table_name, $column_name ];
     }
 
     /**

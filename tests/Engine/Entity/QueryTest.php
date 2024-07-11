@@ -5,7 +5,6 @@ namespace Cadfael\Tests\Engine\Entity;
 
 use Cadfael\Engine\Entity\Column;
 use Cadfael\Engine\Entity\Database;
-use Cadfael\Engine\Entity\Query;
 use Cadfael\Engine\Entity\Schema;
 use Cadfael\Engine\Entity\Table;
 use Cadfael\Engine\Exception\QueryParseException;
@@ -67,6 +66,8 @@ class QueryTest extends BaseTest
         $query = $this->createQuery("SELECT b.id FROM test.users AS b WHERE DATE_FORMAT(SELECT id FROM users WHERE DATE_FORMAT(?)=?)=?", $this->schema);
         $this->assertEmpty($query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on literal.");
     }
+
+
 
     public function test__fetchColumnsModifiedByFunctionsException()
     {

@@ -562,4 +562,43 @@ class QueriesTest extends TestCase
         $this->assertEquals('last_updated', $table1->getColumns()[4]->getName(), 'Ensure the column name is correct.');
 
     }
+
+    public function test__CollationTypeOnTable()
+    {
+        $queries = new Queries("8.1.0", "
+            CREATE TABLE example1 (a TEXT) CHARACTER SET latin1 COLLATE latin1_danish_ci;
+        ");
+
+        $schemas = $queries->processIntoSchemas();
+        $table = $schemas[0]->getTables()[0];
+        $column = $table->getColumn('a');
+
+        $this->assertEquals('latin1', $column->information_schema->character_set_name);
+        $this->assertEquals('latin1_danish_ci', $column->information_schema->collation_name);
+    }
+
+    public function test__CollationTypeOnColumn()
+    {
+        $queries = new Queries("8.1.0", "
+            CREATE TABLE example1 (a TEXT CHARACTER SET latin1 COLLATE latin1_danish_ci);
+        ");
+
+        $schemas = $queries->processIntoSchemas();
+        $table = $schemas[0]->getTables()[0];
+        $column = $table->getColumn('a');
+
+        $this->assertEquals('latin1', $column->information_schema->character_set_name);
+        $this->assertEquals('latin1_danish_ci', $column->information_schema->collation_name);
+    }
+
+    public function test__InvalidCollationTypeOnTable()
+    {
+        $this->expectException(UnknownCharacterSet::class);
+
+        $queries = new Queries("8.1.0", "
+            CREATE TABLE example1 (a TEXT) CHARACTER SET invalid COLLATE invalid_ci;
+        ");
+
+        $queries->processIntoSchemas();
+    }
 }
