@@ -23,7 +23,7 @@ This ensures you won't have any dependency conflicts.
 If you which to make it global, move it into your usr bin folder:
 
 ```bash
-mv cadfael.phar /usr/local/bin/cadfael
+sudo mv cadfael.phar /usr/local/bin/cadfael
 ```
 
 ### Global
