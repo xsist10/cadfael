@@ -1,4 +1,5 @@
-build: psalm phpcs phpunit box
+build: psalm phpcs phpunit
+package: psalm phpcs phpunit box
 
 psalm:
 	./vendor/bin/psalm --use-baseline resources/pslam-baseline

@@ -20,12 +20,20 @@ There are a couple options for installation depending on your personal preferenc
 You can grab the phar file from the [most recent release](https://github.com/xsist10/cadfael/releases).
 This ensures you won't have any dependency conflicts.
 
-### Global
-
-If you'd like Cadfael available anywhere on your system, you can install it globally.
+If you which to make it global, move it into your usr bin folder:
 
 ```bash
-composer global require cadfael/cadfael
+mv cadfael.phar /usr/local/bin/cadfael
+```
+
+### Global
+
+If you'd like Cadfael available anywhere on your system, you can install it globally. 
+
+*Be warned you may encounter dependency conflicts with other globally installed packages.*
+
+```bash
+composer global require --no-dev cadfael/cadfael
 ```
 
 Ensure that your global composer vendor bin folder is set in your path. You may need to add this to your `.bashrc` file.
