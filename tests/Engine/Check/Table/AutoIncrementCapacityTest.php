@@ -10,6 +10,8 @@ use Cadfael\Tests\Engine\BaseTest;
 class AutoIncrementCapacityTest extends BaseTest
 {
     public function providerTableData() {
+        $withoutAutoIncrement = $this->createTable();
+
         $emptyLargeCapacity = $this->createTable();
         $emptyLargeCapacity->setSchemaAutoIncrementColumn(SchemaAutoIncrementColumn::createFromSys([
             'table_schema'          => 'tests',
@@ -95,37 +97,42 @@ class AutoIncrementCapacityTest extends BaseTest
         ]));
 
         return [
-            [ $emptyLargeCapacity,  Report::STATUS_OK ],
-            [ $midLargeCapacity,    Report::STATUS_WARNING ],
-            [ $fullLargeCapacity,   Report::STATUS_CRITICAL ],
-            [ $emptySmallCapacity,  Report::STATUS_OK ],
-            [ $midSmallCapacity,    Report::STATUS_WARNING ],
-            [ $fullSmallCapacity,   Report::STATUS_WARNING ],
+            [ $withoutAutoIncrement, false, null ],
+            [ $emptyLargeCapacity,   true,  Report::STATUS_OK ],
+            [ $midLargeCapacity,     true,  Report::STATUS_WARNING ],
+            [ $fullLargeCapacity,    true,  Report::STATUS_CRITICAL ],
+            [ $emptySmallCapacity,   true,  Report::STATUS_OK ],
+            [ $midSmallCapacity,     true,  Report::STATUS_WARNING ],
+            [ $fullSmallCapacity,    true,  Report::STATUS_WARNING ],
         ];
     }
 
     /**
      * @dataProvider providerTableData
      */
-    public function testSupports($table, $status)
+    public function testSupports($table, $supports, $status)
     {
         $check = new AutoIncrementCapacity();
-        $this->assertTrue($check->supports($table));
+        $this->assertSame($supports, $check->supports($table));
     }
 
     /**
      * @dataProvider providerTableData
      */
-    public function testRun($table, $status)
+    public function testRun($table, $supports, $status)
     {
         $check = new AutoIncrementCapacity();
         $report = $check->run($table);
-        $this->assertEquals($status, $report->getStatus(), "Ensure that the run for $table returns status $status");
+        if ($report) {
+            $this->assertEquals($status, $report->getStatus(), "Ensure that the run for $table returns status $status");
 
-        $data = $report->getData();
-        if ($data) {
-            $this->assertEquals($table->schema_auto_increment_column->max_value, $data['total']);
-            $this->assertEquals($table->schema_auto_increment_column->auto_increment, $data['used']);
+            $data = $report->getData();
+            if ($data) {
+                $this->assertEquals($table->schema_auto_increment_column->max_value, $data['total']);
+                $this->assertEquals($table->schema_auto_increment_column->auto_increment, $data['used']);
+            }
+        } else {
+            $this->assertEquals($status, $report, "Ensure that the report should actually be null.");
         }
     }
 }

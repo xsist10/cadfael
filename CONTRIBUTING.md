@@ -47,7 +47,7 @@ We will then take care of the issue as soon as possible.
 ## I Want To Contribute
 
 > ### Legal Notice <!-- omit in toc -->
-> When contributing to this project, you must agree that you have authored 100% of the content, that you have the necessary rights to the content and that the content you contribute may be provided under the project license.
+> When contributing to this project, you must agree that you have authored 100% of the content, that you have the necessary rights to the content and that the content you contribute may be provided under the project license. We strongly discourage using LLMs to contribute to this codebase.
 
 ### Providing Feedback
 
@@ -139,6 +139,8 @@ For a bug fix, we expect a test to show the fix works and to prevent future regr
 
 You can run the full suite of tests and checks by running `make` inside the project.
 
+*You can ignore any skipped tests.*
+
 ```bash
 $ make
 ```
@@ -155,7 +157,7 @@ Please be patient with us as we review your request.
 
 This project follows PHP FIG [PSR 2](https://www.php-fig.org/psr/psr-2/) style guide.
 
-You can check that the code complies with this style by running:
+You can check that the code complies with this style by running (already part of the `make` build process):
 
 ```bash
 ./vendor/bin/phpcs -sw --standard=PSR2 src

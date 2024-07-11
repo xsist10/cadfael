@@ -22,6 +22,9 @@ class AutoIncrementCapacity implements Check
     public function run($entity): ?Report
     {
         $auto_increment = $entity->getSchemaAutoIncrementColumn();
+        if (!$auto_increment) {
+            return null;
+        }
 
         $percentage = $auto_increment->auto_increment_ratio * 100;
         $percentage_used = sprintf("%0.2f%%", $percentage);
