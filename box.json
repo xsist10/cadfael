@@ -11,7 +11,6 @@
     "vendor/openlss",
     "vendor/phar-io",
     "vendor/phpdocumentor",
-    "vendor/phpspec",
     "vendor/phpstan",
     "vendor/phpunit",
     "vendor/psalm",
