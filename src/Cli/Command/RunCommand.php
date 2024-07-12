@@ -16,6 +16,7 @@ use Cadfael\Engine\Check\Column\ReservedKeywords;
 use Cadfael\Engine\Check\Column\SaneAutoIncrement;
 use Cadfael\Engine\Check\Column\UUIDStorage;
 use Cadfael\Engine\Check\Database\InnoDbFilePerTable;
+use Cadfael\Engine\Check\Database\StrictSqlMode;
 use Cadfael\Engine\Check\Index\IndexPrefix;
 use Cadfael\Engine\Check\Index\LowCardinality;
 use Cadfael\Engine\Check\Query\FunctionsOnIndex;
@@ -219,6 +220,7 @@ class RunCommand extends AbstractDatabaseCommand
             new LockedAccount(),
             new AccountsWithSuperPermission(),
             new InnoDbFilePerTable(),
+            new StrictSqlMode()
         );
 
         if ($load_performance_schema) {
