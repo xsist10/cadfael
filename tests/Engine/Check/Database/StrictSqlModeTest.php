@@ -21,7 +21,8 @@ class StrictSqlModeTest extends BaseTest
             '8.0_STRICT_T'    => $this->createDatabase([ 'version' => '8.0.0', 'sql_mode' => 'STRICT_TRANS_TABLES' ]),
             '8.0_TRADITIONAL' => $this->createDatabase([ 'version' => '8.0.0', 'sql_mode' => 'TRADITIONAL' ]),
             '8.0_NOT_STRICT'  => $this->createDatabase([ 'version' => '8.0.0', 'sql_mode' => 'ON' ]),
-            '5.0_TRADITIONAL' => $this->createDatabase([ 'version' => '5.0.0', 'sql_mode' => 'TRADITIONAL' ])
+            '5.0_TRADITIONAL' => $this->createDatabase([ 'version' => '5.0.0', 'sql_mode' => 'TRADITIONAL' ]),
+            'unknown' => $this->createDatabase([ 'version' => null ])
         ];
     }
 
@@ -35,6 +36,7 @@ class StrictSqlModeTest extends BaseTest
         $this->assertTrue($check->supports($this->databases['8.0_TRADITIONAL']), "Ensure that we only care about databases >= 8.0.");
         $this->assertTrue($check->supports($this->databases['8.0_NOT_STRICT']), "Ensure that we only care about databases >= 8.0.");
         $this->assertFalse($check->supports($this->databases['5.0_TRADITIONAL']), "Ensure that we only care about databases >= 8.0.");
+        $this->assertFalse($check->supports($this->databases['unknown']), "We can't support unknown versions.");
         $this->assertFalse($check->supports($this->createTable()), "We only support database entities.");
     }
 

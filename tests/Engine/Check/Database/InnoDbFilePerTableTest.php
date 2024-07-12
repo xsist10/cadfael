@@ -18,7 +18,8 @@ class InnoDbFilePerTableTest extends BaseTest
         $this->databases = [
             '8.0_NOT_SET' => $this->createDatabase([ 'version' => '8.0.13', 'innodb_file_per_table' => null]),
             '8.0_OFF' => $this->createDatabase([ 'version' => '8.0.13', 'innodb_file_per_table' => 'OFF' ]),
-            '8.0_ON' => $this->createDatabase([ 'version' => '8.0.13', 'innodb_file_per_table' => 'ON' ])
+            '8.0_ON' => $this->createDatabase([ 'version' => '8.0.13', 'innodb_file_per_table' => 'ON' ]),
+            'unknown' => $this->createDatabase([ 'version' => null ])
         ];
     }
 
@@ -29,6 +30,7 @@ class InnoDbFilePerTableTest extends BaseTest
         $this->assertTrue($check->supports($this->databases['8.0_NOT_SET']), "Ensure that we care about all databases.");
         $this->assertTrue($check->supports($this->databases['8.0_OFF']), "Ensure that we care about all databases.");
         $this->assertTrue($check->supports($this->databases['8.0_ON']), "Ensure that we care about all databases.");
+        $this->assertTrue($check->supports($this->databases['unknown']), "Ensure that we care about all databases.");
         $this->assertFalse($check->supports($this->createTable()), "We only support database entities.");
     }
 
