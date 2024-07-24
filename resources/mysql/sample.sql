@@ -2,10 +2,11 @@ SET GLOBAL innodb_file_per_table=OFF;
 SET GLOBAL sql_require_primary_key=OFF;
 SET GLOBAL sql_mode='ONLY_FULL_GROUP_BY,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO';
 
+DROP DATABASE test;
 CREATE DATABASE IF NOT EXISTS test;
 USE test;
 
-DROP TABLE IF EXISTS `table_with_large_text_index`;
+DROP TABLE IF EXISTS `test`.`table_with_large_text_index`, `hats`;
 CREATE TABLE `table_with_large_text_index` (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
@@ -31,7 +32,7 @@ CREATE TABLE `table_myisam` (
 DROP TABLE IF EXISTS `table_empty_in_tablespace`;
 CREATE TABLE `table_empty_in_tablespace` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(255) NOT NULL,
+  `name` VARCHAR(255) NOT NULL UNIQUE,
   PRIMARY KEY (`id`)
 ) /*!50100 TABLESPACE `innodb_system` */ ENGINE=InnoDB;
 
