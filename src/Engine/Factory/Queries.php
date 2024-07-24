@@ -4,25 +4,15 @@ declare(strict_types=1);
 
 namespace Cadfael\Engine\Factory;
 
-use Cadfael\Engine\Entity\Column;
-use Cadfael\Engine\Entity\Column\InformationSchema;
 use Cadfael\Engine\Entity\Database;
-use Cadfael\Engine\Entity\Index;
-use Cadfael\Engine\Entity\Index\Statistics;
-use Cadfael\Engine\Entity\Table\InformationSchema as TableInformationSchema;
 use Cadfael\Engine\Entity\Schema;
-use Cadfael\Engine\Entity\Table;
 use Cadfael\Engine\Exception\InvalidColumn;
 use Cadfael\Engine\Exception\QueryParseException;
 use Cadfael\Engine\Exception\UnknownCharacterSet;
 use Cadfael\Engine\Factory\Queries\Fragment;
 use Cadfael\Engine\Factory\Queries\Fragments\CreateTable;
-use Cadfael\NullLoggerDefault;
-use Cadfael\Utility\Types;
-use Closure;
 use Kodus\SQLSplit\Splitter;
 use PHPSQLParser\PHPSQLParser;
-use Psr\Log\LoggerAwareTrait;
 
 /**
  * This class is responsible for taking in a series of queries and determining the database structure that would have
@@ -130,7 +120,7 @@ class Queries extends Fragment
                 continue;
             }
 
-            $this->structures['database'][$this->currentSchema] ??= $this->createSchema($this->currentSchema);
+            $this->structures['schemas'][$this->currentSchema] ??= $this->createSchema($this->currentSchema);
 
             // We need to figure out what each statement actually does and how it affects
             // We have a use statement. Prepare to switch context
@@ -140,7 +130,7 @@ class Queries extends Fragment
                     case 'database':
                         $database_name = $fragment['sub_tree'][1]['base_expr'];
                         $this->log()->info("Dropping database $database_name");
-                        unset($this->structures['database'][$database_name]);
+                        unset($this->structures['schemas'][$database_name]);
                         if ($this->currentSchema == $database_name) {
                             $this->currentSchema = Queries::DEFAULT_SCHEMA;
                         }
@@ -160,8 +150,8 @@ class Queries extends Fragment
 
                         $this->log()->info("Dropping table $table_name from database $schema_name");
                         // We only process this if we have the specified schema in scope
-                        if (isset($this->structures['database'][$schema_name])) {
-                            $this->structures['database'][$schema_name]->removeTableByName($table_name);
+                        if (isset($this->structures['schemas'][$schema_name])) {
+                            $this->structures['schemas'][$schema_name]->removeTableByName($table_name);
                         }
                         break;
                 }
@@ -171,7 +161,7 @@ class Queries extends Fragment
             } elseif (isset($parse['CREATE'])) {
                 if (isset($parse['DATABASE'])) {
                     $name = array_pop($parse['DATABASE']);
-                    $this->structures['database'][$name] ??= $this->createSchema($name);
+                    $this->structures['schemas'][$name] ??= $this->createSchema($name);
                     $this->log()->info("Created new database $name");
                 } elseif (isset($parse['TABLE'])) {
                     $create_table = new CreateTable();
@@ -184,8 +174,8 @@ class Queries extends Fragment
                     $schema_name = $this->extractSchemaName($parse['TABLE']);
 
                     // If the schema doesn't exist, lets create it since it might exist on the target machine
-                    if (!isset($this->structures['database'][$schema_name])) {
-                        $this->structures['database'][$schema_name] = $this->createSchema($schema_name);
+                    if (!isset($this->structures['schemas'][$schema_name])) {
+                        $this->structures['schemas'][$schema_name] = $this->createSchema($schema_name);
                     }
 
                     // If the table already exists, this statement will fail, so we can ignore it (since that's the
@@ -197,7 +187,7 @@ class Queries extends Fragment
 
                     $this->structures['table'][$schema_name][$table->getName()] = $table;
                     $this->log()->info("Attaching table " . $table->getName() . " to schema $schema_name");
-                    $this->structures['database'][$schema_name]->addTable($table);
+                    $this->structures['schemas'][$schema_name]->addTable($table);
                 } elseif (isset($parse['PROCEDURE'])) {
                     $this->log()->info("Ignoring CREATE PROCEDURE operation.");
                 } elseif (isset($parse['FUNCTION'])) {
@@ -220,10 +210,10 @@ class Queries extends Fragment
         }
 
         // Throw away the default schema if it doesn't exist
-        if (count($this->structures['database'][self::DEFAULT_SCHEMA]->getTables()) == 0) {
-            unset($this->structures['database'][self::DEFAULT_SCHEMA]);
+        if (count($this->structures['schemas'][self::DEFAULT_SCHEMA]->getTables()) == 0) {
+            unset($this->structures['schemas'][self::DEFAULT_SCHEMA]);
         }
 
-        return array_values($this->structures['database']);
+        return array_values($this->structures['schemas']);
     }
 }

@@ -34,7 +34,7 @@ class CreateTable extends Fragment
         // Work out what the default character set and collation for the table are
         $default_character_set = $this->getTableDefaultCharacterSet($table_def);
         if (!$this->validateCharacterSet($default_character_set)) {
-            throw new UnknownCharacterSet("Invalid $default_character_set specfied for table $table_name.");
+            throw new UnknownCharacterSet("Invalid $default_character_set specified for table $table_name.");
         }
         $default_collation = $this->getTableDefaultCollation($table_def, $default_character_set);
 

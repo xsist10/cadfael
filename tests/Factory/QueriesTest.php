@@ -558,8 +558,14 @@ class QueriesTest extends TestCase
         $this->assertCount(1, $table1->getPrimaryKeys(), 'Ensure we have one primary key for the table.');
 
         // Column creation tests
+        $last_updated = $table1->getColumn('last_updated');
         $this->assertTrue($table1->getColumn('id')->isInteger(), 'Ensure our ID column is of type integer.');
-        $this->assertEquals('last_updated', $table1->getColumns()[4]->getName(), 'Ensure the column name is correct.');
+        $this->assertEquals('last_updated', $last_updated->getName(), 'Ensure the column name is correct.');
+        $this->assertEquals(
+            'DEFAULT_GENERATED ON UPDATE CURRENT_TIMESTAMP',
+            $last_updated->information_schema->extra,
+            'Ensure the extras column is accurate.'
+        );
 
     }
 

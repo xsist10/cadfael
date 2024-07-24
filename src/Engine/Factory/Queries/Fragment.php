@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Cadfael\Engine\Factory\Queries;
 
 use Cadfael\Engine\Exception\UnknownCharacterSet;
+use Cadfael\Engine\Exception\UnknownCollation;
 use Cadfael\NullLoggerDefault;
 use Psr\Log\LoggerAwareTrait;
 
