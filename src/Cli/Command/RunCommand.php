@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Cadfael\Cli\Command;
 
+use Cadfael\Cli\OrchestratorProcess;
 use Cadfael\Engine\Check\Account\AccountsWithSuperPermission;
 use Cadfael\Engine\Check\Account\LockedAccount;
 use Cadfael\Engine\Check\Account\NotConnecting;
@@ -16,13 +17,13 @@ use Cadfael\Engine\Check\Column\ReservedKeywords;
 use Cadfael\Engine\Check\Column\SaneAutoIncrement;
 use Cadfael\Engine\Check\Column\UUIDStorage;
 use Cadfael\Engine\Check\Database\InnoDbFilePerTable;
+use Cadfael\Engine\Check\Database\RequirePrimaryKey;
 use Cadfael\Engine\Check\Database\StrictSqlMode;
+use Cadfael\Engine\Check\Database\UnsupportedVersion;
 use Cadfael\Engine\Check\Index\IndexPrefix;
 use Cadfael\Engine\Check\Index\LowCardinality;
 use Cadfael\Engine\Check\Query\FunctionsOnIndex;
 use Cadfael\Engine\Check\Query\Inefficient;
-use Cadfael\Engine\Check\Database\UnsupportedVersion;
-use Cadfael\Engine\Check\Database\RequirePrimaryKey;
 use Cadfael\Engine\Check\Table\AutoIncrementCapacity;
 use Cadfael\Engine\Check\Table\EmptyTable;
 use Cadfael\Engine\Check\Table\MustHavePrimaryKey;
@@ -31,21 +32,23 @@ use Cadfael\Engine\Check\Table\RedundantIndexes;
 use Cadfael\Engine\Check\Table\SaneInnoDbPrimaryKey;
 use Cadfael\Engine\Check\Table\UnusedIndexes;
 use Cadfael\Engine\Check\Table\UnusedTable;
+use Cadfael\Engine\Exception\MissingInformationSchemaRecord;
+use Cadfael\Engine\Exception\MissingPermissions;
 use Cadfael\Engine\Factory;
 use Cadfael\Engine\Orchestrator;
 use Cadfael\Engine\Report;
+use Doctrine\DBAL\DBALException;
 use Doctrine\DBAL\Driver\Exception;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
-use Cadfael\Engine\Exception\MissingPermissions;
-use Doctrine\DBAL\DBALException;
-use Cadfael\Engine\Exception\MissingInformationSchemaRecord;
 
 class RunCommand extends AbstractDatabaseCommand
 {
+    use OrchestratorProcess;
+
     // the name of the command (the part after "bin/console")
     protected static $defaultName = 'run';
 
@@ -164,7 +167,7 @@ class RunCommand extends AbstractDatabaseCommand
 
     /**
      * @param InputInterface $input
-     * @param array<string> $schemaNames
+     * @param array<string> $schema_names
      * @param Factory $factory
      * @param OutputInterface $output
      * @throws MissingPermissions
@@ -174,9 +177,9 @@ class RunCommand extends AbstractDatabaseCommand
      * @throws \Exception
      */
     protected function runChecksAgainstSchema(
-        InputInterface $input,
-        array $schemaNames,
-        Factory $factory,
+        InputInterface  $input,
+        array           $schema_names,
+        Factory         $factory,
         OutputInterface $output
     ): void {
         // Some checks can only run with specific permissions. This lets the user know upfront which permissions are
@@ -185,7 +188,7 @@ class RunCommand extends AbstractDatabaseCommand
 
         $this->formatter->eol();
         $load_performance_schema = $input->getOption('performance_schema');
-        $database = $factory->buildDatabase($factory->getConnection(), $schemaNames, $load_performance_schema);
+        $database = $factory->buildDatabase($factory->getConnection(), $schema_names, $load_performance_schema);
 
         // Provide basic database information
         $uptime = (int)$database->getStatus()['Uptime'];
@@ -274,39 +277,7 @@ class RunCommand extends AbstractDatabaseCommand
         $orchestrator->addEntities(...$database->getAccounts());
 
         foreach ($database->getSchemas() as $schema) {
-            $tables = $schema->getTables();
-            $this->formatter->eol();
-            $this->formatter
-                ->write("Attempting to scan schema <info>" . $schema->getName() . "</info>")
-                ->eol();
-            $this->formatter->write('<info>Tables Found:</info> ' . count($tables))->eol();
-
-            if (!count($tables)) {
-                $this->formatter->write('No tables found in this schema.')->eol();
-                return;
-            }
-
-            $orchestrator->addEntities($schema);
-            $orchestrator->addEntities(...$tables);
-            $orchestrator->addEntities(...$schema->getQueries());
-            foreach ($tables as $entity) {
-                $orchestrator->addEntities(...$entity->getColumns());
-                $orchestrator->addEntities(...$entity->getIndexes());
-            }
-
-            $this->reports = $orchestrator->run();
-
-            $severity = (int)$input->getOption('severity') ?? Report::STATUS_INFO;
-            // We match the failed status to the severity (unless it's OK, then bump it up to INFO at least)
-            $this->failedStatusReport = $severity > Report::STATUS_OK ? $severity : Report::STATUS_INFO;
-
-            $this->formatter
-                ->eol()
-                ->renderReports(
-                    $severity,
-                    $this->reports
-                )
-                ->eol();
+            $this->runOrchestratorAgainstSchema($schema, $orchestrator, $input);
         }
     }
 

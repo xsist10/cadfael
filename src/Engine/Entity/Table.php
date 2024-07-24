@@ -78,6 +78,15 @@ class Table implements Entity
     }
 
     /**
+     * @param Column $column
+     */
+    public function addColumn(Column $column): void
+    {
+        $column->setTable($this);
+        $this->columns[] = $column;
+    }
+
+    /**
      * @codeCoverageIgnore
      * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
      *
@@ -94,6 +103,24 @@ class Table implements Entity
         }
 
         throw new InvalidColumn("Invalid column ($name) specified for table " . $this);
+    }
+
+    /**
+     * @codeCoverageIgnore
+     * Skip coverage as this is a basic accessor. Remove if the accessor behaviour becomes more complicated.
+     *
+     * @param $name
+     * @return bool
+     */
+    public function hasColumn($name): bool
+    {
+        foreach ($this->getColumns() as $column) {
+            if ($column->getName() === $name) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

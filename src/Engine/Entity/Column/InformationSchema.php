@@ -67,10 +67,10 @@ class InformationSchema
     public string $column_type;
     public string $data_type;
     public string $column_key = '';
-    public int $character_maximum_length = 0;
-    public int $character_octet_length = 0;
-    public int $numeric_precision;
-    public int $numeric_scale;
+    public ?int $character_maximum_length;
+    public ?int $character_octet_length;
+    public ?int $numeric_precision;
+    public ?int $numeric_scale;
     public ?int $datetime_precision;
     public ?string $character_set_name;
     public ?string $collation_name;
@@ -96,10 +96,10 @@ class InformationSchema
         $informationSchema->column_type = $schema['COLUMN_TYPE'];
         $informationSchema->data_type = $schema['DATA_TYPE'];
         $informationSchema->column_key = $schema['COLUMN_KEY'];
-        $informationSchema->character_maximum_length  = (int)$schema['CHARACTER_MAXIMUM_LENGTH'];
-        $informationSchema->character_octet_length  = (int)$schema['CHARACTER_OCTET_LENGTH'];
-        $informationSchema->numeric_precision = (int)$schema['NUMERIC_PRECISION'];
-        $informationSchema->numeric_scale = (int)$schema['NUMERIC_SCALE'];
+        $informationSchema->character_maximum_length  = (int)$schema['CHARACTER_MAXIMUM_LENGTH'] ?? null;
+        $informationSchema->character_octet_length  = (int)$schema['CHARACTER_OCTET_LENGTH'] ?? null;
+        $informationSchema->numeric_precision = (int)$schema['NUMERIC_PRECISION'] ?? null;
+        $informationSchema->numeric_scale = (int)$schema['NUMERIC_SCALE'] ?? null;
         // DATETIME_PRECISION was added in MySQL 5.6
         if (isset($schema['DATETIME_PRECISION'])) {
             $informationSchema->datetime_precision = (int)$schema['DATETIME_PRECISION'];
@@ -113,6 +113,12 @@ class InformationSchema
         return $informationSchema;
     }
 
+    /**
+     * @todo Remove this and replace with above function
+     *
+     * @param $statement
+     * @return InformationSchema
+     */
     public static function createFromStatement($statement): InformationSchema
     {
         $informationSchema = new InformationSchema();
@@ -122,11 +128,11 @@ class InformationSchema
         $informationSchema->column_type = $statement['column_type'];
         $informationSchema->data_type = $statement['data_type'];
         $informationSchema->column_key = $statement['column_key'];
-        $informationSchema->character_maximum_length  = (int)$statement['character_maximum_length'];
-        $informationSchema->character_octet_length  = (int)$statement['character_octet_length'];
-        $informationSchema->numeric_precision = (int)$statement['numeric_precision'];
-        $informationSchema->numeric_scale = (int)$statement['numeric_scale'];
-        $informationSchema->datetime_precision = (int)$statement['datetime_precision'];
+        $informationSchema->character_maximum_length  = $statement['character_maximum_length'];
+        $informationSchema->character_octet_length  = $statement['character_octet_length'];
+        $informationSchema->numeric_precision = $statement['numeric_precision'];
+        $informationSchema->numeric_scale = $statement['numeric_scale'];
+        $informationSchema->datetime_precision = $statement['datetime_precision'];
         $informationSchema->extra  = $statement['extra'];
         $informationSchema->column_comment = $statement['comment'];
         $informationSchema->character_set_name = $statement['character_set_name'];

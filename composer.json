@@ -18,7 +18,8 @@
         "greenlion/php-sql-parser": "dev-master",
         "ext-json": "*",
         "kodus/sql-split": "^2.0",
-        "league/flysystem": "^3.0"
+        "league/flysystem": "^3.0",
+        "sqlftw/sqlftw": "^0.1.15"
     },
     "require-dev": {
         "squizlabs/php_codesniffer": "^3.5",

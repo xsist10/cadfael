@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace Cadfael\Cli\Command;
 
+use Cadfael\Builder\Builder;
 use Cadfael\Cli\Formattable;
 use Cadfael\Cli\Formatter\Cli;
 use Cadfael\Cli\Formatter\Json;
+use Cadfael\Cli\OrchestratorProcess;
 use Cadfael\Engine\Check\Column\CorrectUtf8Encoding;
 use Cadfael\Engine\Check\Column\ReservedKeywords;
 use Cadfael\Engine\Check\Column\SaneAutoIncrement;
 use Cadfael\Engine\Check\Column\UUIDStorage;
-use Cadfael\Engine\Check\Index\IndexPrefix;
 use Cadfael\Engine\Check\Database\RequirePrimaryKey;
+use Cadfael\Engine\Check\Index\IndexPrefix;
 use Cadfael\Engine\Check\Table\AutoIncrementCapacity;
 use Cadfael\Engine\Check\Table\EmptyTable;
 use Cadfael\Engine\Check\Table\MustHavePrimaryKey;
@@ -21,9 +23,9 @@ use Cadfael\Engine\Check\Table\RedundantIndexes;
 use Cadfael\Engine\Check\Table\SaneInnoDbPrimaryKey;
 use Cadfael\Engine\Entity\Schema;
 use Cadfael\Engine\Exception\InvalidColumn;
-use Cadfael\Engine\Factory\Queries;
 use Cadfael\Engine\Orchestrator;
 use Cadfael\Engine\Report;
+use Exception;
 use League\Flysystem\Filesystem;
 use League\Flysystem\FilesystemException;
 use League\Flysystem\Local\LocalFilesystemAdapter;
@@ -35,10 +37,11 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Throwable;
 
 class RunStatementCommand extends Command
 {
-    use Formattable;
+    use Formattable, OrchestratorProcess;
     // the name of the command (the part after "bin/console")
     protected static $defaultName = 'run-statement';
 
@@ -113,40 +116,11 @@ class RunStatementCommand extends Command
             new UUIDStorage(),
         );
 
+        $this->formatter
+            ->write("<comment>!!! This is an experimental feature !!!</comment>")->eol();
+
         foreach ($schemas as $schema) {
-            $tables = $schema->getTables();
-            $this->formatter->eol();
-            $this->formatter
-                ->write("<comment>!!! This is an experimental feature !!!</comment>")->eol()
-                ->write("Attempting to scan schema <info>" . $schema->getName() . "</info>")->eol();
-            $this->formatter->write('<info>Tables Found:</info> ' . count($tables))->eol();
-
-            if (!count($tables)) {
-                $this->formatter->write('No tables found in this schema.')->eol();
-                return;
-            }
-
-            $orchestrator->addEntities($schema);
-            $orchestrator->addEntities(...$tables);
-            $orchestrator->addEntities(...$schema->getQueries());
-            foreach ($tables as $entity) {
-                $orchestrator->addEntities(...$entity->getColumns());
-                $orchestrator->addEntities(...$entity->getIndexes());
-            }
-
-            $this->reports = $orchestrator->run();
-
-            $severity = (int)$input->getOption('severity') ?? Report::STATUS_INFO;
-            // We match the failed status to the severity (unless it's OK, then bump it up to INFO at least)
-            $this->failedStatusReport = $severity > Report::STATUS_OK ? $severity : Report::STATUS_INFO;
-
-            $this->formatter
-                ->eol()
-                ->renderReports(
-                    $severity,
-                    $this->reports
-                )
-                ->eol();
+            $this->runOrchestratorAgainstSchema($schema, $orchestrator, $input);
         }
     }
 
@@ -177,16 +151,16 @@ class RunStatementCommand extends Command
             return Command::FAILURE;
         }
 
-        $queries = new Queries("8.1.0", $content);
+        $builder = new Builder('8.0');
         $log = new Logger('name');
         if ($input->getOption('verbose')) {
             $log->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
         }
-        $queries->setLogger($log);
+        $builder->setLogger($log);
 
         try {
-            $schemas = $queries->processIntoSchemas();
-        } catch (InvalidColumn $exception) {
+            $schemas = $builder->processIntoSchemas($content);
+        } catch (Throwable $exception) {
             $this->formatter->write('<error>' . $exception->getMessage() . '</error>')->eol()->eol();
             return Command::FAILURE;
         }
