@@ -9,9 +9,13 @@ use Cadfael\Builder\Statement\Account;
 use Cadfael\Builder\Statement\Table;
 use Cadfael\Engine\Entity\Database;
 use Cadfael\Engine\Entity\Schema;
+use Cadfael\Engine\Exception\ExistingColumn;
 use Cadfael\Engine\Exception\InvalidColumn;
+use Cadfael\Engine\Exception\InvalidIndexType;
+use Cadfael\Engine\Exception\InvalidTable;
 use Cadfael\Engine\Exception\QueryParseException;
 use Cadfael\Engine\Exception\UnknownCharacterSet;
+use Cadfael\Engine\Exception\UnknownCollation;
 use Cadfael\Engine\Exception\UnknownColumnType;
 use Cadfael\NullLoggerDefault;
 use Psr\Log\LoggerAwareTrait;
@@ -32,6 +36,7 @@ use SqlFtw\Sql\Dml\Utility\{DescribeTableCommand, UseCommand};
 use SqlFtw\Sql\Expression\{ObjectIdentifier, QualifiedName, SimpleName};
 use SqlFtw\Sql\InvalidDefinitionException;
 use SqlFtw\Sql\Statement;
+use Throwable;
 
 class Builder
 {
@@ -87,7 +92,7 @@ class Builder
      * @throws QueryParseException
      * @throws UnknownCharacterSet
      * @throws UnknownColumnType
-     * @throws \Throwable
+     * @throws Throwable
      */
     public function processIntoSchemas(string $statements): array
     {
@@ -173,13 +178,17 @@ class Builder
     /**
      * @param Statement $statement
      * @return void
+     * @throws ExistingColumn
      * @throws InvalidColumn
      * @throws InvalidDefinitionException
+     * @throws InvalidIndexType
+     * @throws InvalidTable
      * @throws QueryParseException
      * @throws UnknownCharacterSet
+     * @throws UnknownCollation
      * @throws UnknownColumnType
-     */
-    protected function processStatement(Statement $statement)
+ */
+    protected function processStatement(Statement $statement): void
     {
         $statement_type = get_class($statement);
 

@@ -53,6 +53,7 @@ class InefficientTest extends BaseTest
             'QUERY_SAMPLE_SEEN' => '2023-08-26 09:18:15.533400',
             'QUERY_SAMPLE_TIMER_WAIT' => '58424777000',
         ];
+        $schema->addTable($this->createTable([ "TABLE_NAME" => "table1" ]));
 
         $index_query = $this->createQuery("SELECT * FROM table1", $schema);
         $index_query->setEventsStatementsSummary(EventsStatementsSummary::createFromPerformanceSchema($template));

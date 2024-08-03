@@ -6,31 +6,113 @@ namespace Cadfael\Engine\Entity;
 
 use Cadfael\Engine\Entity;
 use Cadfael\Engine\Entity\Query\EventsStatementsSummary;
-use Cadfael\Engine\Exception\InvalidSchema;
 use Cadfael\Engine\Exception\InvalidTable;
-use Cadfael\Engine\Exception\QueryParseException;
-use PHPSQLParser\PHPSQLParser;
+use Cadfael\Engine\Exception\MySQL\UnknownVersion;
+use SqlFtw\Parser\Parser;
+use SqlFtw\Platform\ClientSideExtension;
+use SqlFtw\Platform\Platform;
+use SqlFtw\Session\Session;
+use SqlFtw\Sql\Command;
+use SqlFtw\Sql\Statement;
 
 class Query implements Entity
 {
     protected Schema $schema;
     protected string $digest;
     protected EventsStatementsSummary $eventsStatementsSummary;
-    protected PHPSQLParser $query_parser;
     /**
-     * @var array Table
+     * @var array<Table>
      */
     protected array $tables = [];
+    protected Statement $command;
 
+    /**
+     * @throws InvalidTable
+     * @throws UnknownVersion
+     */
     public function __construct(string $digest, Schema $schema)
     {
         $this->digest = $digest;
         $this->schema = $schema;
 
-        // Quick hack because performance schema DIGEST and PHPSQLParser don't agree on some things
-        $query = str_replace('` . `', '`.`', $digest);
-        $this->query_parser = new PHPSQLParser($query);
+        $platform = Platform::get(Platform::MYSQL, $this->schema->getDatabase()->getVersion());
+        $session = new Session(
+            $platform,
+            // We need to support these as the digest come with question mark placeholders
+            ClientSideExtension::ALLOW_QUESTION_MARK_PLACEHOLDERS_OUTSIDE_PREPARED_STATEMENTS
+        );
+
+        // TODO: Move the parser out of Query and just have it accept an injected Command
+        $parser = new Parser($session);
+
+        // Returns a Generator
+        $commands = $parser->parse($digest);
+        // Grab the first one. By default, digest are only a single query
+        list($command, $token_list) = $commands->current();
+        $this->command = $command;
+
         $this->linkTablesToQuery();
+    }
+
+    public function findParentRecursively($fragment, array $classes_to_find)
+    {
+        // We need to deal with these as iterable objects we can just walk through. However, most of this is hidden
+        // behind private/protected properties.
+
+        $results = [];
+        foreach ((array)$fragment as $sub_fragment) {
+            // If we've reached scalars and nulls, lets give up
+            if (is_null($sub_fragment) or !is_object($sub_fragment)) {
+                continue;
+            }
+
+            if (in_array(get_class($sub_fragment), $classes_to_find)) {
+                $results[] = $fragment;
+            }
+
+            $results = array_merge($results, $this->findParentRecursively($sub_fragment, $classes_to_find));
+        }
+
+        return $results;
+    }
+
+    public function findObjectsRecursively($fragment, array $classes_to_find)
+    {
+        $results = [];
+        // We might be dealing with a simple array. Iterate!
+        if (is_array($fragment)) {
+            foreach ($fragment as $sub_fragment) {
+                if (is_object($sub_fragment) && in_array(get_class($sub_fragment), $classes_to_find)) {
+                    $results[] = $sub_fragment;
+                }
+                $results = array_merge($results, $this->findObjectsRecursively($sub_fragment, $classes_to_find));
+            }
+
+            return $results;
+        }
+
+        // We need to deal with these as iterable objects we can just walk through. However, most of this is hidden
+        // behind private/protected properties.
+        foreach ((array)$fragment as $sub_fragment) {
+            if (is_null($sub_fragment)) {
+                continue;
+            }
+
+            if (!is_array($sub_fragment) && !is_object($sub_fragment)) {
+                continue;
+            }
+
+            if (is_object($sub_fragment)) {
+                if (in_array(get_class($sub_fragment), $classes_to_find)) {
+                    $results[] = $sub_fragment;
+                }
+            }
+
+            // We continue to examine all internals, even if they match the classes we're looking for
+            $results = array_merge($results, $this->findObjectsRecursively($sub_fragment, $classes_to_find));
+        }
+
+        return $results;
     }
 
     /**
@@ -104,84 +186,25 @@ class Query implements Entity
 
     /**
      * This links table objects that a query affects to the query itself
-     *
-     * @return void
+     * @throws InvalidTable
      */
     private function linkTablesToQuery(): void
     {
-        $tables = $this->getTableNamesInQuery();
+        $tables = $this->findObjectsRecursively(
+            $this->command,
+            ["SqlFtw\Sql\Dml\TableReference\TableReferenceTable"]
+        );
+
         foreach ($tables as $table) {
-            try {
-                if (empty($table['schema'])) {
-                    $this->tables[$table['alias']] = $this->schema
-                        ->getTable($table['name']);
-                } else {
-                    $this->tables[$table['alias']] = $this->schema
-                        ->getDatabase()->getSchema($table['schema'])->getTable($table['name']);
-                }
-            } catch (InvalidTable|InvalidSchema $exception) {
-                // It's possible we'll be dealing with a temporary table here.
+            // TODO: We may need to deal with the schema in the future. However we need to refactor much of the concepts
+            // in this tool to the database level, not the schema level.
+            $table_name = $table->getTable()->getName();
+            $alias = $table->getAlias() ?? $table_name;
+            if (!$this->schema->hasTable($table_name)) {
+                throw new InvalidTable("$table_name is not a table in schema " . $this->schema->getName() . ".");
             }
+            $this->tables[$alias] = $this->schema->getTable($table_name);
         }
-    }
-
-    /**
-     * Return all the tables that are used in an expression
-     * @param $fragment
-     * @return array
-     * @throws QueryParseException
-     */
-    public function findTablesInExpression($fragment): array
-    {
-        if (isset($fragment['expr_type'])) {
-            if ($fragment['expr_type'] === 'table') {
-                // DIGEST should always contain the `schema`.`table`
-                $parts = $fragment['no_quotes']['parts'];
-                $table = [];
-                $table['name'] = array_pop($parts);
-                if (!empty($parts)) {
-                    $table['schema'] = array_pop($parts);
-                }
-                if (!empty($fragment['alias'])) {
-                    $table['alias'] = $fragment['alias']['name'];
-                } else {
-                    $table['alias'] = $table['name'];
-                }
-                return [ $table ];
-            }
-
-            if ($fragment['expr_type'] === 'subquery') {
-                return $this->findTablesInExpression($fragment['sub_tree']);
-            }
-
-            if ($fragment['expr_type'] === 'table_expression') {
-                $tables = [];
-                foreach ($fragment['sub_tree'] as $subtree) {
-                    $tables = array_merge($tables, $this->findTablesInExpression($subtree));
-                }
-
-                return $tables;
-            }
-        } elseif (isset($fragment['FROM'])) {
-            $tables = [];
-            foreach ($fragment['FROM'] as $from) {
-                $tables = array_merge($tables, $this->findTablesInExpression($from));
-            }
-
-            return $tables;
-        }
-
-        // It's possible that we've encountered something we didn't prepare for
-        throw new QueryParseException("Uncertain on how to parse this query.");
-    }
-
-    /**
-     * Return all the tables that are used in this query
-     * @return array
-     */
-    public function getTableNamesInQuery(): array
-    {
-        return array_unique($this->findTablesInExpression($this->query_parser->parsed), SORT_REGULAR);
     }
 
     /**
@@ -189,7 +212,7 @@ class Query implements Entity
      */
     public function getTables(): array
     {
-        return array_values($this->tables);
+        return array_unique(array_values($this->tables));
     }
 
     public function getTableByAlias($alias): Table
@@ -197,110 +220,67 @@ class Query implements Entity
         return $this->tables[$alias];
     }
 
-    /**
-     * @return PHPSQLParser
-     */
-    public function getQueryParser(): PHPSQLParser
-    {
-        return $this->query_parser;
-    }
-
-    protected function extractColumn($tree): array
-    {
-        // Skip any ? (placeholders) as they are literals
-        if ($tree === '?') {
-            return [];
-        }
-
-        $columns = [];
-        if (is_array($tree)) {
-            foreach ($tree as $node) {
-                $columns += $this->extractColumn($node);
-            }
-        }
-        if (!empty($tree['sub_tree'])) {
-            foreach ($tree['sub_tree'] as $sub_tree) {
-                $columns += $this->extractColumn($sub_tree);
-            }
-        }
-        if (!empty($tree['expr_type']) && $tree['expr_type'] === 'colref') {
-            $columns[$tree['base_expr']] = $tree['no_quotes']['parts'];
-        }
-
-        return $columns;
-    }
-
-    /**
-     * This function searches through a parsed WHERE statement fragment and returns a list of columns (table alias and
-     * column name pair) that have been modified by a function expression
-     *
-     * @param mixed $tree Parsed statement fragment from the WHERE statement
-     * @return array tuples of table alias and column name
-     */
-    protected function fetchColumnsModifiedByFunctionsRecursively(mixed $tree): array
-    {
-        $functions = [];
-
-        // Deal with sub-statements
-        if (!empty($tree['sub_tree'])) {
-            foreach ($tree['sub_tree'] as $sub_tree) {
-                $functions += $this->fetchColumnsModifiedByFunctionsRecursively($sub_tree);
-            }
-        }
-        // We found a function! Extract the column involved
-        if (!empty($tree['expr_type']) && $tree['expr_type'] === 'function') {
-            $functions += $this->extractColumn($tree['sub_tree']);
-        }
-
-        // We have multiple parts of the statement. Examine each.
-        if (is_array($tree)) {
-            foreach ($tree as $node) {
-                $functions += $this->fetchColumnsModifiedByFunctionsRecursively($node);
-            }
-        }
-
-        return $functions;
-    }
-
     public function fetchColumnsModifiedByFunctions(): array
     {
-        // Query contains no where statement
-        if (empty($this->getQueryParser()->parsed['WHERE'])) {
-            return [];
-        }
-
         // Query contains no tables
         if (!count($this->getTables())) {
             return [];
         }
 
-        $query = $this;
-        // Remove any empty entries
-        return array_filter(
-            // Convert the text labels of the table and columns into objects
-            array_map(
-                function ($column) use ($query) {
-                    if (count($column) >= 2) {
-                        $table = $query->getTableByAlias(array_shift($column));
-                    } else {
-                        $table = $query->getTables()[0];
-                    }
-                    $first_entry = array_shift($column);
-                    if ($first_entry === '?') {
-                        return [];
-                    }
-
-                    return [
-                        "table" => $table,
-                        "column" => $table->getColumn($first_entry)
-                    ];
-                },
-                array_values(
-                    $this->fetchColumnsModifiedByFunctionsRecursively(
-                        $this->getQueryParser()->parsed['WHERE']
-                    )
-                )
-            )
+        $where_parts = $this->findObjectsRecursively(
+            $this->command,
+            ["SqlFtw\Sql\Expression\ComparisonOperator"]
         );
+
+        // Query contains no where statement
+        if (!count($where_parts)) {
+            return [];
+        }
+
+        $modified_columns = [];
+        foreach ($where_parts as $part) {
+            // Find all places where there is a function call on a column
+            $functions = $this->findObjectsRecursively($part, ['SqlFtw\Sql\Expression\FunctionCall']);
+            foreach ($functions as $function) {
+                $columns = $this->findObjectsRecursively(
+                    $function->getArguments(),
+                    ['SqlFtw\Sql\Expression\QualifiedName']
+                );
+                foreach ($columns as $column) {
+                    // In the context here, the getSchema() is the table name and the getName() is the column name
+                    $table = $this->getTableByAlias($column->getSchema());
+                    $modified_columns[] = $table->getColumn($column->getName());
+                }
+
+                $columns = $this->findObjectsRecursively(
+                    $function->getArguments(),
+                    ['SqlFtw\Sql\Expression\SimpleName']
+                );
+                foreach ($columns as $column) {
+                    // If we have no schema, then we need to assume we only have one table in the query
+                    // TODO: We may need to account for the fact that one table in a query is unaliased
+                    $table = $this->getTables()[0];
+                    $modified_columns[] = $table->getColumn($column->getName());
+                }
+            }
+
+            // Find all places where there are interval operators. This requires finding an object but then returning
+            // the parent object for examination
+            $parents = $this->findParentRecursively($part, ['SqlFtw\Sql\Expression\TimeIntervalLiteral']);
+            foreach ($parents as $parent) {
+                // Find the column involved (we might just be able to look for the left part of the equation
+                $columns = $this->findObjectsRecursively(
+                    $parent,
+                    ['SqlFtw\Sql\Expression\QualifiedName']
+                );
+                foreach ($columns as $column) {
+                    // In the context here, the getSchema() is the table name and the getName() is the column name
+                    $table = $this->getTableByAlias($column->getSchema());
+                    $modified_columns[] = $table->getColumn($column->getName());
+                }
+            }
+        }
+
+        return array_unique($modified_columns);
     }
 }

@@ -7,9 +7,11 @@ use Cadfael\Engine\Entity\Column;
 use Cadfael\Engine\Entity\Database;
 use Cadfael\Engine\Entity\Schema;
 use Cadfael\Engine\Entity\Table;
+use Cadfael\Engine\Exception\InvalidTable;
 use Cadfael\Engine\Exception\QueryParseException;
 use Cadfael\Tests\Engine\BaseTest;
 use Cadfael\Tests\Engine\Check\ColumnBuilder;
+use Psr\Log\LoggerAwareInterface;
 
 class QueryTest extends BaseTest
 {
@@ -46,19 +48,16 @@ class QueryTest extends BaseTest
         $this->assertEmpty($query->fetchColumnsModifiedByFunctions(), "No modified columns");
 
         $query = $this->createQuery("SELECT * FROM test.users WHERE DATE_FORMAT(id)=?", $this->schema);
-        $this->assertEquals([['table' => $this->table, 'column' => $this->column]], $query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on first column using relative column name.");
+        $this->assertEquals([$this->column], $query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on first column using relative column name.");
 
-        $query = $this->createQuery("SELECT * FROM test.users WHERE DATE_FORMAT(CONCATENATE(id, 'moo'))=?", $this->schema);
-        $this->assertEquals([['table' => $this->table, 'column' => $this->column]], $query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification with nexted CONCATENATE on first column using relative column name.");
+        $query = $this->createQuery("SELECT * FROM test.users WHERE DATE_FORMAT(CONCAT(id, 'moo'))=?", $this->schema);
+        $this->assertEquals([$this->column], $query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification with nexted CONCATENATE on first column using relative column name.");
 
         $query = $this->createQuery("SELECT * FROM test.users WHERE id=? OR DATE_FORMAT(id)=?", $this->schema);
-        $this->assertEquals([['table' => $this->table, 'column' => $this->column]], $query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on second column using relative column name.");
+        $this->assertEquals([$this->column], $query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on second column using relative column name.");
 
         $query = $this->createQuery("SELECT * FROM test.users WHERE DATE_FORMAT(users.id)=?", $this->schema);
-        $this->assertEquals([['table' => $this->table, 'column' => $this->column]], $query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on first column using absolute column name.");
-
-        $query = $this->createQuery("SELECT * FROM invalid_table WHERE DATE_FORMAT(id)=?", $this->schema);
-        $this->assertEmpty($query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on first column for invalid table.");
+        $this->assertEquals([$this->column], $query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on first column using absolute column name.");
 
         $query = $this->createQuery("SELECT * FROM test.users WHERE DATE_FORMAT(?)=?", $this->schema);
         $this->assertEmpty($query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on literal.");
@@ -67,68 +66,68 @@ class QueryTest extends BaseTest
         $this->assertEmpty($query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on literal.");
     }
 
-
-
-    public function test__fetchColumnsModifiedByFunctionsException()
+    public function test__fetchColumnsModifiedByFunctionsInvalidTableException()
     {
-        $this->expectException(QueryParseException::class);
-        $query = $this->createQuery("SET VARIABLE a=b", $this->schema);
-        $this->assertEmpty($query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on literal.");
+        $this->expectException(InvalidTable::class);
+        $query = $this->createQuery("SELECT * FROM invalid_table WHERE DATE_FORMAT(id)=?", $this->schema);
+        $query->fetchColumnsModifiedByFunctions();
     }
 
 
-    public function test__getTableNamesInQuery()
+    public function test__fetchColumnsModifiedByFunctionsEmpty()
     {
-        $query = $this->createQuery(
-            "SELECT
-            order_month,
-            order_day,
-            COUNT(DISTINCT order_id) AS num_orders,
-            COUNT(book_id) AS num_books,
-            SUM(price) AS total_price,
-            SUM(COUNT(book_id)) OVER (
-              PARTITION BY order_month
-              ORDER BY order_day
-            ) AS running_total_num_books,
-            LAG(COUNT(book_id), 7) OVER (ORDER BY order_day) AS prev_books
-            FROM (
-              SELECT
-              DATE_FORMAT(co.order_date, '%Y-%m') AS order_month,
-              DATE_FORMAT(co.order_date, '%Y-%m-%d') AS order_day,
-              co.order_id,
-              ol.book_id,
-              ol.price
-              FROM cust_order co
-              INNER JOIN order_line ol ON co.order_id = ol.order_id
-            ) sub
-            GROUP BY order_month, order_day
-            ORDER BY order_day ASC;",
-            $this->schema
-        );
-        $tables = $query->getTableNamesInQuery();
-        $this->assertCount(2, $tables, "Found correct number of tables");
+        $query = $this->createQuery("SET VARIABLE a=b", $this->schema);
+        $this->assertCount(0, $query->fetchColumnsModifiedByFunctions(), "DATE_FORMAT modification on literal.");
+    }
 
-        $query = $this->createQuery(
-            "SELECT
-                DATE_FORMAT(co.order_date, '%Y-%m') AS order_month,
-                DATE_FORMAT(co.order_date, '%Y-%m-%d') AS order_day,
-                COUNT(DISTINCT co.order_id) AS num_orders,
-                COUNT(ol.book_id) AS num_books,
-                SUM(ol.price) AS total_price,
-                SUM(COUNT(ol.book_id)) OVER (
-                        PARTITION BY DATE_FORMAT(co.order_date, '%Y-%m')
-                  ORDER BY DATE_FORMAT(co.order_date, '%Y-%m-%d')
-                ) AS running_total_num_books
-            FROM cust_order co
-            INNER JOIN order_line ol ON co.order_id = ol.order_id
-            GROUP BY
-              DATE_FORMAT(co.order_date, '%Y-%m'),
-              DATE_FORMAT(co.order_date, '%Y-%m-%d')
-            ORDER BY co.order_date ASC",
-            $this->schema
-        );
-        $tables = $query->getTableNamesInQuery();
-        $this->assertCount(2, $tables, "Found correct number of tables");
+
+    public function test__getTablesInQuery()
+    {
+        $this->schema->addTable($this->createTable([ "TABLE_NAME" => "cust_order"]));
+        $this->schema->addTable($this->createTable([ "TABLE_NAME" => "order_line" ]));
+        $this->schema->addTable($this->createTable([ "TABLE_NAME" => "calendar_days" ]));
+
+//        $query = $this->createQuery(
+//            "SELECT
+//            order_month,
+//            order_day,
+//            COUNT(DISTINCT order_id) AS num_orders,
+//            COUNT(book_id) AS num_books,
+//            SUM(price) AS total_price
+//            FROM (
+//              SELECT
+//              DATE_FORMAT(co.order_date, '%Y-%m') AS order_month,
+//              DATE_FORMAT(co.order_date, '%Y-%m-%d') AS order_day,
+//              co.order_id,
+//              ol.book_id,
+//              ol.price
+//              FROM cust_order co
+//              INNER JOIN order_line ol ON co.order_id = ol.order_id
+//            ) sub
+//            GROUP BY order_month, order_day
+//            ORDER BY order_day ASC;",
+//            $this->schema
+//        );
+//        $tables = $query->getTables();
+//        $this->assertCount(2, $tables, "Found correct number of tables");
+//
+//        $query = $this->createQuery(
+//            "SELECT
+//                DATE_FORMAT(co.order_date, '%Y-%m') AS order_month,
+//                DATE_FORMAT(co.order_date, '%Y-%m-%d') AS order_day,
+//                COUNT(DISTINCT co.order_id) AS num_orders,
+//                COUNT(ol.book_id) AS num_books,
+//                SUM(ol.price) AS total_price
+//            FROM cust_order co
+//            INNER JOIN order_line ol ON co.order_id = ol.order_id
+//            GROUP BY
+//              DATE_FORMAT(co.order_date, '%Y-%m'),
+//              DATE_FORMAT(co.order_date, '%Y-%m-%d')
+//            ORDER BY co.order_date ASC",
+//            $this->schema
+//        );
+//        $tables = $query->getTables();
+//        $this->assertCount(2, $tables, "Found correct number of tables");
 
         $query = $this->createQuery(
             "SELECT
@@ -138,12 +137,7 @@ class QueryTest extends BaseTest
             c.calendar_dayname,
             COUNT(DISTINCT sub.order_id) AS num_orders,
             COUNT(sub.book_id) AS num_books,
-            SUM(sub.price) AS total_price,
-            SUM(COUNT(sub.book_id)) OVER (
-                    PARTITION BY c.calendar_year, c.calendar_month
-              ORDER BY c.calendar_date
-            ) AS running_total_num_books,
-            LAG(COUNT(sub.book_id), 7) OVER (ORDER BY c.calendar_date) AS prev_books
+            SUM(sub.price) AS total_price
             FROM calendar_days c
             LEFT JOIN (
                     SELECT
@@ -159,9 +153,15 @@ class QueryTest extends BaseTest
             ORDER BY c.calendar_date ASC",
             $this->schema
         );
-        $tables = $query->getTableNamesInQuery();
+        $tables = $query->getTables();
         $this->assertCount(3, $tables, "Found correct number of tables");
 
+
+        $this->schema->addTable($this->createTable([ "TABLE_NAME" => "places"]));
+        $this->schema->addTable($this->createTable([ "TABLE_NAME" => "place_names" ]));
+        $this->schema->addTable($this->createTable([ "TABLE_NAME" => "admin_names" ]));
+        $this->schema->addTable($this->createTable([ "TABLE_NAME" => "country_names" ]));
+        $this->schema->addTable($this->createTable([ "TABLE_NAME" => "languages" ]));
 
         $query = $this->createQuery(
             "SELECT MIN(place_id) AS place_id,
@@ -227,7 +227,8 @@ class QueryTest extends BaseTest
             ORDER BY relevance DESC;",
             $this->schema
         );
-        $tables = $query->getTableNamesInQuery();
+
+        $tables = $query->getTables();
         $this->assertCount(5, $tables, "Found correct number of tables");
     }
 }

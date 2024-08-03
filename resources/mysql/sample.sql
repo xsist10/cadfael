@@ -6,7 +6,15 @@ DROP DATABASE test;
 CREATE DATABASE IF NOT EXISTS test;
 USE test;
 
-DROP TABLE IF EXISTS `test`.`table_with_large_text_index`, `hats`;
+DROP TABLE IF EXISTS `test`.`table_with_date_index`;
+CREATE TABLE `table_with_date_index` (
+   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+   created DATETIME NOT NULL,
+   INDEX idx_created (created),
+   PRIMARY KEY (id)
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS `test`.`table_with_large_text_index`;
 CREATE TABLE `table_with_large_text_index` (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,

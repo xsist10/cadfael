@@ -4,6 +4,9 @@
     <include>
       <directory suffix=".php">src/</directory>
     </include>
+    <exclude>
+      <directory suffix=".php">src/Cli/</directory>
+    </exclude>
     <report>
       <html outputDirectory="build/coverage/html" lowUpperBound="35" highLowerBound="70"/>
       <xml outputDirectory="build/coverage/coverage-xml"/>

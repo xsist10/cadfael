@@ -15,6 +15,7 @@ use Cadfael\Engine\Report;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerAwareInterface;
 use SqlFtw\Parser\InvalidTokenException;
 
 class BuilderTest extends TestCase
@@ -24,13 +25,6 @@ class BuilderTest extends TestCase
     protected function setUp(): void
     {
         $this->builder = new Builder("8.0");
-    }
-    protected function attachLogger(Builder $builder): void
-    {
-        // TODO: Remove later
-        $log = new Logger('debugger');
-        $log->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
-        $builder->setLogger($log);
     }
 
     public function testCreateTableWithoutSchemaHasDefault()
@@ -164,6 +158,36 @@ class BuilderTest extends TestCase
 
         $this->assertCount(1, $schemas, "Ensure only one schema was created.");
         $this->assertEquals('example_db', $schemas[0]->getName(), "Ensure our schema has the correct name.");
+    }
+
+    public function testColumnExtractionCorrectness()
+    {
+        $schemas = $this->builder->processIntoSchemas("
+            CREATE TABLE `test_table` (
+                `id` int(11) NOT NULL AUTO_INCREMENT,
+                `name` VARCHAR(255) NOT NULL,
+                `created` DATETIME(6) NOT NULL,
+                PRIMARY KEY (`id`)
+            );
+        ");
+
+
+        $table = $schemas[0]->getTables()[0];
+        $this->assertCount(3, $table->getColumns(), 'Ensure the correct number of columns were created.');
+        $this->assertEquals('id', $table->getAutoIncrementColumn()->getName(), 'Ensure the ID column is correctly identified as the auto increment column.');
+        $this->assertCount(1, $table->getPrimaryKeys(), 'Ensure we have one primary key for the table.');
+
+        $information_schema = $table->getColumn('id')->information_schema;
+        $this->assertNull($information_schema->character_maximum_length, 'Ensure our int length is correct.');
+        $this->assertNull($information_schema->character_octet_length, 'Ensure our int octet length is correct.');
+        $this->assertEquals(11, $information_schema->numeric_precision, 'Ensure our int numeric precision is correct.');
+
+        $information_schema = $table->getColumn('name')->information_schema;
+        $this->assertEquals(255, $information_schema->character_maximum_length, 'Ensure our varchar length is correct.');
+        $this->assertEquals(1020, $information_schema->character_octet_length, 'Ensure our varchar octet length is correct.');
+
+        $information_schema = $table->getColumn('created')->information_schema;
+        $this->assertEquals(6, $information_schema->datetime_precision, 'Ensure our date time precision is correct.');
     }
 
     public function testPrimaryKeyDefinitionSeparateStatementBackticks()
@@ -457,14 +481,17 @@ class BuilderTest extends TestCase
     {
         $schemas = $this->builder->processIntoSchemas("
             CREATE TABLE example1 (a INT);
-            ALTER TABLE example1 ADD COLUMN b VARCHAR(32);
+            ALTER TABLE example1
+                ADD COLUMN b VARCHAR(32),
+                ADD INDEX idx_b (b);
         ");
 
         $this->assertCount(1, $schemas, "One default schemas should be generated for this.");
         $tables = $schemas[0]->getTables();
         $this->assertCount(1, $tables, "One table should exist int the table.");
         $columns = $tables[0]->getColumns();
-        $this->assertCount(2, $columns, "Two tables should be generated.");
+        $this->assertCount(2, $columns, "Two columns should be generated.");
+        $this->assertCount(1, $tables[0]->getIndexes(), "One index should have been created.");
     }
 
     public function testMultiplePrimaryKeyColumns()

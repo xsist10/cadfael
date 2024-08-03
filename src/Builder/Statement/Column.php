@@ -76,7 +76,6 @@ class Column extends Fragment
             } elseif (Types::isString($type->getBaseType()->getValue())) {
                 $definition['character_maximum_length'] = $size;
                 $definition['character_octet_length'] = min($size * 4, 65535);
-                // TODO: Cannot create a test for this. Explore more later.
             } elseif (Types::isTime($type->getBaseType()->getValue())) {
                 $definition['datetime_precision'] = $size;
             } else {

@@ -22,11 +22,10 @@ class FunctionsOnIndex implements Check
 
         // If you're performing a query where the WHERE statement contains an index column that is first modified
         // by a function, then the index cannot be used.
-        $functions = $entity->fetchColumnsModifiedByFunctions();
-        if (!empty($functions)) {
-            foreach ($functions as $function) {
-                $table = $function['table'];
-                $column = $function['column'];
+        $columns = $entity->fetchColumnsModifiedByFunctions();
+        if (!empty($columns)) {
+            foreach ($columns as $column) {
+                $table = $column->getTable();
 
                 foreach ($table->getIndexes() as $index) {
                     foreach ($index->getColumns() as $indexColumn) {

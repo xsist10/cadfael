@@ -38,23 +38,114 @@ class FunctionsOnIndexTest extends BaseTest
             new Table("comments"),
         );
         $this->database->setSchemas($this->schema);
-        $this->query = $this->createQuery(
+    }
+
+    public function testPass()
+    {
+        $query = $this->createQuery(
+            "
+                SELECT u.*
+                FROM `test` . `users` AS u
+                WHERE u.id = ?",
+            $this->schema
+        );
+
+        $check = new FunctionsOnIndex();
+        $this->assertTrue($check->supports($query));
+
+        $report = $check->run($query);
+        $this->assertEquals(
+            Report::STATUS_OK,
+            $report->getStatus(),
+            "Query should identify modified INDEX column in WHERE statement."
+        );
+    }
+
+    public function testFailWhereFunction()
+    {
+        $query = $this->createQuery(
             "
                 SELECT u.*
                 FROM `test` . `users` AS u
                 JOIN test.posts AS p ON (p.author_id = `u` . `id`)
                 JOIN test.`comments` ON (`comments`.author_id = `u` . `id`)
-                WHERE DATE ( u.`joined` ) = ? AND ( DATE_FORMAT(p.posted, '%Y-%m-%d') > u.joined + INTERVAL 1 DAY)",
-                $this->schema
+                WHERE DATE ( u.`joined` ) = ?",
+            $this->schema
+        );
+
+        $check = new FunctionsOnIndex();
+        $this->assertTrue($check->supports($query));
+
+        $report = $check->run($query);
+        $this->assertEquals(
+            Report::STATUS_WARNING,
+            $report->getStatus(),
+            "Query should identify modified INDEX column in WHERE statement."
         );
     }
 
-    public function test__moo()
+    public function testFailWhereOperator()
     {
-        $check = new FunctionsOnIndex();
-        $this->assertTrue($check->supports($this->query));
+        $query = $this->createQuery(
+            "
+                SELECT u.*
+                FROM `test` . `users` AS u
+                JOIN test.posts AS p ON (p.author_id = `u` . `id`)
+                JOIN test.`comments` ON (`comments`.author_id = `u` . `id`)
+                WHERE DATE_FORMAT(p.posted, '%Y-%m-%d') > u.joined + INTERVAL 1 DAY",
+            $this->schema
+        );
 
-        $report = $check->run($this->query);
+        $check = new FunctionsOnIndex();
+        $this->assertTrue($check->supports($query));
+
+        $report = $check->run($query);
+        $this->assertEquals(
+            Report::STATUS_WARNING,
+            $report->getStatus(),
+            "Query should identify modified INDEX column in WHERE statement."
+        );
+    }
+
+    public function testFailJoinFunction()
+    {
+        $query = $this->createQuery(
+            "
+                SELECT u.*
+                FROM `test` . `users` AS u
+                JOIN test.posts AS p ON (p.author_id = `u` . `id` AND DATE ( u.`joined` ) = ?)
+                JOIN test.`comments` ON (`comments`.author_id = `u` . `id`)
+                WHERE u.id = ?",
+            $this->schema
+        );
+
+        $check = new FunctionsOnIndex();
+        $this->assertTrue($check->supports($query));
+
+        $report = $check->run($query);
+        $this->assertEquals(
+            Report::STATUS_WARNING,
+            $report->getStatus(),
+            "Query should identify modified INDEX column in WHERE statement."
+        );
+    }
+
+    public function testFailJoinOperator()
+    {
+        $query = $this->createQuery(
+            "
+                SELECT u.*
+                FROM `test` . `users` AS u
+                JOIN test.posts AS p ON (p.author_id = `u` . `id` AND DATE_FORMAT(p.posted, '%Y-%m-%d') > u.joined + INTERVAL 1 DAY)
+                JOIN test.`comments` ON (`comments`.author_id = `u` . `id`)
+                WHERE u.id = 10",
+            $this->schema
+        );
+
+        $check = new FunctionsOnIndex();
+        $this->assertTrue($check->supports($query));
+
+        $report = $check->run($query);
         $this->assertEquals(
             Report::STATUS_WARNING,
             $report->getStatus(),

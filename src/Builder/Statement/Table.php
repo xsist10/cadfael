@@ -18,6 +18,7 @@ use Cadfael\Engine\Exception\UnknownCharacterSet;
 use Cadfael\Engine\Exception\UnknownCollation;
 use Cadfael\Engine\Exception\UnknownColumnType;
 use SqlFtw\Sql\Ddl\Table\Alter\Action\AddColumnAction;
+use SqlFtw\Sql\Ddl\Table\Alter\Action\AddIndexAction;
 use SqlFtw\Sql\Ddl\Table\AlterTableCommand;
 use SqlFtw\Sql\Ddl\Table\Column\ColumnDefinition;
 use SqlFtw\Sql\Ddl\Table\CreateTableCommand;
@@ -28,8 +29,16 @@ use SqlFtw\Sql\InvalidDefinitionException;
 class Table extends Fragment
 {
     /**
+     * @param AlterTableCommand $command
+     * @param TableEntity $table
+     * @return TableEntity
      * @throws ExistingColumn
+     * @throws InvalidIndexType
+     * @throws QueryParseException
+     * @throws UnknownCharacterSet
      * @throws UnknownCollation
+     * @throws UnknownColumnType
+     * @throws InvalidColumn
      */
     public static function alterFromCommand(AlterTableCommand $command, TableEntity $table): TableEntity
     {
@@ -48,9 +57,10 @@ class Table extends Fragment
                     $table->addColumn($column);
                     $ordinal++;
                     break;
-//            if ($item instanceof IndexDefinition) {
-//                $table->addIndex(self::generateIndexDefinition($item, $table));
-//            }
+                case $action instanceof AddIndexAction:
+                    $definition = $action->getIndex();
+                    $table->addIndex(self::generateIndexDefinition($definition, $table));
+                    break;
                 default:
                     print_r($action);
                     throw new QueryParseException("Uncertain on how to handle this alter action: " . get_class($action));
@@ -166,7 +176,7 @@ class Table extends Fragment
     /**
      * @param IndexDefinition $item
      * @param TableEntity $table
-     * @return void
+     * @return Index
      * @throws InvalidColumn
      * @throws InvalidIndexType
      */

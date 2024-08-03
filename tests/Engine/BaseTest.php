@@ -11,10 +11,23 @@ use Cadfael\Engine\Entity\Query;
 use Cadfael\Engine\Entity\Schema;
 use Cadfael\Engine\Entity\Table;
 use Cadfael\Engine\Entity\Tablespace;
+use Cadfael\Engine\Exception\InvalidTable;
+use Cadfael\Engine\Exception\MySQL\UnknownVersion;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerAwareInterface;
 
 abstract class BaseTest extends TestCase
 {
+    protected function attachLogger($object): void
+    {
+        // TODO: Remove later
+        $log = new Logger('debugger');
+        $log->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+        $object->setLogger($log);
+    }
+
     protected function createDatabase(array $variables = []): Database
     {
         $base_variables = [
@@ -33,6 +46,10 @@ abstract class BaseTest extends TestCase
         return $schema;
     }
 
+    /**
+     * @throws InvalidTable
+     * @throws UnknownVersion
+     */
     protected function createQuery(string $digest, Schema $schema): Query
     {
         return new Query($digest, $schema);
