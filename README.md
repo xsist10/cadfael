@@ -1,6 +1,7 @@
 # Cadfael
 
 ![Build](https://github.com/xsist10/cadfael/workflows/build/badge.svg?branch=master)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/xsist10/cadfael/badge)](https://scorecard.dev/viewer/?uri=github.com/xsist10/cadfael)
 
 ![Cadfael, a golem in a monk cowl, hunched over a desk examining a the contents of a vial and consulting a book](resources/images/scene.png)
 [Artwork Commissioned and Copyright by Ben Fleuter](https://benfleuter.com)
