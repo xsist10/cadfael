@@ -29,6 +29,7 @@ use Cadfael\NullLoggerDefault;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\InvalidFieldNameException;
 use Exception;
+use Exception\InvalidColumnType;
 use Psr\Log\LoggerAwareTrait;
 
 /**
@@ -124,17 +125,17 @@ class Factory
             $this->log()->info("Collecting all query digests for schema `" . $schema->getName() . "`.");
             $statement = $this->getConnection()->prepare(EventsStatementsSummary::getQuery());
             $statement->bindValue("schema", $schema->getName());
-            $statement->execute();
+            $result = $statement->executeQuery();
         } catch (InvalidFieldNameException $exception) {
             // Older versions of MySQL don't have QUERY_SAMPLE_TEXT. Collect everything
             $this->log()->info("Detected version of MySQL performance_schema.events_statements_summary_by_digest "
                 . "without QUERY_SAMPLE_TEXT column.");
             $statement = $this->getConnection()->prepare(EventsStatementsSummary::getQueryWithoutSampleText());
             $statement->bindValue("schema", $schema->getName());
-            $statement->execute();
+            $result = $statement->executeQuery();
         }
 
-        foreach ($statement->fetchAllAssociative() as $querySummaryByDigest) {
+        foreach ($result->fetchAllAssociative() as $querySummaryByDigest) {
             try {
                 $query = new Query($querySummaryByDigest['DIGEST_TEXT'], $schema);
                 $summary = EventsStatementsSummary::createFromPerformanceSchema($querySummaryByDigest);
@@ -352,6 +353,7 @@ class Factory
      * @param string $table
      * @return bool
      * @throws \Doctrine\DBAL\Exception
+     * @throws \Doctrine\DBAL\Driver\Exception
      */
     public function doesTableExist(Connection $connection, string $schema, string $table): bool
     {
@@ -361,9 +363,9 @@ class Factory
                    . '("information_schema", "sys", "mysql", "performance_schema", :schema)';
             $statement = $connection->prepare($query);
             $statement->bindValue(":schema", $schema);
-            $statement->execute();
+            $result = $statement->executeQuery();
 
-            foreach ($statement->fetchAllAssociative() as $row) {
+            foreach ($result->fetchAllAssociative() as $row) {
                 $key = $row['TABLE_SCHEMA'] . '.' . $row['TABLE_NAME'];
                 $this->table_lookup[strtoupper($key)] = true;
             }
@@ -376,6 +378,7 @@ class Factory
      * @param Connection $connection
      * @return array<Tablespace>
      * @throws \Doctrine\DBAL\Exception
+     * @throws \Doctrine\DBAL\Driver\Exception
      */
     public function getTablespaces(Connection $connection): array
     {
@@ -422,10 +425,9 @@ class Factory
                 $query = "SELECT * FROM information_schema.$table WHERE name LIKE :name_pattern";
                 $statement = $this->connection->prepare($query);
                 $statement->bindValue(":name_pattern", $schema->getName() . "/%");
-                $statement->execute();
+                $result = $statement->executeQuery();
 
-                $rows = $statement->fetchAllAssociative();
-                foreach ($rows as $row) {
+                foreach ($result->fetchAllAssociative() as $row) {
                     $table = explode('/', $row['NAME']);
                     $innodb_tables[$table[1]] = InnoDbTable::createFromInformationSchema(
                         $row
@@ -439,11 +441,14 @@ class Factory
     /**
      * @param Connection $connection
      * @param array $schema_names
+     * @param bool $load_performance_schema
      * @return Database
-     * @throws \Doctrine\DBAL\Exception
+     * @throws \Cadfael\Engine\Exception\InvalidColumnType
      * @throws MissingInformationSchemaRecord
      * @throws MissingPermissions
+     * @throws NonSupportedVersion
      * @throws \Doctrine\DBAL\Driver\Exception
+     * @throws \Doctrine\DBAL\Exception
      */
     public function buildDatabase(Connection $connection, array $schema_names, bool $load_performance_schema): Database
     {
@@ -470,11 +475,10 @@ class Factory
             $query = 'SELECT * FROM information_schema.TABLES WHERE TABLE_SCHEMA=:schema';
             $statement = $this->connection->prepare($query);
             $statement->bindValue("schema", $schema_name);
-            $statement->execute();
+            $result = $statement->executeQuery();
 
-            $rows = $statement->fetchAllAssociative();
             $tables = [];
-            foreach ($rows as $row) {
+            foreach ($result->fetchAllAssociative() as $row) {
                 $table = Table::createFromInformationSchema($row);
                 $tables[$table->getName()] = $table;
             }
@@ -484,11 +488,10 @@ class Factory
             $query = 'SELECT * FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=:schema';
             $statement = $this->connection->prepare($query);
             $statement->bindValue("schema", $schema_name);
-            $statement->execute();
+            $result = $statement->executeQuery();
 
-            $rows = $statement->fetchAllAssociative();
             $columns = [];
-            foreach ($rows as $row) {
+            foreach ($result->fetchAllAssociative() as $row) {
                 $column = Column::createFromInformationSchema($row);
                 $columns[$row['TABLE_NAME']][$row['COLUMN_NAME']] = $column;
             }
@@ -497,12 +500,11 @@ class Factory
             $this->log()->info("Collecting information_schema.STATISTICS.");
             $statement = $this->connection->prepare(Statistics::getQuery());
             $statement->bindValue("schema", $schema_name);
-            $statement->execute();
+            $result = $statement->executeQuery();
 
-            $rows = $statement->fetchAllAssociative();
             $indexes = [];
             $indexUnique = [];
-            foreach ($rows as $row) {
+            foreach ($result->fetchAllAssociative() as $row) {
                 $col = $columns[$row['TABLE_NAME']][$row['COLUMN_NAME']];
                 $col->setCardinality((int)$row['CARDINALITY']);
                 $indexes[$row['TABLE_NAME']][$row['INDEX_NAME']][$row['SEQ_IN_INDEX']] =
@@ -522,10 +524,9 @@ class Factory
                     $this->log()->info("Collecting sys.schema_auto_increment_columns.");
                     $statement = $this->connection->prepare(SchemaAutoIncrementColumn::getQuery());
                     $statement->bindValue("schema", $schema_name);
-                    $statement->execute();
+                    $result = $statement->executeQuery();
 
-                    $rows = $statement->fetchAllAssociative();
-                    foreach ($rows as $row) {
+                    foreach ($result->fetchAllAssociative() as $row) {
                         $autoIncrementColumns[$row['table_name']] = SchemaAutoIncrementColumn::createFromSys($row);
                     }
                 } else {
@@ -536,10 +537,9 @@ class Factory
                     $this->log()->info("Collecting sys.schema_index_statistics.");
                     $statement = $this->connection->prepare(SchemaIndexStatistics::getQuery());
                     $statement->bindValue("schema", $schema_name);
-                    $statement->execute();
+                    $result = $statement->executeQuery();
 
-                    $rows = $statement->fetchAllAssociative();
-                    foreach ($rows as $row) {
+                    foreach ($result->fetchAllAssociative() as $row) {
                         $index_statistics[$row['table_name']][$row['index_name']] =
                             SchemaIndexStatistics::createFromSys($row);
                     }
@@ -564,8 +564,8 @@ class Factory
                     ORDER BY table_name, index_name;
                 ");
                 $statement->bindValue("schema", $schema->getName());
-                $statement->execute();
-                foreach ($statement->fetchAllAssociative() as $row) {
+                $result = $statement->executeQuery();
+                foreach ($result->fetchAllAssociative() as $row) {
                     $size = $row['stat_value'] * $database->getVariables()['innodb_page_size'];
                     $indexSize[$row['table_name']][$row['index_name']] = $size;
                 }
@@ -591,10 +591,9 @@ class Factory
                 $this->log()->info("Collecting sys.schema_redundant_indexes.");
                 $statement = $this->connection->prepare(SchemaRedundantIndex::getQuery());
                 $statement->bindValue("schema", $schema_name);
-                $statement->execute();
+                $result = $statement->executeQuery();
 
-                $rows = $statement->fetchAllAssociative();
-                foreach ($rows as $row) {
+                foreach ($result->fetchAllAssociative() as $row) {
                     $schemaRedundantIndexes[$row['table_name']][] = SchemaRedundantIndex::createFromSys(
                         $table_indexes_objects[$row['table_name']],
                         $row
@@ -615,8 +614,8 @@ class Factory
                     $this->log()->info("Collecting performance_schema.table_io_waits_summary_by_index_usage.");
                     $statement = $this->getConnection()->prepare(UnusedIndex::getQuery());
                     $statement->bindValue("schema", $schema->getName());
-                    $statement->execute();
-                    foreach ($statement->fetchAllAssociative() as $row) {
+                    $result = $statement->executeQuery();
+                    foreach ($result->fetchAllAssociative() as $row) {
                         $index = $table_indexes_objects[$row['object_name']][$row['index_name']];
                         $unused_indexes[$row['object_name']][] = new UnusedIndex($index);
                     }
@@ -658,10 +657,9 @@ class Factory
                     $this->log()->info("Collecting performance_schema.table_io_waits_summary_by_table.");
                     $statement = $this->connection->prepare(AccessInformation::getQuery());
                     $statement->bindValue("schema", $schema->getName());
-                    $statement->execute();
+                    $result = $statement->executeQuery();
 
-                    $access_requests = $statement->fetchAllAssociative();
-                    foreach ($access_requests as $access_request) {
+                    foreach ($result->fetchAllAssociative() as $access_request) {
                         $table_access_information[$access_request['OBJECT_NAME']]
                             = AccessInformation::createFromIOSummary($access_request);
                     }
