@@ -38,6 +38,11 @@ class CreateColumn extends Fragment
         $extras = [];
         // TODO: Add support for privileges
         // TODO: Add support for generation_expression
+        // There are some data types that are not supported, like json. This is a potential quick-hack fix.
+        if (is_null($data_type)) {
+            $data_type = $type;
+        }
+
         $definition = [
             'ordinal_position' => $ordinal,
             'is_nullable' => $type['nullable'],
