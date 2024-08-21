@@ -196,7 +196,10 @@ class Table extends Fragment
             case 'UNIQUE INDEX':
                 foreach ($item->getParts() as $part) {
                     $column = $table->getColumn($part->getExpression());
-                    $column->information_schema->column_key = 'UNI';
+                    // This column might already be defined as a PRIMARY KEY. Don't overwrite with UNIQUE
+                    if ($column->information_schema->column_key != 'PRI') {
+                        $column->information_schema->column_key = 'UNI';
+                    }
                 }
             case 'INDEX':
                 $index = new Index($item->getName() ?? "unknown_index");

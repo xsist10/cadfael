@@ -11,6 +11,7 @@ use Cadfael\NullLoggerDefault;
 use Exception;
 use Psr\Log\LoggerAwareTrait;
 use SqlFtw\Sql\Expression\FunctionCall;
+use SqlFtw\Sql\Expression\NullLiteral;
 use SqlFtw\Sql\Expression\RootNode;
 
 abstract class Fragment
@@ -392,6 +393,9 @@ abstract class Fragment
         }
         if ($node instanceof FunctionCall) {
             return $node->getFunction()->getName();
+        }
+        if ($node instanceof NullLiteral) {
+            return null;
         }
 
         throw new Exception("Unknown RootNode derivative: " . get_class($node));

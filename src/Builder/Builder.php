@@ -21,6 +21,7 @@ use Cadfael\NullLoggerDefault;
 use Psr\Log\LoggerAwareTrait;
 use SqlFtw\Parser\InvalidCommand;
 use SqlFtw\Parser\Parser;
+use SqlFtw\Parser\ParserConfig;
 use SqlFtw\Platform\Platform;
 use SqlFtw\Session\Session;
 use SqlFtw\Sql\Dal\Set\SetVariablesCommand;
@@ -97,8 +98,9 @@ class Builder
     public function processIntoSchemas(string $statements): array
     {
         $platform = Platform::get(Platform::MYSQL, $this->version); // version defaults to x.x.99 when no patch number is given
+        $config = new ParserConfig($platform);
         $session = new Session($platform);
-        $parser = new Parser($session);
+        $parser = new Parser($config, $session);
 
         // Instantiate initial schema
         $this->getCurrentSchema();
@@ -106,7 +108,7 @@ class Builder
         // Returns a Generator. will not parse anything if you don't iterate over it
         $commands = $parser->parse($statements);
 
-        foreach ($commands as [$statement, $token_list]) {
+        foreach ($commands as $statement) {
             /** @var Statement|InvalidColumn $statement */
             // Parser does not throw exceptions. this allows to parse partially invalid code and not fail on first error
             if ($statement instanceof InvalidCommand) {
