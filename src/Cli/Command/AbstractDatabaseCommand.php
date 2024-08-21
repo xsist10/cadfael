@@ -50,9 +50,14 @@ abstract class AbstractDatabaseCommand extends Command
      */
     public function getPort(InputInterface $input): int
     {
-        return $input->getOption('port')
-            ? (int)$input->getOption('port')
-            : (int)$_SERVER['MYSQL_PORT'] ?? 3306;
+        if ($input->getOption('port')) {
+            return (int)$input->getOption('port');
+        }
+        if (isset($_SERVER['MYSQL_PORT'])) {
+            return (int)$_SERVER['MYSQL_PORT'];
+        }
+
+        return 3306;
     }
 
     protected function configure(): void
@@ -93,12 +98,10 @@ abstract class AbstractDatabaseCommand extends Command
     protected function getDatabasePassword(InputInterface $input, OutputInterface $output): string
     {
         // First we see if a secret file is provided
-        if ($input->getOption('secret')) {
-            $file = $input->getOption('secret');
-            if (file_exists($file)) {
-                $password = trim(file_get_contents($file));
-                return !empty($password) ? $password : '';
-            }
+        $file = $input->getOption('secret');
+        if (!is_null($file) and file_exists($file)) {
+            $password = trim(file_get_contents($file));
+            return !empty($password) ? $password : '';
         }
 
         // Then we check if there is an environment variables
