@@ -69,6 +69,9 @@ class CreateTable extends Fragment
         foreach ($options as $option) {
             $type = $this->getSingleExpressionType($option['sub_tree'], 'reserved');
             $value = $this->getSingleExpressionType($option['sub_tree'], 'const');
+            if (is_null($value)) {
+                $value = array_pop($option['sub_tree']);
+            }
             $information_schema[$type['base_expr']] = $value['base_expr'];
         }
         $table->information_schema = TableInformationSchema::createFromInformationSchema(
