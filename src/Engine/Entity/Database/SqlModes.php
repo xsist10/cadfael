@@ -34,7 +34,7 @@ class SqlModes
         'STRICT_TRANS_TABLES',
     ];
 
-    public static function normaliseMode(?string $mode): array
+    public static function normaliseMode(?string $mode, ?string $version): array
     {
         $modes = $mode ? explode(',', $mode) : self::DEFAULT_MODE;
         // Search and replace any COMBINED_MODE value you find
@@ -47,5 +47,20 @@ class SqlModes
             }
         }
         return array_unique($normalised_modes);
+    }
+
+    /**
+     * Determines if a mode array contains a specific mode. This does not account for defaults for a specific server
+     * version.
+     *
+     * @TODO Move this into the server object?
+     *
+     * @param array $modes
+     * @param string $mode
+     * @return bool
+     */
+    public static function hasMode(array $modes, string $mode): bool
+    {
+        return in_array($mode, $modes) !== false;
     }
 }
