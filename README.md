@@ -1,3 +1,9 @@
+# WARNING - DO NOT USE THIS BRANCH
+
+This is an experiment branch specifically to see how using the sqlftw library would work.
+
+However the library is not under an open license at the moment so I won't be merging it into the main branch until there is more clarity there.
+
 # Cadfael
 
 ![Build](https://github.com/xsist10/cadfael/workflows/build/badge.svg?branch=master)
