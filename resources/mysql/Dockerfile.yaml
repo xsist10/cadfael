@@ -1,7 +1,0 @@
-FROM mysql:8.0
-
-# Copy over our SQL queries
-COPY ./resources/mysql/sample.sql /sample.sql
-
-# Startup MySQL and run the queries
-CMD ["mysqld", "--init-file=/sample.sql"]
